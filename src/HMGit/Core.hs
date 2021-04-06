@@ -94,46 +94,33 @@ loadObject sha1
 
 loadTree = undefined
 
-data CatOpt = CatOptObjectType ObjectType (BL.ByteString -> IO ())
-    | CatOptModeType (ObjectType -> IO ())
-    | CatOptModeSize (BL.ByteString -> IO ())
-    | CatOptModePP   (ObjectType -> BL.ByteString -> IO ())
-
-instance Show CatOpt where
-    show (CatOptObjectType objType _) = show objType
-    show (CatOptModeType _)           = "t"
-    show (CatOptModeSize _)           = "s"
-    show (CatOptModePP   _)           = "p"
-
-instance Eq CatOpt where
-    lhs == rhs = show lhs == show rhs
+data CatOpt = CatOptObjectType ObjectType (ObjectType -> BL.ByteString -> IO ())
+    | CatOptMode { runCatOptMode :: ObjectType -> BL.ByteString -> IO () }
 
 catObjectO :: ObjectType -> CatOpt
-catObjectO = flip CatOptObjectType BLC.putStrLn
+catObjectO = flip CatOptObjectType $ const BLC.putStrLn
 
 catObjectType :: CatOpt
-catObjectType = CatOptModeType print
+catObjectType = CatOptMode $ const . print
 
 catObjectSize :: CatOpt
-catObjectSize = CatOptModeSize $ print . BL.length
+catObjectSize = CatOptMode $ const $ print . BL.length
 
 catObjectPP :: CatOpt
-catObjectPP = CatOptModePP $ \objType body ->
+catObjectPP = CatOptMode $ \objType body ->
     if objType `elem` [ Commit, Blob ] then BLC.putStrLn body else loadTree body
 
-catObject :: CatOpt -> B.ByteString -> IO ()
-catObject catOpt sha1 = loadObject sha1 >>= \case
-    Left err -> hPutStrLn stderr $ show err
-    Right (objType', body) -> case catOpt of
-        CatOptObjectType objType runner
-            | objType /= objType' -> hPutStrLn stderr $ unwords [
-                "expected object type"
-               , show objType
-               , "got"
-               , show objType'
-               ]
-            | otherwise -> runner body
-        CatOptModePP runner -> runner objType' body
-        CatOptModeType runner -> runner objType'
-        CatOptModeSize runner -> runner body
+runCatOpt :: CatOpt -> ObjectType -> BL.ByteString -> IO ()
+runCatOpt (CatOptObjectType specifiedObjType runner) objType body
+    | specifiedObjType /= objType = hPutStrLn stderr $ unwords [
+        "expected objType type"
+        , show specifiedObjType
+        , "got"
+        , show objType
+        ]
+    | otherwise = runner objType body
+runCatOpt catOptMode objType body = runCatOptMode catOptMode objType body
 
+catObject :: CatOpt -> B.ByteString -> IO ()
+catObject catOpt sha1 = loadObject sha1
+    >>= either (hPutStrLn stderr . show) (uncurry (runCatOpt catOpt))
