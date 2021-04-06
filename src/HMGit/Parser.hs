@@ -1,6 +1,6 @@
 {-# LANGUAGE TupleSections #-}
 module HMGit.Parser (
-    ObjectType
+    ObjectType (..)
   , objectParser
 ) where
 
@@ -19,7 +19,7 @@ import qualified Text.Megaparsec.Error      as M
 data ObjectType = Blob
     | Commit
     | Tree
-    deriving Enum
+    deriving (Eq, Enum)
 
 instance Show ObjectType where
     show Blob   = "blob"

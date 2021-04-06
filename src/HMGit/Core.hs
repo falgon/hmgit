@@ -4,28 +4,30 @@ module HMGit.Core (
   , loadObject
 ) where
 
-import           Codec.Compression.Zlib    (compress, decompress)
-import           Control.Exception.Safe    (MonadThrow (..), SomeException,
-                                            throwString)
-import           Control.Monad             (MonadPlus (..))
-import           Control.Monad.Trans       (lift)
-import           Control.Monad.Trans.Maybe (MaybeT (..))
-import           Crypto.Hash.SHA1          (hashlazy)
-import qualified Data.ByteString           as B
-import qualified Data.ByteString.Lazy      as BL
-import qualified Data.ByteString.Lazy.UTF8 as BLU
-import qualified Data.ByteString.UTF8      as BU
-import           Data.List                 (intercalate, isPrefixOf, unwords,
-                                            words)
-import qualified Data.List.NonEmpty        as LN
-import           Data.Void                 (Void)
-import           Data.Word                 (Word8)
-import           Prelude                   hiding (init)
-import           System.Directory          (createDirectoryIfMissing,
-                                            listDirectory)
-import           System.FilePath           ((</>))
-import qualified Text.Megaparsec           as M
-import qualified Text.Megaparsec.Error     as M
+import           Codec.Compression.Zlib     (compress, decompress)
+import           Control.Exception.Safe     (MonadThrow (..), SomeException,
+                                             throwString)
+import           Control.Monad              (MonadPlus (..))
+import           Control.Monad.Trans        (lift)
+import           Control.Monad.Trans.Maybe  (MaybeT (..))
+import           Crypto.Hash.SHA1           (hashlazy)
+import qualified Data.ByteString            as B
+import qualified Data.ByteString.Lazy       as BL
+import qualified Data.ByteString.Lazy.Char8 as BLC
+import qualified Data.ByteString.Lazy.UTF8  as BLU
+import qualified Data.ByteString.UTF8       as BU
+import           Data.List                  (intercalate, isPrefixOf, unwords,
+                                             words)
+import qualified Data.List.NonEmpty         as LN
+import           Data.Void                  (Void)
+import           Data.Word                  (Word8)
+import           Prelude                    hiding (init)
+import           System.Directory           (createDirectoryIfMissing,
+                                             listDirectory)
+import           System.FilePath            ((</>))
+import           System.IO                  (hPutStrLn, stderr)
+import qualified Text.Megaparsec            as M
+import qualified Text.Megaparsec.Error      as M
 
 import           HMGit.Parser
 
@@ -89,3 +91,49 @@ loadObject sha1
             (object, ext) <- LN.splitAt 1 <$> MaybeT (LN.nonEmpty . filter (isPrefixOf rest) <$> listDirectory dir)
             if not $ null ext then mzero else let fname = dir </> head object in
                 (fname,) <$> lift (decompress <$> BL.readFile fname)
+
+loadTree = undefined
+
+data CatOpt = CatOptObjectType ObjectType (BL.ByteString -> IO ())
+    | CatOptModeType (ObjectType -> IO ())
+    | CatOptModeSize (BL.ByteString -> IO ())
+    | CatOptModePP   (ObjectType -> BL.ByteString -> IO ())
+
+instance Show CatOpt where
+    show (CatOptObjectType objType _) = show objType
+    show (CatOptModeType _)           = "t"
+    show (CatOptModeSize _)           = "s"
+    show (CatOptModePP   _)           = "p"
+
+instance Eq CatOpt where
+    lhs == rhs = show lhs == show rhs
+
+catObjectO :: ObjectType -> CatOpt
+catObjectO = flip CatOptObjectType BLC.putStrLn
+
+catObjectType :: CatOpt
+catObjectType = CatOptModeType print
+
+catObjectSize :: CatOpt
+catObjectSize = CatOptModeSize $ print . BL.length
+
+catObjectPP :: CatOpt
+catObjectPP = CatOptModePP $ \objType body ->
+    if objType `elem` [ Commit, Blob ] then BLC.putStrLn body else loadTree body
+
+catObject :: CatOpt -> B.ByteString -> IO ()
+catObject catOpt sha1 = loadObject sha1 >>= \case
+    Left err -> hPutStrLn stderr $ show err
+    Right (objType', body) -> case catOpt of
+        CatOptObjectType objType runner
+            | objType /= objType' -> hPutStrLn stderr $ unwords [
+                "expected object type"
+               , show objType
+               , "got"
+               , show objType'
+               ]
+            | otherwise -> runner body
+        CatOptModePP runner -> runner objType' body
+        CatOptModeType runner -> runner objType'
+        CatOptModeSize runner -> runner body
+
