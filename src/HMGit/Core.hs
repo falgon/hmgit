@@ -1,13 +1,15 @@
-{-# LANGUAGE LambdaCase, OverloadedStrings, TupleSections #-}
+{-# LANGUAGE CPP, LambdaCase, OverloadedStrings, TupleSections #-}
 module HMGit.Core (
     storeObject
   , loadObject
 ) where
 
+import           HMGit.Parser
+
 import           Codec.Compression.Zlib     (compress, decompress)
 import           Control.Exception.Safe     (MonadThrow (..), SomeException,
                                              throwString)
-import           Control.Monad              (MonadPlus (..))
+import           Control.Monad              (MonadPlus (..), forM_)
 import           Control.Monad.Trans        (lift)
 import           Control.Monad.Trans.Maybe  (MaybeT (..))
 import           Crypto.Hash.SHA1           (hashlazy)
@@ -16,8 +18,7 @@ import qualified Data.ByteString.Lazy       as BL
 import qualified Data.ByteString.Lazy.Char8 as BLC
 import qualified Data.ByteString.Lazy.UTF8  as BLU
 import qualified Data.ByteString.UTF8       as BU
-import           Data.List                  (intercalate, isPrefixOf, unwords,
-                                             words)
+import           Data.List                  (intercalate, isPrefixOf, unwords)
 import qualified Data.List.NonEmpty         as LN
 import           Data.Void                  (Void)
 import           Data.Word                  (Word8)
@@ -25,11 +26,25 @@ import           Prelude                    hiding (init)
 import           System.Directory           (createDirectoryIfMissing,
                                              listDirectory)
 import           System.FilePath            ((</>))
-import           System.IO                  (hPutStrLn, stderr)
+import           System.IO                  (hPrint, hPutStrLn, stderr)
+import           System.Posix.Types         (CMode (..))
 import qualified Text.Megaparsec            as M
 import qualified Text.Megaparsec.Error      as M
 
-import           HMGit.Parser
+#ifndef mingw32_HOST_OS
+import           System.Posix.Internals     (s_isdir)
+
+sIsDir :: CMode -> Bool
+sIsDir = s_isdir
+#else
+import           Data.Bits                  ((.&.))
+
+sIsDir :: CMode -> Bool
+sIsDir = (== sIFDIR) . (.&. sIFMT)
+    where
+        sIFMT = 0o170000
+        sIFDIR = 0o040000
+#endif
 
 hmGitDir :: FilePath -> FilePath
 hmGitDir = flip (</>) ".hmgit"
@@ -92,7 +107,8 @@ loadObject sha1
             if not $ null ext then mzero else let fname = dir </> head object in
                 (fname,) <$> lift (decompress <$> BL.readFile fname)
 
-loadTree = undefined
+loadTreeFromData :: BL.ByteString -> Either (M.ParseErrorBundle BLU.ByteString Void) [(CMode, FilePath, BL.ByteString)]
+loadTreeFromData = M.runParser (treeParser 1000) mempty
 
 data CatOpt = CatOptObjectType ObjectType (ObjectType -> BL.ByteString -> IO ())
     | CatOptMode { runCatOptMode :: ObjectType -> BL.ByteString -> IO () }
@@ -108,7 +124,14 @@ catObjectSize = CatOptMode $ const $ print . BL.length
 
 catObjectPP :: CatOpt
 catObjectPP = CatOptMode $ \objType body ->
-    if objType `elem` [ Commit, Blob ] then BLC.putStrLn body else loadTree body
+    if objType `elem` [ Commit, Blob ] then BLC.putStrLn body else case loadTreeFromData body of
+        Left err -> hPutStrLn stderr $ M.errorBundlePretty err
+        Right objs -> forM_ objs $ \(mode, fpath, sha1) -> putStrLn $ unwords [
+            show mode -- todo octal display
+          , if sIsDir mode then "tree" else "blob"
+          , BLU.toString sha1
+          , fpath
+          ]
 
 runCatOpt :: CatOpt -> ObjectType -> BL.ByteString -> IO ()
 runCatOpt (CatOptObjectType specifiedObjType runner) objType body
@@ -123,4 +146,4 @@ runCatOpt catOptMode objType body = runCatOptMode catOptMode objType body
 
 catObject :: CatOpt -> B.ByteString -> IO ()
 catObject catOpt sha1 = loadObject sha1
-    >>= either (hPutStrLn stderr . show) (uncurry (runCatOpt catOpt))
+    >>= either (hPrint stderr) (uncurry (runCatOpt catOpt))
