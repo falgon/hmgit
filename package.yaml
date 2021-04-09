@@ -32,18 +32,20 @@ dependencies:
 - megaparsec
 - mtl
 - monad-loops
+- extra
 
 library:
   source-dirs: src
 
 executables:
-  hmgit-exe:
+  hmgit:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    - -Wall
     dependencies:
     - hmgit
 

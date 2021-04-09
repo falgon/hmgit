@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0d48ac5335faab1911204aac8e5db507ae9ac7afda0ab747cf852b524372eae7
+-- hash: 1bbf67f7849602d36ad94881f86a404fd1ed3a913316c26ac017e5cde2bc3733
 
 name:           hmgit
 version:        0.1.0.0
@@ -27,7 +27,9 @@ source-repository head
 
 library
   exposed-modules:
-      HMGit.Core
+      HMGit.Commands.CatFile
+      HMGit.Commands.Init
+      HMGit.Internals
       HMGit.Parser
   other-modules:
       Paths_hmgit
@@ -38,6 +40,7 @@ library
     , bytestring
     , cryptohash
     , directory
+    , extra
     , filepath
     , megaparsec
     , monad-loops
@@ -48,18 +51,19 @@ library
     , zlib
   default-language: Haskell2010
 
-executable hmgit-exe
+executable hmgit
   main-is: Main.hs
   other-modules:
       Paths_hmgit
   hs-source-dirs:
       app
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall
   build-depends:
       base >=4.7 && <5
     , bytestring
     , cryptohash
     , directory
+    , extra
     , filepath
     , hmgit
     , megaparsec
@@ -84,6 +88,7 @@ test-suite hmgit-test
     , bytestring
     , cryptohash
     , directory
+    , extra
     , filepath
     , hmgit
     , megaparsec

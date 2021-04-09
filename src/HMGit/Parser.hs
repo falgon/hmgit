@@ -1,12 +1,14 @@
 {-# LANGUAGE TupleSections #-}
 module HMGit.Parser (
     ObjectType (..)
+  , ObjectParser
   , objectParser
   , treeParser
 ) where
 
 import qualified Codec.Binary.UTF8.String   as S
 import           Control.Monad              (MonadPlus (..))
+import           Control.Monad.Extra        (concatMapM, ifM)
 import           Control.Monad.Loops        (unfoldrM)
 import           Control.Monad.Trans        (lift)
 import           Control.Monad.Trans.Maybe  (MaybeT (..), runMaybeT)
@@ -18,12 +20,11 @@ import           Data.List                  (isPrefixOf)
 import qualified Data.List.NonEmpty         as LN
 import           Data.Void
 import           Data.Word                  (Word8)
-import           Numeric                    (readOct)
+import           Numeric                    (readHex, readOct, showHex)
 import           System.Posix.Types         (CMode (..))
 import qualified Text.Megaparsec            as M
 import qualified Text.Megaparsec.Char       as MC
-import qualified Text.Megaparsec.Char.Lexer as ML
-import qualified Text.Megaparsec.Error      as M
+import           Text.Printf                (printf)
 
 data ObjectType = Blob
     | Commit
@@ -42,36 +43,44 @@ instance Read ObjectType where
         | "tree" `isPrefixOf` s = [(Tree, drop 4 s)]
         | otherwise = []
 
-pNull :: M.Parsec Void BL.ByteString Word8
+type ObjectParser = M.Parsec Void BL.ByteString
+
+pNull :: ObjectParser Word8
 pNull = M.single 0
 
-pSpace :: M.Parsec Void BL.ByteString Word8
+pSpace :: ObjectParser Word8
 pSpace = M.single $ fromIntegral $ ord ' '
 
-pDecimals :: (Read i, Integral i) => M.Parsec Void BL.ByteString i
-pDecimals = read . map (chr . fromIntegral) <$> M.many (M.choice $ map (M.single . fromIntegral . ord) ['1'..'9'])
+pDecimals :: (Read i, Integral i) => ObjectParser i
+pDecimals = read . map (chr . fromIntegral) <$> M.many (M.choice $ map (M.single . fromIntegral . ord) ['0'..'9'])
 
-pObjectTypes :: M.Parsec Void BL.ByteString ObjectType
+pObjectTypes :: ObjectParser ObjectType
 pObjectTypes = read . BLC.unpack <$> M.choice (map (MC.string . BLU.fromString . show) [ Blob .. Tree ])
 
-pHeader :: (Read i, Integral i) => M.Parsec Void BL.ByteString (ObjectType, i)
+pHeader :: (Read i, Integral i) => ObjectParser (ObjectType, i)
 pHeader = (,) <$> pObjectTypes <*> (pSpace *> pDecimals <* pNull)
 
-objectParser :: M.Parsec Void BL.ByteString (ObjectType, BL.ByteString)
+objectParser :: ObjectParser (ObjectType, BL.ByteString)
 objectParser = do
     (objType, size) <- pHeader
     (objType,) . BL.pack <$> M.count size M.anySingle <* M.eof
 
-treeParser :: Int -> M.Parsec Void BL.ByteString [(CMode, FilePath, BL.ByteString)]
+stateEmpty :: (Foldable t, MonadPlus m) => (a, t b) -> m a
+stateEmpty x
+    | not $ null $ snd x = mzero
+    | otherwise = pure $ fst x
+
+treeParser :: Int -> ObjectParser [(CMode, FilePath, String)]
 treeParser limit = runMaybeT treeParser'
     >>= maybe (fail "failed to parse octet value of cmode") pure
     where
-        treeParser' = flip unfoldrM 0 $ \limitCount -> do
-            cmode <- LN.head <$> MaybeT (LN.nonEmpty . readOct . show <$> pDecimals)
-            if not $ null $ snd cmode then mzero else M.choice
-                [ Nothing <$ lift M.eof
-                , if limitCount >= limit then pure Nothing else lift mzero
-                , (.) Just . (.) (, succ limitCount) . (fst cmode,,)
-                    <$> lift (pSpace *> (S.decode <$> M.manyTill M.anySingle pNull))
-                    <*> lift (BL.pack <$> M.count 20 M.anySingle)
-                ]
+        treeParser' = flip unfoldrM 0 $ \limitCount ->
+            ifM ((||) <$> pure (limitCount >= limit) <*> lift M.atEnd) (pure Nothing) $ do
+                cmode <- stateEmpty =<< LN.head <$> MaybeT (LN.nonEmpty . readOct . show <$> pDecimals) <* lift pSpace
+                (.) Just . (.) (, succ limitCount) . (cmode,,)
+                    <$> lift (S.decode <$> M.manyTill M.anySingle pNull)
+                    <*> hexDigest
+
+        hexDigest = let formatter = printf "%02x" :: Word8 -> String in
+            MaybeT (mapM (LN.nonEmpty . readHex . flip showHex mempty) <$> M.count 20 M.anySingle)
+                >>= concatMapM (fmap formatter . stateEmpty . LN.head)
