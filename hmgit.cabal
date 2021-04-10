@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 1bbf67f7849602d36ad94881f86a404fd1ed3a913316c26ac017e5cde2bc3733
+-- hash: e47f31dab5f726f091da845a573f4fc6b9e75676db57abba4d7a9a5ca5a85e88
 
 name:           hmgit
 version:        0.1.0.0
@@ -29,8 +29,10 @@ library
   exposed-modules:
       HMGit.Commands.CatFile
       HMGit.Commands.Init
-      HMGit.Internals
-      HMGit.Parser
+      HMGit.Internal.Core
+      HMGit.Internal.Exceptions
+      HMGit.Internal.Parser
+      HMGit.Internal.Utils
   other-modules:
       Paths_hmgit
   hs-source-dirs:

@@ -3,8 +3,9 @@ module HMGit.Commands.Init (
     init
 ) where
 
+import           HMGit.Internal.Core  (hmGitDir)
+
 import qualified Data.ByteString.Lazy as BL
-import           HMGit.Internals      (hmGitDir)
 import           Prelude              hiding (init)
 import           System.Directory     (createDirectoryIfMissing)
 import           System.FilePath      ((</>))

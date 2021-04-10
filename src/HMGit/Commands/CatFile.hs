@@ -8,16 +8,18 @@ module HMGit.Commands.CatFile (
   , catFile
 ) where
 
-import           HMGit.Internals            (loadObject, loadTreeFromData)
-import           HMGit.Parser
+import           HMGit.Internal.Core        (loadObject, loadTreeFromData)
+import           HMGit.Internal.Exceptions
+import           HMGit.Internal.Parser
 
+import           Control.Exception.Safe     (MonadThrow, throw)
 import           Control.Monad              (forM_)
 import qualified Data.ByteString            as B
 import qualified Data.ByteString.Lazy       as BL
 import qualified Data.ByteString.Lazy.Char8 as BLC
 import           Numeric                    (showOct)
 import           Prelude                    hiding (init)
-import           System.IO                  (hPrint, hPutStrLn, stderr)
+import           System.IO                  (hPrint, stderr)
 import           System.Posix.Types         (CMode (..))
 #ifndef mingw32_HOST_OS
 import           System.Posix.Internals     (s_isdir)
@@ -36,7 +38,7 @@ data CatOpt = CatOptObjectType ObjectType (ObjectType -> BL.ByteString -> IO ())
     | CatOptMode { runCatOptMode :: ObjectType -> BL.ByteString -> IO () }
 
 catOptObject :: ObjectType -> CatOpt
-catOptObject = flip CatOptObjectType $ const BLC.putStrLn
+catOptObject = flip CatOptObjectType $ const $ BLC.putStrLn
 
 catOptObjectType :: CatOpt
 catOptObjectType = CatOptMode $ const . print
@@ -57,17 +59,17 @@ catOptObjectPP = CatOptMode $ \objType body ->
           , fpath
           ]
 
-runCatOpt :: CatOpt -> ObjectType -> BL.ByteString -> IO ()
+runCatOpt :: MonadThrow m => CatOpt -> ObjectType -> BL.ByteString -> IO (m ())
 runCatOpt (CatOptObjectType specifiedObjType runner) objType body
-    | specifiedObjType /= objType = hPutStrLn stderr $ unwords [
+    | specifiedObjType /= objType = pure $ throw $ invalidArgument $ unwords [
         "expected object type"
         , show specifiedObjType <> ","
         , "but got"
         , show objType
         ]
-    | otherwise = runner objType body
-runCatOpt catOptMode objType body = runCatOptMode catOptMode objType body
+    | otherwise = pure () <$ runner objType body
+runCatOpt catOptMode objType body = pure () <$ runCatOptMode catOptMode objType body
 
-catFile :: CatOpt -> B.ByteString -> IO ()
+catFile :: MonadThrow m => CatOpt -> B.ByteString -> IO (m ())
 catFile catOpt sha1 = loadObject sha1
-    >>= either (hPrint stderr) (uncurry (runCatOpt catOpt))
+    >>= either (pure . throw) (uncurry (runCatOpt catOpt))

@@ -1,16 +1,18 @@
 {-# LANGUAGE LambdaCase, OverloadedStrings, TupleSections #-}
-module HMGit.Internals (
+module HMGit.Internal.Core (
     hmGitDir
   , storeObject
   , loadObject
   , loadTreeFromData
 ) where
 
-import           HMGit.Parser
+import           HMGit.Internal.Exceptions
+import           HMGit.Internal.Parser     (ObjectType (..), objectParser,
+                                            treeParser)
+import           HMGit.Internal.Utils      (stateEmpty)
 
 import           Codec.Compression.Zlib    (compress, decompress)
-import           Control.Exception.Safe    (MonadThrow, throwString)
-import           Control.Monad             (MonadPlus (..))
+import           Control.Exception.Safe    (MonadThrow, throw)
 import           Control.Monad.Trans       (lift)
 import           Control.Monad.Trans.Maybe (MaybeT (..))
 import           Crypto.Hash.SHA1          (hashlazy)
@@ -18,8 +20,10 @@ import qualified Data.ByteString           as B
 import qualified Data.ByteString.Lazy      as BL
 import qualified Data.ByteString.Lazy.UTF8 as BLU
 import qualified Data.ByteString.UTF8      as BU
+import           Data.Functor              ((<&>))
 import           Data.List                 (intercalate, isPrefixOf)
 import qualified Data.List.NonEmpty        as LN
+import           Data.Tuple.Extra          (first)
 import           Prelude                   hiding (init)
 import           System.Directory          (createDirectoryIfMissing,
                                             listDirectory)
@@ -55,9 +59,9 @@ storeObject objType rawData = sha1 <$
 
 loadObject :: MonadThrow m => B.ByteString -> IO (m (ObjectType, BL.ByteString))
 loadObject sha1
-    | B.length sha1 < 1 = pure $ throwString "hash prefix must be 2 or more characters"
-    | otherwise = runMaybeT getValidObject >>= \case
-        Nothing -> throwString $ unwords [
+    | B.length sha1 < 2 = pure $ throw $ invalidArgument "hash prefix must be 2 or more characters"
+    | otherwise = runMaybeT loadObject' >>= \case
+        Nothing -> throw $ nosuchThing $ unwords [
             "objects"
           , BU.toString sha1
           , "not found or multiple object ("
@@ -66,14 +70,15 @@ loadObject sha1
           , BU.toString sha1
           ]
         Just (fname, object) -> case M.runParser objectParser fname object of
-            Left errorBundle -> throwString $ M.errorBundlePretty errorBundle
+            Left errorBundle      -> throw errorBundle
             Right (objType, body) -> pure $ pure (objType, body)
     where
-        getValidObject = do
+        loadObject' = do
             let (dir, rest) = hashToPath sha1
-            (object, ext) <- LN.splitAt 1 <$> MaybeT (LN.nonEmpty . filter (isPrefixOf rest) <$> listDirectory dir)
-            if not $ null ext then mzero else let fname = dir </> head object in
-                (fname,) <$> lift (decompress <$> BL.readFile fname)
+            fname <- MaybeT (LN.nonEmpty . filter (isPrefixOf rest) <$> listDirectory dir)
+                >>= stateEmpty . first head . LN.splitAt 1
+                <&> (dir </>)
+            (fname,) <$> lift (decompress <$> BL.readFile fname)
 
 loadTreeFromData :: MonadThrow m => BL.ByteString -> m [(CMode, FilePath, String)]
-loadTreeFromData = either (throwString . M.errorBundlePretty) pure . M.runParser (treeParser 1000) mempty
+loadTreeFromData = either throw pure . M.runParser (treeParser 1000) mempty

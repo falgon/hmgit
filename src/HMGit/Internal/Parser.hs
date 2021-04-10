@@ -1,13 +1,16 @@
 {-# LANGUAGE TupleSections #-}
-module HMGit.Parser (
+module HMGit.Internal.Parser (
     ObjectType (..)
   , ObjectParser
+  , ObjectParseException
   , objectParser
   , treeParser
 ) where
 
+import           HMGit.Internal.Utils       (foldChoice, stateEmpty)
+
 import qualified Codec.Binary.UTF8.String   as S
-import           Control.Monad              (MonadPlus (..))
+import           Control.Exception.Safe     (Exception)
 import           Control.Monad.Extra        (concatMapM, ifM)
 import           Control.Monad.Loops        (unfoldrM)
 import           Control.Monad.Trans        (lift)
@@ -18,7 +21,7 @@ import qualified Data.ByteString.Lazy.UTF8  as BLU
 import           Data.Char                  (chr, ord)
 import           Data.List                  (isPrefixOf)
 import qualified Data.List.NonEmpty         as LN
-import           Data.Void
+import           Data.Tuple.Extra           (secondM)
 import           Data.Word                  (Word8)
 import           Numeric                    (readHex, readOct, showHex)
 import           System.Posix.Types         (CMode (..))
@@ -43,7 +46,15 @@ instance Read ObjectType where
         | "tree" `isPrefixOf` s = [(Tree, drop 4 s)]
         | otherwise = []
 
-type ObjectParser = M.Parsec Void BL.ByteString
+newtype ObjectParseException = TreeParser String
+    deriving (Eq, Ord, Show)
+
+instance M.ShowErrorComponent ObjectParseException where
+    showErrorComponent (TreeParser s) = "tree object parse error: " <> s
+
+instance Exception ObjectParseException
+
+type ObjectParser = M.Parsec ObjectParseException BL.ByteString
 
 pNull :: ObjectParser Word8
 pNull = M.single 0
@@ -52,31 +63,24 @@ pSpace :: ObjectParser Word8
 pSpace = M.single $ fromIntegral $ ord ' '
 
 pDecimals :: (Read i, Integral i) => ObjectParser i
-pDecimals = read . map (chr . fromIntegral) <$> M.many (M.choice $ map (M.single . fromIntegral . ord) ['0'..'9'])
+pDecimals = read . map (chr . fromIntegral) <$> M.many (foldChoice (M.single . fromIntegral . ord) ['0'..'9'])
 
 pObjectTypes :: ObjectParser ObjectType
-pObjectTypes = read . BLC.unpack <$> M.choice (map (MC.string . BLU.fromString . show) [ Blob .. Tree ])
+pObjectTypes = read . BLC.unpack <$> foldChoice (MC.string . BLU.fromString . show) [ Blob .. Tree ]
 
 pHeader :: (Read i, Integral i) => ObjectParser (ObjectType, i)
 pHeader = (,) <$> pObjectTypes <*> (pSpace *> pDecimals <* pNull)
 
 objectParser :: ObjectParser (ObjectType, BL.ByteString)
-objectParser = do
-    (objType, size) <- pHeader
-    (objType,) . BL.pack <$> M.count size M.anySingle <* M.eof
-
-stateEmpty :: (Foldable t, MonadPlus m) => (a, t b) -> m a
-stateEmpty x
-    | not $ null $ snd x = mzero
-    | otherwise = pure $ fst x
+objectParser = (secondM (fmap BL.pack . flip M.count M.anySingle) =<< pHeader) <* M.eof
 
 treeParser :: Int -> ObjectParser [(CMode, FilePath, String)]
 treeParser limit = runMaybeT treeParser'
-    >>= maybe (fail "failed to parse octet value of cmode") pure
+    >>= maybe (M.customFailure $ TreeParser "failed to parse octet value of cmode") pure
     where
         treeParser' = flip unfoldrM 0 $ \limitCount ->
-            ifM ((||) <$> pure (limitCount >= limit) <*> lift M.atEnd) (pure Nothing) $ do
-                cmode <- stateEmpty =<< LN.head <$> MaybeT (LN.nonEmpty . readOct . show <$> pDecimals) <* lift pSpace
+            ifM ((limitCount >= limit ||) <$> lift M.atEnd) (pure Nothing) $ do
+                cmode <- stateEmpty =<< LN.head <$> MaybeT (LN.nonEmpty . readOct . show <$> pDecimals') <* lift pSpace
                 (.) Just . (.) (, succ limitCount) . (cmode,,)
                     <$> lift (S.decode <$> M.manyTill M.anySingle pNull)
                     <*> hexDigest
@@ -84,3 +88,5 @@ treeParser limit = runMaybeT treeParser'
         hexDigest = let formatter = printf "%02x" :: Word8 -> String in
             MaybeT (mapM (LN.nonEmpty . readHex . flip showHex mempty) <$> M.count 20 M.anySingle)
                 >>= concatMapM (fmap formatter . stateEmpty . LN.head)
+
+        pDecimals' = pDecimals :: ObjectParser Integer
