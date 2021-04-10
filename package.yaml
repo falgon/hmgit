@@ -33,6 +33,7 @@ dependencies:
 - mtl
 - monad-loops
 - extra
+- optparse-applicative
 
 library:
   source-dirs: src

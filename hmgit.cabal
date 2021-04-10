@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e47f31dab5f726f091da845a573f4fc6b9e75676db57abba4d7a9a5ca5a85e88
+-- hash: 6528cbf1d0a89d41365dd5cd72d423f089cc6b4823868a4d65fd604fc04b202b
 
 name:           hmgit
 version:        0.1.0.0
@@ -47,6 +47,7 @@ library
     , megaparsec
     , monad-loops
     , mtl
+    , optparse-applicative
     , safe-exceptions
     , transformers
     , utf8-string
@@ -71,6 +72,7 @@ executable hmgit
     , megaparsec
     , monad-loops
     , mtl
+    , optparse-applicative
     , safe-exceptions
     , transformers
     , utf8-string
@@ -96,6 +98,7 @@ test-suite hmgit-test
     , megaparsec
     , monad-loops
     , mtl
+    , optparse-applicative
     , safe-exceptions
     , transformers
     , utf8-string

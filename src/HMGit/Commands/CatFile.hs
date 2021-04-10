@@ -38,7 +38,7 @@ data CatOpt = CatOptObjectType ObjectType (ObjectType -> BL.ByteString -> IO ())
     | CatOptMode { runCatOptMode :: ObjectType -> BL.ByteString -> IO () }
 
 catOptObject :: ObjectType -> CatOpt
-catOptObject = flip CatOptObjectType $ const $ BLC.putStrLn
+catOptObject = flip CatOptObjectType $ const BLC.putStrLn
 
 catOptObjectType :: CatOpt
 catOptObjectType = CatOptMode $ const . print
@@ -54,10 +54,7 @@ catOptObjectPP = CatOptMode $ \objType body ->
             showOct mode ""
           , if sIsDir mode then "tree" else "blob"
           , sha1
-          ] <> concat [
-            "\t"
-          , fpath
-          ]
+          ] <> "\t" <> fpath
 
 runCatOpt :: MonadThrow m => CatOpt -> ObjectType -> BL.ByteString -> IO (m ())
 runCatOpt (CatOptObjectType specifiedObjType runner) objType body
