@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module HMGit.Commands.Init (
+module HMGit.Commands.Porcelain.Init (
     init
 ) where
 

@@ -1,5 +1,5 @@
 {-# LANGUAGE CPP, LambdaCase, OverloadedStrings #-}
-module HMGit.Commands.CatFile (
+module HMGit.Commands.Plumbing.CatFile.Core (
     CatOpt (..)
   , catOptObject
   , catOptObjectType
@@ -8,6 +8,7 @@ module HMGit.Commands.CatFile (
   , catFile
 ) where
 
+import           HMGit.Commands.Plumbing    (Plumbing (..))
 import           HMGit.Internal.Core        (HMGitConfig (..), HMGitT,
                                              loadObject, loadTreeFromData)
 import           HMGit.Internal.Exceptions
@@ -38,7 +39,18 @@ sIsDir = (== sIFDIR) . (.&. sIFMT)
 #endif
 
 data CatOpt = CatOptObjectType ObjectType (ObjectType -> BL.ByteString -> HMGitT IO ())
-    | CatOptMode { runCatOptMode :: ObjectType -> BL.ByteString -> HMGitT IO () }
+    | CatOptMode (ObjectType -> BL.ByteString -> HMGitT IO ())
+
+instance Plumbing CatOpt where
+    runPlumbing (CatOptObjectType specifiedObjType f) objType body
+        | specifiedObjType /= objType = liftIO $ pure $ throw $ invalidArgument $ unwords [
+            "expected object type"
+            , show specifiedObjType <> ","
+            , "but got"
+            , show objType
+            ]
+        | otherwise = pure () <$ f objType body
+    runPlumbing (CatOptMode f) objType body = pure () <$ f objType body
 
 catOptObject :: ObjectType -> CatOpt
 catOptObject = flip CatOptObjectType $ const (liftIO . BLC.putStrLn)
@@ -59,17 +71,6 @@ catOptObjectPP = CatOptMode $ \objType body -> if objType `elem` [ Commit, Blob 
           , sha1
           ] <> "\t" <> fpath
 
-runCatOpt :: MonadThrow m => CatOpt -> ObjectType -> BL.ByteString -> HMGitT IO (m ())
-runCatOpt (CatOptObjectType specifiedObjType runner) objType body
-    | specifiedObjType /= objType = liftIO $ pure $ throw $ invalidArgument $ unwords [
-        "expected object type"
-        , show specifiedObjType <> ","
-        , "but got"
-        , show objType
-        ]
-    | otherwise = pure () <$ runner objType body
-runCatOpt catOptMode objType body = pure () <$ runCatOptMode catOptMode objType body
-
 catFile :: MonadThrow m => CatOpt -> B.ByteString -> HMGitT IO (m ())
 catFile catOpt sha1 = loadObject sha1
-    >>= either (liftIO . pure . throw) (uncurry (runCatOpt catOpt))
+    >>= either (liftIO . pure . throw) (uncurry (runPlumbing catOpt))
