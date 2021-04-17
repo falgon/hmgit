@@ -3,19 +3,23 @@ module HMGit.Commands.Init (
     init
 ) where
 
-import           HMGit.Internal.Core  (hmGitDir)
+import           HMGit.Internal.Core        (HMGitConfig (..), HMGitT)
 
-import qualified Data.ByteString.Lazy as BL
-import           Prelude              hiding (init)
-import           System.Directory     (createDirectoryIfMissing)
-import           System.FilePath      ((</>))
+import           Control.Monad.IO.Class     (MonadIO (..))
+import           Control.Monad.Trans.Reader (asks)
+import qualified Data.ByteString.Lazy       as BL
+import           Prelude                    hiding (init)
+import           System.Directory           (createDirectoryIfMissing)
+import           System.FilePath            ((</>))
 
-hmGitInitDir :: FilePath -> [FilePath]
-hmGitInitDir repoName = map (hmGitDir repoName </>) [
+hmGitInitDir :: FilePath -> (FilePath -> FilePath) -> [FilePath]
+hmGitInitDir repoName initDir = map (initDir repoName </>) [
     "objects"
   , "refs" </> "heads"
   ]
 
-init :: FilePath -> IO ()
-init repoName = mapM_ (createDirectoryIfMissing True) (hmGitInitDir repoName)
-    *> BL.writeFile (hmGitDir repoName </> "HEAD") "ref: refs/heads/master"
+init :: FilePath -> HMGitT IO ()
+init repoName = do
+    initDir <- asks hmGitDir
+    liftIO $ mapM_ (createDirectoryIfMissing True) (hmGitInitDir repoName initDir)
+        *> BL.writeFile (initDir repoName </> "HEAD") "ref: refs/heads/master"

@@ -1,5 +1,7 @@
 module Main where
 
+
+import           HMGit                  (HMGitConfig (..), runHMGit)
 import           HMGit.Commands.CatFile (CatOpt (..), catFile, catOptObject,
                                          catOptObjectPP, catOptObjectSize,
                                          catOptObjectType)
@@ -8,6 +10,7 @@ import qualified Data.ByteString.UTF8   as B
 import           Data.Foldable          (asum)
 import           Data.String            (IsString (..))
 import qualified Options.Applicative    as OA
+import           System.FilePath        ((</>))
 import           System.IO              (hPrint, stderr)
 
 data Cmd = CmdCatFile
@@ -74,6 +77,10 @@ optsParser = OA.info (OA.helper <*> programOptions) $ mconcat [
 main :: IO ()
 main = do
     opts <- OA.execParser optsParser
+    let hmGitConfig = HMGitConfig {
+        hmGitDir = (</> ".hmgit")
+      , hmGitTreeLimit = 1000
+    }
     case optCmd opts of
-        CmdCatFile -> catFile (getRunner (optCatFileMode opts)) (B.fromString $ optObject opts)
+        CmdCatFile -> runHMGit (catFile (getRunner (optCatFileMode opts)) (B.fromString $ optObject opts)) hmGitConfig
             >>= either (hPrint stderr) pure

@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, OverloadedStrings #-}
+{-# LANGUAGE CPP, LambdaCase, OverloadedStrings #-}
 module HMGit.Commands.CatFile (
     CatOpt (..)
   , catOptObject
@@ -8,12 +8,15 @@ module HMGit.Commands.CatFile (
   , catFile
 ) where
 
-import           HMGit.Internal.Core        (loadObject, loadTreeFromData)
+import           HMGit.Internal.Core        (HMGitConfig (..), HMGitT,
+                                             loadObject, loadTreeFromData)
 import           HMGit.Internal.Exceptions
 import           HMGit.Internal.Parser
 
 import           Control.Exception.Safe     (MonadThrow, throw)
 import           Control.Monad              (forM_)
+import           Control.Monad.IO.Class     (MonadIO (..))
+import           Control.Monad.Trans.Reader (asks)
 import qualified Data.ByteString            as B
 import qualified Data.ByteString.Lazy       as BL
 import qualified Data.ByteString.Lazy.Char8 as BLC
@@ -34,31 +37,31 @@ sIsDir = (== sIFDIR) . (.&. sIFMT)
         sIFDIR = 0o040000
 #endif
 
-data CatOpt = CatOptObjectType ObjectType (ObjectType -> BL.ByteString -> IO ())
-    | CatOptMode { runCatOptMode :: ObjectType -> BL.ByteString -> IO () }
+data CatOpt = CatOptObjectType ObjectType (ObjectType -> BL.ByteString -> HMGitT IO ())
+    | CatOptMode { runCatOptMode :: ObjectType -> BL.ByteString -> HMGitT IO () }
 
 catOptObject :: ObjectType -> CatOpt
-catOptObject = flip CatOptObjectType $ const BLC.putStrLn
+catOptObject = flip CatOptObjectType $ const (liftIO . BLC.putStrLn)
 
 catOptObjectType :: CatOpt
-catOptObjectType = CatOptMode $ const . print
+catOptObjectType = CatOptMode $ const . liftIO . print
 
 catOptObjectSize :: CatOpt
-catOptObjectSize = CatOptMode $ const $ print . BL.length
+catOptObjectSize = CatOptMode $ const $ liftIO . print . BL.length
 
 catOptObjectPP :: CatOpt
-catOptObjectPP = CatOptMode $ \objType body ->
-    if objType `elem` [ Commit, Blob ] then BLC.putStrLn body else case loadTreeFromData body of
-        Left err -> hPrint stderr err
-        Right objs -> forM_ objs $ \(mode, fpath, sha1) -> putStrLn $ unwords [
+catOptObjectPP = CatOptMode $ \objType body -> if objType `elem` [ Commit, Blob ] then liftIO (BLC.putStrLn body) else
+    asks (loadTreeFromData body . hmGitTreeLimit) >>= \case
+        Left err -> liftIO $ hPrint stderr err
+        Right objs -> liftIO $ forM_ objs $ \(mode, fpath, sha1) -> putStrLn $ unwords [
             showOct mode ""
           , if sIsDir mode then "tree" else "blob"
           , sha1
           ] <> "\t" <> fpath
 
-runCatOpt :: MonadThrow m => CatOpt -> ObjectType -> BL.ByteString -> IO (m ())
+runCatOpt :: MonadThrow m => CatOpt -> ObjectType -> BL.ByteString -> HMGitT IO (m ())
 runCatOpt (CatOptObjectType specifiedObjType runner) objType body
-    | specifiedObjType /= objType = pure $ throw $ invalidArgument $ unwords [
+    | specifiedObjType /= objType = liftIO $ pure $ throw $ invalidArgument $ unwords [
         "expected object type"
         , show specifiedObjType <> ","
         , "but got"
@@ -67,6 +70,6 @@ runCatOpt (CatOptObjectType specifiedObjType runner) objType body
     | otherwise = pure () <$ runner objType body
 runCatOpt catOptMode objType body = pure () <$ runCatOptMode catOptMode objType body
 
-catFile :: MonadThrow m => CatOpt -> B.ByteString -> IO (m ())
+catFile :: MonadThrow m => CatOpt -> B.ByteString -> HMGitT IO (m ())
 catFile catOpt sha1 = loadObject sha1
-    >>= either (pure . throw) (uncurry (runCatOpt catOpt))
+    >>= either (liftIO . pure . throw) (uncurry (runCatOpt catOpt))
