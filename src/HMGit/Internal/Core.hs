@@ -3,6 +3,8 @@ module HMGit.Internal.Core (
     HMGitConfig (..)
   , HMGitT
   , runHMGit
+  , liftIOUnit
+  , liftException
   , ObjectInfo (..)
   , fromContents
   , storeObject
@@ -46,6 +48,12 @@ type HMGitT = ReaderT HMGitConfig
 
 runHMGit :: HMGitT m a -> HMGitConfig -> m a
 runHMGit = runReaderT
+
+liftIOUnit :: (MonadIO m, Applicative f) => IO a -> m (f a)
+liftIOUnit = liftIO . fmap pure
+
+liftException :: (MonadIO m, Applicative f) => f a -> m (f a)
+liftException = liftIO . pure
 
 data ObjectInfo = ObjectInfo {
     objectId   :: BU.ByteString

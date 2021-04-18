@@ -6,7 +6,7 @@ import           Data.String                          (IsString (..))
 import           HMGit.Commands.Plumbing.CatFile.Core (CatOpt (..),
                                                        catOptObject)
 
-newtype CatFile = CatFile { getCatFileRunner :: CatOpt }
+newtype CatFile m = CatFile { getCatFileRunner :: CatOpt m }
 
-instance IsString CatFile where
+instance Applicative m => IsString (CatFile m) where
     fromString = CatFile . catOptObject . read

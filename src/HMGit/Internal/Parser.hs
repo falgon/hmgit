@@ -7,11 +7,12 @@ module HMGit.Internal.Parser (
   , treeParser
 ) where
 
-import           HMGit.Internal.Utils       (foldChoice, stateEmpty)
+import           HMGit.Internal.Utils       (foldChoice, formatHexStrings,
+                                             stateEmpty)
 
 import qualified Codec.Binary.UTF8.String   as S
 import           Control.Exception.Safe     (Exception)
-import           Control.Monad.Extra        (concatMapM, ifM)
+import           Control.Monad.Extra        (ifM)
 import           Control.Monad.Loops        (unfoldrM)
 import           Control.Monad.Trans        (lift)
 import           Control.Monad.Trans.Maybe  (MaybeT (..), runMaybeT)
@@ -23,11 +24,10 @@ import           Data.List                  (isPrefixOf)
 import qualified Data.List.NonEmpty         as LN
 import           Data.Tuple.Extra           (secondM)
 import           Data.Word                  (Word8)
-import           Numeric                    (readHex, readOct, showHex)
+import           Numeric                    (readOct)
 import           System.Posix.Types         (CMode (..))
 import qualified Text.Megaparsec            as M
 import qualified Text.Megaparsec.Char       as MC
-import           Text.Printf                (printf)
 
 data ObjectType = Blob
     | Commit
@@ -83,10 +83,6 @@ treeParser limit = runMaybeT treeParser'
                 cmode <- stateEmpty =<< LN.head <$> MaybeT (LN.nonEmpty . readOct . show <$> pDecimals') <* lift pSpace
                 (.) Just . (.) (, succ limitCount) . (cmode,,)
                     <$> lift (S.decode <$> M.manyTill M.anySingle pNull)
-                    <*> hexDigest
-
-        hexDigest = let formatter = printf "%02x" :: Word8 -> String in
-            MaybeT (mapM (LN.nonEmpty . readHex . flip showHex mempty) <$> M.count 20 M.anySingle)
-                >>= concatMapM (fmap formatter . stateEmpty . LN.head)
+                    <*> MaybeT (formatHexStrings <$> M.count 20 M.anySingle)
 
         pDecimals' = pDecimals :: ObjectParser Integer
