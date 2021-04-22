@@ -7,8 +7,10 @@ import           HMGit.Commands.Plumbing.CatFile
 import           HMGit.Commands.Plumbing.HashObject
 
 import           Control.Exception.Safe             (MonadThrow)
+import           Control.Monad                      ((>=>))
 import qualified Data.ByteString.UTF8               as B
 import qualified Options.Applicative                as OA
+import           System.Exit                        (exitFailure)
 import           System.FilePath                    ((</>))
 import           System.IO                          (hPrint, stderr)
 
@@ -37,4 +39,4 @@ hmGitConfig = HMGitConfig {
 main :: IO ()
 main = OA.customExecParser (OA.prefs OA.showHelpOnError) optsParser
     >>= flip runHMGit hmGitConfig . cmdToHMGitT
-    >>= either (hPrint stderr) pure
+    >>= either (hPrint stderr >=> const exitFailure) pure

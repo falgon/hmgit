@@ -34,6 +34,7 @@ dependencies:
 - monad-loops
 - extra
 - optparse-applicative
+- binary
 
 library:
   source-dirs: src
@@ -47,6 +48,7 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     - -Wall
+    - -O2
     dependencies:
     - hmgit
 

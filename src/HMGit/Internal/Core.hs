@@ -10,10 +10,12 @@ module HMGit.Internal.Core (
   , storeObject
   , loadObject
   , loadTreeFromData
+  , loadIndex
 ) where
 
 import           HMGit.Internal.Exceptions
-import           HMGit.Internal.Parser      (ObjectType (..), objectParser,
+import           HMGit.Internal.Parser      (IndexEntry, ObjectType (..),
+                                             indexParser, objectParser,
                                              treeParser)
 import           HMGit.Internal.Utils       (stateEmpty)
 
@@ -61,6 +63,7 @@ data ObjectInfo = ObjectInfo {
   , objectPath :: (FilePath, FilePath)
   }
 
+
 objectFormat :: ObjectType -> BL.ByteString -> BL.ByteString
 objectFormat objType contents = mconcat [
     BLU.fromString $ show objType
@@ -106,8 +109,8 @@ loadObject sha1
           , BU.toString sha1
           ]
         Just (fname, object) -> case M.runParser objectParser fname object of
-            Left errorBundle      -> liftIO $ throw errorBundle
-            Right (objType, body) -> liftIO $ pure $ pure (objType, body)
+            Left errorBundle      -> liftException $ throw errorBundle
+            Right (objType, body) -> liftIOUnit $ pure (objType, body)
     where
         loadObject' = do
             (dir, rest) <- lift $ asks $ hashToPath sha1 . hmGitDir
@@ -118,3 +121,11 @@ loadObject sha1
 
 loadTreeFromData :: MonadThrow m => BL.ByteString -> Int -> m [(CMode, FilePath, String)]
 loadTreeFromData body treeLimit = either throw pure $ M.runParser (treeParser treeLimit) mempty body
+
+loadIndex :: MonadThrow m => HMGitT IO (m [IndexEntry])
+loadIndex = do
+    fname <- asks ((</> "index") . flip id "." . hmGitDir)
+    M.runParser indexParser fname <$> liftIO (BL.readFile fname) >>= \case
+        Left errorBundle -> liftException $ throw errorBundle
+        Right indexEntry -> liftIOUnit $ pure indexEntry
+
