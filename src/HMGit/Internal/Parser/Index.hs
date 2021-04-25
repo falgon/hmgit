@@ -12,10 +12,15 @@ import           Crypto.Hash.SHA1           (hashlazy)
 import qualified Data.Binary.Get            as BG
 import qualified Data.ByteString.Lazy       as BL
 import           Data.Functor               ((<&>))
-import           Data.Tuple.Extra           (thd3)
 import           Data.Word                  (Word16, Word32)
 import qualified Text.Megaparsec            as M
 import           Text.Printf                (printf)
+
+data IndexHeader = IndexHeader {
+    ihSignature  :: BL.ByteString
+  , ihVersion    :: Word32
+  , ihNumEntries :: Word32
+  }
 
 data IndexEntry = IndexEntry {
     ieCtimeS :: Word32
@@ -33,14 +38,13 @@ data IndexEntry = IndexEntry {
   , iePath   :: BL.ByteString
   }
 
-indexHeader :: ByteStringParser Word32
-indexHeader = do
-    (signature, version, numEntries) <- setBody *> M.count 12 M.anySingle
-        <&> BG.runGet ((,,) <$> BG.getLazyByteString 4 <*> BG.getWord32be <*> BG.getWord32be)
-         .  BL.pack
-    let errMsg = if signature /= "DIRC" then "invalid index signature" else
-            if version /= 2 then "unknown index version" else mempty
-    if null errMsg then pure numEntries else M.customFailure $ IndexParser errMsg
+fromBinaryGetter' :: BG.Get a -> ByteStringParser (BG.ByteOffset, a)
+fromBinaryGetter' = fromBinaryGetter IndexParser
+
+indexHeader :: ByteStringParser IndexHeader
+indexHeader = setBody *> M.count 12 M.anySingle
+    <&> BG.runGet (IndexHeader <$> BG.getLazyByteString 4 <*> BG.getWord32be <*> BG.getWord32be)
+     .  BL.pack
     where
         setBody = do
             indexData <- M.getInput
@@ -50,33 +54,53 @@ indexHeader = do
             else
                 M.setInput body
 
-indexBody :: Word32 -> ByteStringParser [IndexEntry]
-indexBody expectedEntriesNum = do
-    entries <- unfoldM $ ifM M.atEnd (pure Nothing) $ M.getInput <&> BG.runGetOrFail idxEntryField >>= either
-        (M.customFailure . IndexParser . thd3)
-        (\(unconsumed, _, entry) -> M.setInput unconsumed *> (Just . entry . BL.pack <$> M.manyTill M.anySingle pNull))
-    entries <$ entriesExpected expectedEntriesNum entries
-    where
-        idxEntryField = IndexEntry
-            <$> BG.getWord32be
-            <*> BG.getWord32be
-            <*> BG.getWord32be
-            <*> BG.getWord32be
-            <*> BG.getWord32be
-            <*> BG.getWord32be
-            <*> BG.getWord32be
-            <*> BG.getWord32be
-            <*> BG.getWord32be
-            <*> BG.getWord32be
-            <*> BG.getLazyByteString 20
-            <*> BG.getWord16be
+lookSignature :: IndexHeader -> ByteStringParser IndexHeader
+lookSignature ih
+    | ihSignature ih == "DIRC" = pure ih
+    | otherwise = M.customFailure $ IndexParser "invalid index signature"
 
-        entriesExpected :: Word32 -> [IndexEntry] -> ByteStringParser ()
-        entriesExpected numEntries entries
-            | length entries /= fromIntegral numEntries = M.customFailure
+lookVersion :: IndexHeader -> ByteStringParser IndexHeader
+lookVersion ih
+    | ihVersion ih == 2 = pure ih
+    | otherwise = M.customFailure $ IndexParser "unknown index version"
+
+indexBody :: Word32 -> ByteStringParser [IndexEntry]
+indexBody expectedEntriesNum = unfoldM (ifM M.atEnd (pure Nothing) idxField)
+    >>= lookNumEntries
+    where
+        idxField = do
+            (idxEntryNumConsumed, entry) <- fromBinaryGetter' $ IndexEntry
+                <$> BG.getWord32be
+                <*> BG.getWord32be
+                <*> BG.getWord32be
+                <*> BG.getWord32be
+                <*> BG.getWord32be
+                <*> BG.getWord32be
+                <*> BG.getWord32be
+                <*> BG.getWord32be
+                <*> BG.getWord32be
+                <*> BG.getWord32be
+                <*> BG.getLazyByteString 20
+                <*> BG.getWord16be
+            Just . entry . BL.pack
+                <$> M.manyTill M.anySingle pNull >>= padding idxEntryNumConsumed
+            where
+                -- 1-8 nul bytes as necessary to pad the entry to a multiple of eight bytes
+                -- while keeping the name NUL-terminated.
+                padding idxEntryNumConsumed path =
+                    let numConsumed = fromIntegral idxEntryNumConsumed + length path
+                        numPad = (numConsumed + 8) `div` 8 * 8 - numConsumed in
+                        path <$ M.skipCount numPad pNull
+
+        lookNumEntries :: [IndexEntry] -> ByteStringParser [IndexEntry]
+        lookNumEntries entries
+            | length entries /= fromIntegral expectedEntriesNum = M.customFailure
                 $ IndexParser
-                $ printf "expected number of entries is %d, but got %d" numEntries $ length entries
-            | otherwise = pure ()
+                $ printf "expected number of entries is %d, but got %d" expectedEntriesNum $ length entries
+            | otherwise = pure entries
 
 indexParser :: ByteStringParser [IndexEntry]
-indexParser = indexHeader >>= indexBody
+indexParser = indexHeader
+    >>= lookSignature
+    >>= lookVersion
+    >>= indexBody . ihNumEntries

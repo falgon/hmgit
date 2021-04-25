@@ -5,7 +5,7 @@ module HMGit.Commands.Plumbing.HashObject.Core (
   , hashObject
 ) where
 
-import           HMGit.Commands.Plumbing    (Plumbing (..))
+import           HMGit.Commands.Plumbing    (Plumbing (..), PlumbingArgs (..))
 import           HMGit.Internal.Core        (HMGitConfig (..), HMGitT,
                                              ObjectInfo (..), fromContents,
                                              liftException, liftIOUnit,
@@ -24,7 +24,8 @@ import           Data.Char                  (ord)
 newtype HashObjectOpt m = HashObjectOpt (ObjectType -> BL.ByteString -> HMGitT IO (m ()))
 
 instance Plumbing HashObjectOpt where
-    runPlumbing (HashObjectOpt f) = f
+    runPlumbing (HashObjectOpt f) (PAObject objType body) = f objType body
+    runPlumbing _ _ = liftIOUnit $ pure ()
 
 hashObjectShow :: MonadThrow m => HashObjectOpt m
 hashObjectShow = HashObjectOpt $ \objType contents ->
@@ -39,4 +40,4 @@ hashObjectWrite = HashObjectOpt $ \objType contents ->
 
 hashObject :: MonadThrow m => HashObjectOpt m -> ObjectType -> FilePath -> HMGitT IO (m ())
 hashObject hashObjectOpt objType fpath = BLU.fromString <$> liftIO (readFile fpath)
-    >>= runPlumbing hashObjectOpt objType
+    >>= runPlumbing hashObjectOpt . PAObject objType

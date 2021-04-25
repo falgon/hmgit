@@ -8,7 +8,7 @@ module HMGit.Commands.Plumbing.CatFile.Core (
   , catFile
 ) where
 
-import           HMGit.Commands.Plumbing    (Plumbing (..))
+import           HMGit.Commands.Plumbing    (Plumbing (..), PlumbingArgs (..))
 import           HMGit.Internal.Core        (HMGitConfig (..), HMGitT,
                                              liftException, liftIOUnit,
                                              loadObject, loadTreeFromData)
@@ -42,7 +42,7 @@ data CatOpt m = CatOptObjectType ObjectType (ObjectType -> BL.ByteString -> HMGi
     | CatOptMode (ObjectType -> BL.ByteString -> HMGitT IO (m ()))
 
 instance Plumbing CatOpt where
-    runPlumbing (CatOptObjectType specifiedObjType f) objType body
+    runPlumbing (CatOptObjectType specifiedObjType f) (PAObject objType body)
         | specifiedObjType /= objType = liftException $ throw $ invalidArgument $ unwords [
             "expected object type"
             , show specifiedObjType <> ","
@@ -50,7 +50,8 @@ instance Plumbing CatOpt where
             , show objType
             ]
         | otherwise = f objType body
-    runPlumbing (CatOptMode f) objType body = f objType body
+    runPlumbing (CatOptMode f) (PAObject objType body) = f objType body
+    runPlumbing _ _ = liftIOUnit $ pure ()
 
 catOptObject :: Applicative m => ObjectType -> CatOpt m
 catOptObject = flip CatOptObjectType $ const (liftIOUnit . BLC.putStrLn)
@@ -75,4 +76,4 @@ catOptObjectPP = CatOptMode $ \objType body -> if objType `elem` [ Commit, Blob 
 
 catFile :: MonadThrow m => CatOpt m -> B.ByteString -> HMGitT IO (m ())
 catFile catOpt sha1 = loadObject sha1
-    >>= either (liftException . throw) (uncurry (runPlumbing catOpt))
+    >>= either (liftException . throw) (runPlumbing catOpt . uncurry PAObject)

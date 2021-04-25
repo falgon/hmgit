@@ -1,8 +1,10 @@
+{-# LANGUAGE TupleSections #-}
 module HMGit.Internal.Utils (
     stateEmpty
   , foldChoice
   , hexFormat
   , formatHexStrings
+  , first3M
 ) where
 
 import           Control.Applicative (Alternative (..))
@@ -33,3 +35,6 @@ formatBase formatter baseShow = fmap (fmap formatter . stateEmpty . LN.head)
 
 formatHexStrings :: (Integral a, Show a) => [a] -> Maybe String
 formatHexStrings = fmap concat . concatMapM (formatBase hexFormat showHex)
+
+first3M :: Functor m => (a -> m a') -> (a, b, c) -> m (a', b, c)
+first3M f (x,y,z) = (,y,z) <$> f x
