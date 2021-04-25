@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase, OverloadedStrings, TupleSections #-}
 module HMGit.Internal.Core (
     HMGitConfig (..)
+  , defaultHMGitConfig
   , HMGitT
   , runHMGit
   , liftIOUnit
@@ -44,6 +45,12 @@ import qualified Text.Megaparsec            as M
 data HMGitConfig = HMGitConfig {
     hmGitDir       :: FilePath -> FilePath
   , hmGitTreeLimit :: Int
+  }
+
+defaultHMGitConfig :: HMGitConfig
+defaultHMGitConfig = HMGitConfig {
+    hmGitDir = (</> ".hmgit")
+  , hmGitTreeLimit = 1000
   }
 
 type HMGitT = ReaderT HMGitConfig
@@ -125,7 +132,6 @@ loadTreeFromData body treeLimit = either throw pure $ M.runParser (treeParser tr
 loadIndex :: MonadThrow m => HMGitT IO (m [IndexEntry])
 loadIndex = do
     fname <- asks ((</> "index") . flip id "." . hmGitDir)
-    M.runParser indexParser fname <$> liftIO (BL.readFile fname) >>= \case
-        Left errorBundle -> liftException $ throw errorBundle
-        Right indexEntry -> liftIOUnit $ pure indexEntry
+    M.runParser indexParser fname <$> liftIO (BL.readFile fname)
+        >>= either (liftException . throw) (liftIOUnit . pure)
 

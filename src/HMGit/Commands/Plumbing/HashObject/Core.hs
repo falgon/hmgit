@@ -11,15 +11,13 @@ import           HMGit.Internal.Core        (HMGitConfig (..), HMGitT,
                                              liftException, liftIOUnit,
                                              storeObject)
 import           HMGit.Internal.Parser      (ObjectType (..))
-import           HMGit.Internal.Utils       (formatHexStrings)
+import           HMGit.Internal.Utils       (formatHexByteString')
 
-import           Control.Exception.Safe     (MonadThrow, throwString)
+import           Control.Exception.Safe     (MonadThrow, throw)
 import           Control.Monad.IO.Class     (liftIO)
 import           Control.Monad.Trans.Reader (asks)
-import qualified Data.ByteString.Char8      as BC
 import qualified Data.ByteString.Lazy       as BL
 import qualified Data.ByteString.Lazy.UTF8  as BLU
-import           Data.Char                  (ord)
 
 newtype HashObjectOpt m = HashObjectOpt (ObjectType -> BL.ByteString -> HMGitT IO (m ()))
 
@@ -29,14 +27,13 @@ instance Plumbing HashObjectOpt where
 
 hashObjectShow :: MonadThrow m => HashObjectOpt m
 hashObjectShow = HashObjectOpt $ \objType contents ->
-    asks (formatHexStrings . map ord . BC.unpack . objectId . fromContents objType contents . hmGitDir)
-        >>= maybe (liftException $ throwString "cannot parse a hex value") (liftIOUnit . putStrLn)
+    asks (formatHexByteString' . objectId . fromContents objType contents . hmGitDir)
+        >>= either (liftException . throw) (liftIOUnit . putStrLn)
 
 hashObjectWrite :: MonadThrow m => HashObjectOpt m
 hashObjectWrite = HashObjectOpt $ \objType contents ->
     storeObject objType contents
-        >>= maybe (liftException $ throwString "cannot parse a hex value") (liftIOUnit . putStrLn) .
-            formatHexStrings . map ord . BC.unpack
+        >>= either (liftException . throw) (liftIOUnit . putStrLn) . formatHexByteString'
 
 hashObject :: MonadThrow m => HashObjectOpt m -> ObjectType -> FilePath -> HMGitT IO (m ())
 hashObject hashObjectOpt objType fpath = BLU.fromString <$> liftIO (readFile fpath)

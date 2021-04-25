@@ -1,20 +1,27 @@
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE ExplicitForAll, TupleSections #-}
 module HMGit.Internal.Utils (
     stateEmpty
   , foldChoice
-  , hexFormat
   , formatHexStrings
+  , formatHexByteString
+  , formatHexByteString'
   , first3M
 ) where
 
-import           Control.Applicative (Alternative (..))
-import           Control.Monad       (MonadPlus (..))
-import           Control.Monad.Extra (concatMapM)
-import qualified Data.List.NonEmpty  as LN
-import           Data.Monoid         (Alt (..))
-import           Data.Word           (Word8)
-import           Numeric             (readHex, showHex)
-import           Text.Printf         (printf)
+import           Control.Applicative        (Alternative (..))
+import           Control.Exception.Safe     (MonadThrow, throwString)
+import           Control.Monad              (MonadPlus (..))
+import           Control.Monad.Extra        (concatMapM)
+import qualified Data.ByteString            as B
+import qualified Data.ByteString.Char8      as BC
+import qualified Data.ByteString.Lazy       as BL
+import qualified Data.ByteString.Lazy.Char8 as BLC
+import           Data.Char                  (ord)
+import qualified Data.List.NonEmpty         as LN
+import           Data.Monoid                (Alt (..))
+import           Data.Word                  (Word8)
+import           Numeric                    (readHex, showHex)
+import           Text.Printf                (printf)
 
 stateEmpty :: (Foldable t, MonadPlus m) => (a, t b) -> m a
 stateEmpty x
@@ -33,8 +40,15 @@ formatBase formatter baseShow = fmap (fmap formatter . stateEmpty . LN.head)
     . readHex
     . flip baseShow mempty
 
-formatHexStrings :: (Integral a, Show a) => [a] -> Maybe String
-formatHexStrings = fmap concat . concatMapM (formatBase hexFormat showHex)
+formatHexStrings :: MonadThrow m => (Integral a, Show a) => [a] -> m String
+formatHexStrings = maybe (throwString "cannot parse a hex value") (pure . concat)
+    . concatMapM (formatBase hexFormat showHex)
+
+formatHexByteString :: MonadThrow m => BL.ByteString -> m String
+formatHexByteString = formatHexStrings . map ord . BLC.unpack
+
+formatHexByteString' :: MonadThrow m => B.ByteString -> m String
+formatHexByteString' = formatHexStrings . map ord . BC.unpack
 
 first3M :: Functor m => (a -> m a') -> (a, b, c) -> m (a', b, c)
 first3M f (x,y,z) = (,y,z) <$> f x

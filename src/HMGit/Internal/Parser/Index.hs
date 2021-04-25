@@ -1,4 +1,5 @@
-{-# LANGUAGE OverloadedStrings, TupleSections #-}
+{-# LANGUAGE ExplicitNamespaces, OverloadedStrings, Rank2Types, TupleSections,
+             TypeOperators #-}
 module HMGit.Internal.Parser.Index (
     IndexEntry (..)
   , indexParser
@@ -6,44 +7,52 @@ module HMGit.Internal.Parser.Index (
 
 import           HMGit.Internal.Parser.Core
 
-import           Control.Monad.Extra        (ifM)
+import           Control.Monad.Extra        (ifM, orM)
 import           Control.Monad.Loops        (unfoldM)
+import           Control.Natural            (type (~>))
 import           Crypto.Hash.SHA1           (hashlazy)
 import qualified Data.Binary.Get            as BG
 import qualified Data.ByteString.Lazy       as BL
-import           Data.Functor               ((<&>))
+import           Data.Char                  (ord)
+import           Data.Tuple.Extra           (thd3)
 import           Data.Word                  (Word16, Word32)
 import qualified Text.Megaparsec            as M
 import           Text.Printf                (printf)
 
+-- ^ Index format, ref. https://github.com/git/git/blob/v2.17.1/Documentation/technical/index-format.txt#L9-L17
 data IndexHeader = IndexHeader {
-    ihSignature  :: BL.ByteString
-  , ihVersion    :: Word32
-  , ihNumEntries :: Word32
+    ihSignature  :: BL.ByteString   -- ^ The signature is { 'D', 'I', 'R', 'C' } (stands for "dircache")
+  , ihVersion    :: Word32          -- ^ The current supported versions are 2, 3 and 4.
+  , ihNumEntries :: Word32          -- ^ Number of index entries.
   }
+  deriving Show
 
+-- ^ Index entry, ref. https://github.com/git/git/blob/v2.17.1/Documentation/technical/index-format.txt#L38
 data IndexEntry = IndexEntry {
-    ieCtimeS :: Word32
-  , ieCtimeN :: Word32
-  , ieMTimeS :: Word32
-  , ieMTimeN :: Word32
-  , ieDev    :: Word32
-  , ieIno    :: Word32
-  , ieMode   :: Word32
-  , ieUid    :: Word32
-  , ieGid    :: Word32
-  , ieSize   :: Word32
-  , ieSha1   :: BL.ByteString
-  , ieFlags  :: Word16
+    ieCtimeS :: Word32          -- ^ the last time a file's metadata changed,  this is stat(2) data
+  , ieCtimeN :: Word32          -- ^ nanosecond fractions, this is stat(2) data
+  , ieMTimeS :: Word32          -- ^ mtime seconds, the last time a file's data changed, this is stat(2) data
+  , ieMTimeN :: Word32          -- ^ mtime nanosecond fractions, this is stat(2) data
+  , ieDev    :: Word32          -- ^ this is stat(2) data
+  , ieIno    :: Word32          -- ^ this is stat(2) data
+  , ieMode   :: Word32          -- ^ mode, split into (high to low bits)
+  , ieUid    :: Word32          -- ^ this is stat(2) data
+  , ieGid    :: Word32          -- ^ this is stat(2) data
+  , ieSize   :: Word32          -- ^ This is the on-disk size from stat(2), truncated to 32-bit.
+  , ieSha1   :: BL.ByteString   -- ^ 160-bit SHA-1 for the represented object
+  , ieFlags  :: Word16          -- ^ A 16-bit 'flags' field split into (high to low bits)
   , iePath   :: BL.ByteString
   }
+  deriving Show
 
-fromBinaryGetter' :: BG.Get a -> ByteStringParser (BG.ByteOffset, a)
+fromBinaryGetter' :: BG.Get ~> ByteStringParser
 fromBinaryGetter' = fromBinaryGetter IndexParser
 
 indexHeader :: ByteStringParser IndexHeader
-indexHeader = setBody *> M.count 12 M.anySingle
-    <&> BG.runGet (IndexHeader <$> BG.getLazyByteString 4 <*> BG.getWord32be <*> BG.getWord32be)
+indexHeader = setBody
+    >> M.count 12 M.anySingle
+    >>= either (M.customFailure . IndexParser . thd3) idxHeader
+     .  BG.runGetOrFail (IndexHeader <$> BG.getLazyByteString 4 <*> BG.getWord32be <*> BG.getWord32be)
      .  BL.pack
     where
         setBody = do
@@ -53,6 +62,11 @@ indexHeader = setBody *> M.count 12 M.anySingle
                 M.customFailure $ IndexParser "invalid index checksum"
             else
                 M.setInput body
+
+        idxHeader :: (BL.ByteString, BG.ByteOffset, IndexHeader) -> ByteStringParser IndexHeader
+        idxHeader (unconsumed, nConsumed, val)
+            | BL.null unconsumed && nConsumed == 12 = pure val
+            | otherwise = M.customFailure $ IndexParser $ "expected consumed size number is 12"
 
 lookSignature :: IndexHeader -> ByteStringParser IndexHeader
 lookSignature ih
@@ -65,11 +79,19 @@ lookVersion ih
     | otherwise = M.customFailure $ IndexParser "unknown index version"
 
 indexBody :: Word32 -> ByteStringParser [IndexEntry]
-indexBody expectedEntriesNum = unfoldM (ifM M.atEnd (pure Nothing) idxField)
+indexBody expectedEntriesNum = unfoldM (ifM stopConditions (pure Nothing) idxField)
     >>= lookNumEntries
     where
+        stopConditions = orM [
+            M.atEnd
+          , (62>) . BL.length <$> M.getInput
+            -- > If the first byte is 'A'..'Z' the extension is optional and can be ignored.
+            -- ref. https://github.com/git/git/blob/v2.17.1/Documentation/technical/index-format.txt#L28-L29
+          , M.option False (True <$ M.lookAhead (M.satisfy ((`elem` map ord ['A'..'Z']) . fromIntegral)))
+          ]
+
         idxField = do
-            (idxEntryNumConsumed, entry) <- fromBinaryGetter' $ IndexEntry
+            entry <- fromBinaryGetter' $ IndexEntry
                 <$> BG.getWord32be
                 <*> BG.getWord32be
                 <*> BG.getWord32be
@@ -83,20 +105,15 @@ indexBody expectedEntriesNum = unfoldM (ifM M.atEnd (pure Nothing) idxField)
                 <*> BG.getLazyByteString 20
                 <*> BG.getWord16be
             Just . entry . BL.pack
-                <$> M.manyTill M.anySingle pNull >>= padding idxEntryNumConsumed
-            where
-                -- 1-8 nul bytes as necessary to pad the entry to a multiple of eight bytes
-                -- while keeping the name NUL-terminated.
-                padding idxEntryNumConsumed path =
-                    let numConsumed = fromIntegral idxEntryNumConsumed + length path
-                        numPad = (numConsumed + 8) `div` 8 * 8 - numConsumed in
-                        path <$ M.skipCount numPad pNull
+                <$> M.manyTill (M.anySingleBut 0) pNull
+                <*  M.count' 0 7 pNull
 
         lookNumEntries :: [IndexEntry] -> ByteStringParser [IndexEntry]
         lookNumEntries entries
             | length entries /= fromIntegral expectedEntriesNum = M.customFailure
                 $ IndexParser
-                $ printf "expected number of entries is %d, but got %d" expectedEntriesNum $ length entries
+                $ printf "expected number of entries is %d, but got %d entries" expectedEntriesNum
+                $ length entries
             | otherwise = pure entries
 
 indexParser :: ByteStringParser [IndexEntry]

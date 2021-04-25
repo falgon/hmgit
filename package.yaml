@@ -35,6 +35,7 @@ dependencies:
 - extra
 - optparse-applicative
 - binary
+- natural-transformation
 
 library:
   source-dirs: src

@@ -1,6 +1,6 @@
 module Main where
 
-import           HMGit                              (HMGitConfig (..), HMGitT,
+import           HMGit                              (HMGitT, defaultHMGitConfig,
                                                      runHMGit)
 import           HMGit.Commands                     (Cmd (..))
 import           HMGit.Commands.Plumbing.CatFile
@@ -11,7 +11,6 @@ import           Control.Monad                      ((>=>))
 import qualified Data.ByteString.UTF8               as B
 import qualified Options.Applicative                as OA
 import           System.Exit                        (exitFailure)
-import           System.FilePath                    ((</>))
 import           System.IO                          (hPrint, stderr)
 
 programOptions :: MonadThrow m => OA.Parser (Cmd m)
@@ -30,13 +29,7 @@ cmdToHMGitT :: MonadThrow m => Cmd m -> HMGitT IO (m ())
 cmdToHMGitT (CmdCatFile mode object) = catFile (getCatFileRunner mode) (B.fromString object)
 cmdToHMGitT (CmdHashObject objType mode fpath) = hashObject (getHashObjectRunner mode) objType fpath
 
-hmGitConfig :: HMGitConfig
-hmGitConfig = HMGitConfig {
-    hmGitDir = (</> ".hmgit")
-  , hmGitTreeLimit = 1000
-  }
-
 main :: IO ()
 main = OA.customExecParser (OA.prefs OA.showHelpOnError) optsParser
-    >>= flip runHMGit hmGitConfig . cmdToHMGitT
+    >>= flip runHMGit defaultHMGitConfig . cmdToHMGitT
     >>= either (hPrint stderr >=> const exitFailure) pure
