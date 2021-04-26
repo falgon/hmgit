@@ -1,10 +1,10 @@
 name:                hmgit
 version:             0.1.0.0
-github:              "githubuser/hmgit"
+github:              "falgon/hmgit"
 license:             BSD3
-author:              "Author name here"
+author:              "Roki"
 maintainer:          "example@example.com"
-copyright:           "2021 Author name here"
+copyright:           "2021 Roki"
 
 extra-source-files:
 - README.md
@@ -36,6 +36,7 @@ dependencies:
 - optparse-applicative
 - binary
 - natural-transformation
+- Glob
 
 library:
   source-dirs: src
@@ -52,6 +53,9 @@ executables:
     - -O2
     dependencies:
     - hmgit
+    when:
+    - condition: false
+      other-modules: Paths_hmgit
 
 tests:
   hmgit-test:
@@ -63,3 +67,4 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - hmgit
+

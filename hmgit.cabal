@@ -4,16 +4,16 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f1e248451608426d7777cb1824ee64abcdde8d8c44ae0dc1137437cec27fa6a1
+-- hash: f2570b7d31b5839d3853681880b60a1a0ef2141836fb4e3a44300d9ef943bfa4
 
 name:           hmgit
 version:        0.1.0.0
 description:    Please see the README on GitHub at <https://github.com/githubuser/hmgit#readme>
-homepage:       https://github.com/githubuser/hmgit#readme
-bug-reports:    https://github.com/githubuser/hmgit/issues
-author:         Author name here
+homepage:       https://github.com/falgon/hmgit#readme
+bug-reports:    https://github.com/falgon/hmgit/issues
+author:         Roki
 maintainer:     example@example.com
-copyright:      2021 Author name here
+copyright:      2021 Roki
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
@@ -23,7 +23,7 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/githubuser/hmgit
+  location: https://github.com/falgon/hmgit
 
 library
   exposed-modules:
@@ -55,7 +55,8 @@ library
   hs-source-dirs:
       src
   build-depends:
-      base >=4.7 && <5
+      Glob
+    , base >=4.7 && <5
     , binary
     , bytestring
     , cryptohash
@@ -75,13 +76,12 @@ library
 
 executable hmgit
   main-is: Main.hs
-  other-modules:
-      Paths_hmgit
   hs-source-dirs:
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -O2
   build-depends:
-      base >=4.7 && <5
+      Glob
+    , base >=4.7 && <5
     , binary
     , bytestring
     , cryptohash
@@ -98,6 +98,9 @@ executable hmgit
     , transformers
     , utf8-string
     , zlib
+  if false
+    other-modules:
+        Paths_hmgit
   default-language: Haskell2010
 
 test-suite hmgit-test
@@ -109,7 +112,8 @@ test-suite hmgit-test
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      Glob
+    , base >=4.7 && <5
     , binary
     , bytestring
     , cryptohash

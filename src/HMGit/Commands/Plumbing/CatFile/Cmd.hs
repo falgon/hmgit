@@ -10,10 +10,11 @@ import           HMGit.Commands.Plumbing.CatFile.Core       (catOptObjectPP,
                                                              catOptObjectType)
 
 import           Control.Exception.Safe                     (MonadThrow)
+import           Control.Monad.IO.Class                     (MonadIO)
 import           Data.Foldable                              (asum)
 import qualified Options.Applicative                        as OA
 
-catFileMode :: MonadThrow m => OA.Parser (CatFile m)
+catFileMode :: (MonadThrow m, MonadIO m) => OA.Parser (CatFile m)
 catFileMode = asum [
     OA.flag' (CatFile catOptObjectType) $ mconcat [
         OA.short 't'
@@ -45,7 +46,7 @@ objectName = OA.strArgument $ mconcat [
   , OA.help "Set as an option dedicated to cat-file"
   ]
 
-catFileCmd :: MonadThrow m => OA.Mod OA.CommandFields (Cmd m)
+catFileCmd :: (MonadThrow m, MonadIO m) => OA.Mod OA.CommandFields (Cmd m)
 catFileCmd = OA.command "cat-file"
     $ OA.info (CmdCatFile <$> (OA.helper <*> catFileMode) <*> objectName)
     $ OA.progDesc "Provide content or type and size information for repository objects"

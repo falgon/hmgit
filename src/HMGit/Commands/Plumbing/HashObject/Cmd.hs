@@ -9,10 +9,11 @@ import           HMGit.Commands.Plumbing.HashObject.Core       (hashObjectShow,
 import           HMGit.Internal.Parser                         (ObjectType (..))
 
 import           Control.Exception.Safe                        (MonadThrow)
+import           Control.Monad.IO.Class                        (MonadIO)
 import           Data.Foldable                                 (asum)
 import qualified Options.Applicative                           as OA
 
-hashObjectMode :: MonadThrow m => OA.Parser (HashObject m)
+hashObjectMode :: (MonadThrow m, MonadIO m) => OA.Parser (HashObject m)
 hashObjectMode = asum [
     OA.flag' (HashObject hashObjectWrite) $ mconcat [
         OA.short 'w'
@@ -41,7 +42,7 @@ hashObjectFilePath = asum [
       ]
   ]
 
-hashObjectCmd :: MonadThrow m => OA.Mod OA.CommandFields (Cmd m)
+hashObjectCmd :: (MonadThrow m, MonadIO m) => OA.Mod OA.CommandFields (Cmd m)
 hashObjectCmd = OA.command "hash-object"
     $ OA.info (CmdHashObject <$> (OA.helper <*> hashObjectType) <*> hashObjectMode <*> hashObjectFilePath)
     $ OA.progDesc "Compute object ID and optionally creates a blob from a file"

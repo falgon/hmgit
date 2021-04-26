@@ -1,4 +1,4 @@
-{-# LANGUAGE ExplicitNamespaces, OverloadedStrings, Rank2Types, TupleSections,
+{-# LANGUAGE ExplicitNamespaces, OverloadedStrings, Rank2Types,
              TypeOperators #-}
 module HMGit.Internal.Parser.Index (
     IndexEntry (..)
@@ -66,7 +66,7 @@ indexHeader = setBody
         idxHeader :: (BL.ByteString, BG.ByteOffset, IndexHeader) -> ByteStringParser IndexHeader
         idxHeader (unconsumed, nConsumed, val)
             | BL.null unconsumed && nConsumed == 12 = pure val
-            | otherwise = M.customFailure $ IndexParser $ "expected consumed size number is 12"
+            | otherwise = M.customFailure $ IndexParser "expected consumed size number is 12"
 
 lookSignature :: IndexHeader -> ByteStringParser IndexHeader
 lookSignature ih

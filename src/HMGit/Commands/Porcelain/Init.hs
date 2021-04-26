@@ -12,14 +12,17 @@ import           Prelude                    hiding (init)
 import           System.Directory           (createDirectoryIfMissing)
 import           System.FilePath            ((</>))
 
-hmGitInitDir :: FilePath -> (FilePath -> FilePath) -> [FilePath]
+{-
+hmGitInitDir :: FilePath -> FilePath -> [FilePath]
 hmGitInitDir repoName initDir = map (initDir repoName </>) [
     "objects"
   , "refs" </> "heads"
   ]
-
+-}
 init :: FilePath -> HMGitT IO ()
-init repoName = do
+init repoName = undefined
+{-
     initDir <- asks hmGitDir
     liftIO $ mapM_ (createDirectoryIfMissing True) (hmGitInitDir repoName initDir)
         *> BL.writeFile (initDir repoName </> "HEAD") "ref: refs/heads/master"
+        -}

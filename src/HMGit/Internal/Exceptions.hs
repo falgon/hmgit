@@ -1,6 +1,6 @@
 module HMGit.Internal.Exceptions (
     invalidArgument
-  , nosuchThing
+  , noSuchThing
 ) where
 
 import           GHC.IO.Exception (IOErrorType (..), IOException (..))
@@ -18,5 +18,5 @@ ioEx errorType description = IOError {
 invalidArgument :: String -> IOException
 invalidArgument = ioEx InvalidArgument
 
-nosuchThing :: String -> IOException
-nosuchThing = ioEx NoSuchThing
+noSuchThing :: String -> IOException
+noSuchThing = ioEx NoSuchThing

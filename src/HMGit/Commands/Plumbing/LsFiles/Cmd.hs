@@ -8,10 +8,11 @@ import           HMGit.Commands.Plumbing.LsFiles.Core       (lsFilesDetail,
                                                              lsFilesShow)
 
 import           Control.Exception.Safe                     (MonadThrow)
+import           Control.Monad.IO.Class                     (MonadIO)
 import           Data.Foldable                              (asum)
 import qualified Options.Applicative                        as OA
 
-lsFilesMode :: MonadThrow m => OA.Parser (LsFiles m)
+lsFilesMode :: (MonadThrow m, MonadIO m) => OA.Parser (LsFiles m)
 lsFilesMode = asum [
     OA.flag' (LsFiles lsFilesDetail) $ mconcat [
         OA.short 's'
@@ -27,7 +28,7 @@ fileNames = OA.many $ OA.argument OA.str $ mconcat [
   , OA.help "Files to show. If no files are given all files which match the other specified criteria are shown."
   ]
 
-lsFilesCmd :: MonadThrow m => OA.Mod OA.CommandFields (Cmd m)
+lsFilesCmd :: (MonadThrow m, MonadIO m) => OA.Mod OA.CommandFields (Cmd m)
 lsFilesCmd = OA.command "ls-files"
     $ OA.info (CmdLsFiles <$> (OA.helper <*> lsFilesMode) <*> fileNames)
     $ OA.progDesc "Show information about files in the index and the working tree"

@@ -1,9 +1,9 @@
 module HMGit (
     HMGitConfig (..)
-  , defaultHMGitConfig
   , HMGitT
   , runHMGit
+  , getHMGitPath
 ) where
 
-import           HMGit.Internal.Core (HMGitConfig (..), HMGitT,
-                                      defaultHMGitConfig, runHMGit)
+import           HMGit.Internal.Core (HMGitConfig (..), HMGitT, getHMGitPath,
+                                      runHMGit)
