@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7005ad18c50cb123f83567319c5e42fe0f80d4bd940205c20cbb9eb9b9624b3a
+-- hash: f1e248451608426d7777cb1824ee64abcdde8d8c44ae0dc1137437cec27fa6a1
 
 name:           hmgit
 version:        0.1.0.0
@@ -38,6 +38,9 @@ library
       HMGit.Commands.Plumbing.HashObject.Cmd
       HMGit.Commands.Plumbing.HashObject.Cmd.Runner
       HMGit.Commands.Plumbing.HashObject.Core
+      HMGit.Commands.Plumbing.LsFiles
+      HMGit.Commands.Plumbing.LsFiles.Cmd
+      HMGit.Commands.Plumbing.LsFiles.Cmd.Runner
       HMGit.Commands.Plumbing.LsFiles.Core
       HMGit.Commands.Porcelain.Init
       HMGit.Internal.Core

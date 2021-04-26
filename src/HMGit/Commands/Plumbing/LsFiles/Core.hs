@@ -28,8 +28,9 @@ lsFilesDetail = LsFilesOpt $ loadIndex >>= either (liftException . throw) execLs
     where
         execLs entries = liftIOUnit $ forM_ entries $ \e -> case formatHexByteString $ ieSha1 e of
             Left err -> throw err
-            Right s -> let stage = (ieFlags e `shiftL` 12) .&. 3 in do
-                putStrLn $ printf "%6o %s %d\t%s" (ieMode e) s stage (BLC.unpack $ iePath e)
+            Right s -> putStrLn
+                $ printf "%6o %s %d\t%s" (ieMode e) s ((ieFlags e `shiftL` 12) .&. 3)
+                $ BLC.unpack $ iePath e
 
 lsFilesShow :: MonadThrow m => LsFilesOpt m
 lsFilesShow = LsFilesOpt $ loadIndex
