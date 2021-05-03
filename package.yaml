@@ -37,6 +37,9 @@ dependencies:
 - binary
 - natural-transformation
 - Glob
+- containers
+- path
+- path-io
 
 library:
   source-dirs: src
@@ -50,6 +53,10 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     - -Wall
+    - -Wcompat
+    - -Wincomplete-record-updates
+    - -Wincomplete-uni-patterns
+    - -Wredundant-constraints
     - -O2
     dependencies:
     - hmgit

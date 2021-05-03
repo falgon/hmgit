@@ -1,6 +1,7 @@
 {-# LANGUAGE ExplicitForAll, TupleSections #-}
 module HMGit.Internal.Utils (
     stateEmpty
+  , strictOne
   , foldChoice
   , formatHexStrings
   , formatHexByteString
@@ -12,7 +13,7 @@ import           HMGit.Internal.Exceptions  (MonadThrowable (..))
 
 import           Control.Applicative        (Alternative (..))
 import           Control.Exception.Safe     (MonadThrow, StringException (..))
-import           Control.Monad              (MonadPlus (..))
+import           Control.Monad              (MonadPlus (..), (>=>))
 import           Control.Monad.Extra        (concatMapM)
 import qualified Data.ByteString            as B
 import qualified Data.ByteString.Char8      as BC
@@ -21,6 +22,7 @@ import qualified Data.ByteString.Lazy.Char8 as BLC
 import           Data.Char                  (ord)
 import qualified Data.List.NonEmpty         as LN
 import           Data.Monoid                (Alt (..))
+import           Data.Tuple.Extra           (first)
 import           Data.Word                  (Word8)
 import           GHC.Stack                  (callStack)
 import           Numeric                    (readHex, showHex)
@@ -30,6 +32,13 @@ stateEmpty :: (Foldable t, MonadPlus m) => (a, t b) -> m a
 stateEmpty x
     | not $ null $ snd x = mzero
     | otherwise = pure $ fst x
+
+nonEmpty :: MonadThrow m => [a] -> m (LN.NonEmpty a)
+nonEmpty = fromMonad (Just $ StringException "a given list is empty" callStack)
+    . LN.nonEmpty
+
+strictOne :: (MonadPlus m, MonadThrow m) => [a] -> m a
+strictOne = nonEmpty >=> stateEmpty . first head . LN.splitAt 1
 
 foldChoice :: (Foldable t, Alternative f) => (a -> f b) -> t a -> f b
 foldChoice f = getAlt . foldMap (Alt . f)

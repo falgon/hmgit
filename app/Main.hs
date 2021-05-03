@@ -1,42 +1,69 @@
-{-# LANGUAGE LambdaCase #-}
 module Main where
 
-import           HMGit                              (HMGitConfig (..), HMGitT,
-                                                     getHMGitPath, runHMGit)
+import           HMGit                              (BugException (..),
+                                                     HMGitConfig (..), HMGitT,
+                                                     hmGitConfig, runHMGit)
 import           HMGit.Commands                     (Cmd (..))
 import           HMGit.Commands.Plumbing.CatFile
 import           HMGit.Commands.Plumbing.HashObject
 import           HMGit.Commands.Plumbing.LsFiles
+import           HMGit.Commands.Porcelain.Init
 
-import           Control.Exception.Safe             (MonadThrow, tryAny)
+import           Control.Exception.Safe             (MonadCatch,
+                                                     displayException, throw,
+                                                     tryAny)
+import           Control.Monad                      (MonadPlus, (>=>))
 import           Control.Monad.IO.Class             (MonadIO)
 import qualified Data.ByteString.UTF8               as B
-import           Data.Functor                       ((<&>))
 import qualified Options.Applicative                as OA
+import           Prelude                            hiding (init)
 import           System.Exit                        (exitFailure)
 import           System.IO                          (hPutStrLn, stderr)
 
-programOptions :: (MonadThrow m, MonadIO m) => OA.Parser (Cmd m)
-programOptions = OA.hsubparser $ mconcat [
-    catFileCmd
-  , hashObjectCmd
-  , lsFilesCmd
+data Opts m = Opts FilePath (Cmd m)
+
+optDBName :: OA.Parser String
+optDBName = OA.option OA.str $ mconcat [
+    OA.long "db-name"
+  , OA.value ".hmgit"
+  , OA.metavar "<database name>"
+  , OA.help "hmgit database name"
   ]
 
-optsParser :: (MonadThrow m, MonadIO m) => OA.ParserInfo (Cmd m)
+programOptions :: (MonadCatch m, MonadIO m) => OA.Parser (Opts m)
+programOptions = Opts
+    <$> optDBName
+    <*> OA.hsubparser (mconcat [
+        initCmd
+      , catFileCmd
+      , hashObjectCmd
+      , lsFilesCmd
+      ])
+
+optsParser :: (MonadCatch m, MonadIO m) => OA.ParserInfo (Opts m)
 optsParser = OA.info (OA.helper <*> programOptions) $ mconcat [
     OA.fullDesc
   , OA.progDesc "the subset of awesome content tracker"
   ]
 
-cmdToHMGitT :: (MonadThrow m, MonadIO m) => Cmd m -> HMGitT m ()
-cmdToHMGitT (CmdCatFile mode object) = catFile mode (B.fromString object)
-cmdToHMGitT (CmdHashObject objType mode fpath) = hashObject mode objType fpath
-cmdToHMGitT (CmdLsFiles mode globs) = lsFiles mode globs
+optsToHMGitT :: (MonadPlus m, MonadCatch m, MonadIO m) => Opts m -> m (HMGitT m (), HMGitConfig)
+optsToHMGitT (Opts dbName (CmdInit runner repoName)) = pure (
+    init runner dbName repoName
+  , HMGitConfigInit
+  )
+optsToHMGitT (Opts dbName cmd) = (,)
+    <$> fromCmd cmd
+    <*> hmGitConfig dbName
+    where
+        fromCmd (CmdCatFile runner object) = pure $ catFile runner (B.fromString object)
+        fromCmd (CmdHashObject objType runner fpath) = pure $ hashObject runner objType fpath
+        fromCmd (CmdLsFiles runner globs) = pure $ lsFiles runner globs
+        fromCmd _ = throw $ BugException "never reach here"
 
 main :: IO ()
-main = do
-    cmd <- OA.customExecParser (OA.prefs OA.showHelpOnError) optsParser <&> cmdToHMGitT
-    tryAny (getHMGitPath ".hmgit") >>= \case
-        Left err -> hPutStrLn stderr (show err) *> exitFailure
-        Right hmGitPath -> runHMGit cmd (HMGitConfig { hmGitDir = hmGitPath, hmGitTreeLimit = 1000 })
+main = OA.customExecParser (OA.prefs OA.showHelpOnError) optsParser
+    >>= tryAny . optsToHMGitT
+    >>= either
+        (hPutStrLn stderr . displayException >=> const exitFailure)
+        (uncurry runHMGit)
+

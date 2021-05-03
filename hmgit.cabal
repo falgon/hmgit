@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a1afbb18ace88f0d72889eb1baa1ff05b8e7d171ace18db8e8763d3cdc3ac9a7
+-- hash: e06b75e1213813cff7ec432486eb3bc8d5c61e650956dc899b5fc83a05e00b1f
 
 name:           hmgit
 version:        0.1.0.0
@@ -40,10 +40,16 @@ library
       HMGit.Commands.Plumbing.LsFiles.Cmd
       HMGit.Commands.Plumbing.LsFiles.Core
       HMGit.Commands.Porcelain.Init
+      HMGit.Commands.Porcelain.Init.Cmd
+      HMGit.Commands.Porcelain.Init.Core
       HMGit.Internal.Core
+      HMGit.Internal.Core.Runner
+      HMGit.Internal.Core.Runner.API
+      HMGit.Internal.Core.Runner.HMGitConfig
       HMGit.Internal.Exceptions
       HMGit.Internal.Parser
       HMGit.Internal.Parser.Core
+      HMGit.Internal.Parser.Core.ByteString
       HMGit.Internal.Parser.Index
       HMGit.Internal.Parser.Object
       HMGit.Internal.Utils
@@ -56,6 +62,7 @@ library
     , base >=4.7 && <5
     , binary
     , bytestring
+    , containers
     , cryptohash
     , directory
     , extra
@@ -65,6 +72,8 @@ library
     , mtl
     , natural-transformation
     , optparse-applicative
+    , path
+    , path-io
     , safe-exceptions
     , transformers
     , utf8-string
@@ -75,12 +84,13 @@ executable hmgit
   main-is: Main.hs
   hs-source-dirs:
       app
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -O2
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -O2
   build-depends:
       Glob
     , base >=4.7 && <5
     , binary
     , bytestring
+    , containers
     , cryptohash
     , directory
     , extra
@@ -91,6 +101,8 @@ executable hmgit
     , mtl
     , natural-transformation
     , optparse-applicative
+    , path
+    , path-io
     , safe-exceptions
     , transformers
     , utf8-string
@@ -113,6 +125,7 @@ test-suite hmgit-test
     , base >=4.7 && <5
     , binary
     , bytestring
+    , containers
     , cryptohash
     , directory
     , extra
@@ -123,6 +136,8 @@ test-suite hmgit-test
     , mtl
     , natural-transformation
     , optparse-applicative
+    , path
+    , path-io
     , safe-exceptions
     , transformers
     , utf8-string

@@ -3,6 +3,7 @@
 module HMGit.Internal.Exceptions (
     invalidArgument
   , noSuchThing
+  , BugException (..)
   , MonadThrowable (..)
 ) where
 
@@ -35,6 +36,11 @@ invalidArgument = ioEx InvalidArgument
 
 noSuchThing :: String -> IOException
 noSuchThing = ioEx NoSuchThing
+
+newtype BugException = BugException String
+    deriving Show
+
+instance Exception BugException where
 
 class MonadThrowable m where
     fromMonad :: (MonadThrow n, Exception e) => Maybe e -> m ~> n

@@ -5,19 +5,21 @@ module HMGit.Internal.Parser.Index (
   , indexParser
 ) where
 
-import           HMGit.Internal.Parser.Core
+import           HMGit.Internal.Parser.Core.ByteString
 
-import           Control.Monad.Extra        (ifM, orM)
-import           Control.Monad.Loops        (unfoldM)
-import           Control.Natural            (type (~>))
-import           Crypto.Hash.SHA1           (hashlazy)
-import qualified Data.Binary.Get            as BG
-import qualified Data.ByteString.Lazy       as BL
-import           Data.Char                  (ord)
-import           Data.Tuple.Extra           (thd3)
-import           Data.Word                  (Word16, Word32)
-import qualified Text.Megaparsec            as M
-import           Text.Printf                (printf)
+import qualified Codec.Binary.UTF8.String              as BUS
+import           Control.Monad.Extra                   (ifM, orM)
+import           Control.Monad.Loops                   (unfoldM)
+import           Control.Natural                       (type (~>))
+import           Crypto.Hash.SHA1                      (hashlazy)
+import qualified Data.Binary.Get                       as BG
+import qualified Data.ByteString.Lazy                  as BL
+import           Data.Char                             (ord)
+import           Data.Tuple.Extra                      (thd3)
+import           Data.Word                             (Word16, Word32)
+import qualified Path                                  as P
+import qualified Text.Megaparsec                       as M
+import           Text.Printf                           (printf)
 
 -- ^ Index format, ref. https://github.com/git/git/blob/v2.17.1/Documentation/technical/index-format.txt#L9-L17
 data IndexHeader = IndexHeader {
@@ -41,7 +43,7 @@ data IndexEntry = IndexEntry {
   , ieSize   :: Word32          -- ^ This is the on-disk size from stat(2), truncated to 32-bit.
   , ieSha1   :: BL.ByteString   -- ^ 160-bit SHA-1 for the represented object
   , ieFlags  :: Word16          -- ^ A 16-bit 'flags' field split into (high to low bits)
-  , iePath   :: BL.ByteString
+  , iePath   :: P.Path P.Rel P.File
   }
   deriving Show
 
@@ -104,7 +106,7 @@ indexBody expectedEntriesNum = unfoldM (ifM stopConditions (pure Nothing) idxFie
                 <*> BG.getWord32be
                 <*> BG.getLazyByteString 20
                 <*> BG.getWord16be
-            Just . entry . BL.pack
+            fmap entry . P.parseRelFile . BUS.decode
                 <$> M.manyTill (M.anySingleBut 0) pNull
                 <*  M.count' 0 7 pNull
 

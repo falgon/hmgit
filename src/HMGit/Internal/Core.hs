@@ -1,8 +1,7 @@
-{-# LANGUAGE LambdaCase, OverloadedStrings, TupleSections #-}
+{-# LANGUAGE OverloadedStrings, TemplateHaskell, TupleSections #-}
+{-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
 module HMGit.Internal.Core (
-    HMGitConfig (..)
-  , getHMGitPath
-  , HMGitT
+    HMGitT
   , hmGitRoot
   , getCurrentDirectoryFromHMGit
   , runHMGit
@@ -10,88 +9,51 @@ module HMGit.Internal.Core (
   , fromContents
   , storeObject
   , loadObject
-  , loadTreeFromData
+  , loadTree
   , loadIndex
+  , Status (..)
+ -- , getStatus
 ) where
 
+import           HMGit.Internal.Core.Runner
 import           HMGit.Internal.Exceptions
-import           HMGit.Internal.Parser      (IndexEntry, ObjectType (..),
+import           HMGit.Internal.Parser      (IndexEntry (..), ObjectType (..),
                                              indexParser, objectParser,
-                                             treeParser)
-import           HMGit.Internal.Utils       (stateEmpty)
+                                             runByteStringParser, treeParser)
+import           HMGit.Internal.Utils       (strictOne)
 
 import           Codec.Compression.Zlib     (compress, decompress)
-import           Control.Exception.Safe     (MonadThrow, throw, throwString)
-import           Control.Monad.Extra        (andM, ifM)
-import           Control.Monad.Fix          (fix)
+import           Control.Exception.Safe     (Handler (..), MonadCatch,
+                                             MonadThrow, SomeException (..),
+                                             catchAny, catches, throw)
+import           Text.Printf                (printf)
+-- import           Control.Monad              (filterM, (>=>))
+import           Control.Monad              (MonadPlus)
 import           Control.Monad.IO.Class     (MonadIO (..))
 import           Control.Monad.Trans        (lift)
-import           Control.Monad.Trans.Maybe  (MaybeT (..))
-import           Control.Monad.Trans.Reader (ReaderT (..), asks)
 import           Crypto.Hash.SHA1           (hashlazy)
 import qualified Data.ByteString            as B
 import qualified Data.ByteString.Lazy       as BL
 import qualified Data.ByteString.Lazy.UTF8  as BLU
 import qualified Data.ByteString.UTF8       as BU
 import           Data.Functor               (($>), (<&>))
-import           Data.List                  (intercalate, isPrefixOf)
-import           Data.List.Extra            (dropPrefix)
-import qualified Data.List.NonEmpty         as LN
-import           Data.Tuple.Extra           (first)
-import           Data.Void                  (Void)
+import           Data.List                  (isPrefixOf)
+-- import           Data.List.Extra            (dropPrefix)
+-- import qualified Data.Map.Lazy              as ML
+import qualified Data.Set                   as S
+import           Data.Tuple.Extra           (both, dupe, first, firstM, second)
+import qualified Path                       as P
+import qualified Path.IO                    as P
 import           Prelude                    hiding (init)
-import           System.Directory           (canonicalizePath,
-                                             createDirectoryIfMissing,
-                                             doesDirectoryExist,
-                                             getCurrentDirectory, listDirectory)
-import           System.FilePath            (takeDirectory, (</>))
+-- import           System.FilePath.Glob       (glob)
 import           System.Posix.Types         (CMode (..))
 import qualified Text.Megaparsec            as M
-
-data HMGitConfig = HMGitConfig {
-    hmGitDir       :: FilePath
-  , hmGitTreeLimit :: Int
-  }
-
-isHMGitDir :: MonadIO m => FilePath -> m Bool
-isHMGitDir fp = liftIO $ andM [
-    doesDirectoryExist fp
-  , doesDirectoryExist $ fp </> "objects"
-  , doesDirectoryExist $ fp </> "refs"
-  ]
-
-getHMGitPath :: (MonadThrow m, MonadIO m) => FilePath -> m FilePath
-getHMGitPath hmGitDirName = do
-    currentDirectory <- liftIO getCurrentDirectory
-    ($ currentDirectory) . fix $ \f cwd -> ifM (not <$> liftIO (doesDirectoryExist cwd)) (throw $ noSuchThing errMsg) $
-        let expectedHMGitDirPath = cwd </> hmGitDirName in ifM (isHMGitDir expectedHMGitDirPath)
-            (liftIO $ canonicalizePath expectedHMGitDirPath)
-          $ f (cwd </> "..")
-    where
-        errMsg = "not a git repository (or any of the parent directories): .git"
-
-type HMGitT = ReaderT HMGitConfig
-
-hmGitRoot :: Monad m => HMGitT m FilePath
-hmGitRoot = asks (takeDirectory . hmGitDir)
-
-getCurrentDirectoryFromHMGit :: (MonadThrow m, MonadIO m) => HMGitT m FilePath
-getCurrentDirectoryFromHMGit = do
-    currentDirectory <- liftIO getCurrentDirectory
-    rootPath <- hmGitRoot
-    if rootPath `isPrefixOf` currentDirectory then
-        pure $ let p = dropPrefix rootPath currentDirectory in
-            if null p then p else tail p <> "/"
-    else
-        throwString "The current working directory is not in hmgit repository"
-
-runHMGit :: HMGitT m a -> HMGitConfig -> m a
-runHMGit = runReaderT
+-- import           Text.Printf                (printf)
 
 data ObjectInfo = ObjectInfo {
     objectId   :: BU.ByteString
   , objectData :: BL.ByteString
-  , objectPath :: (FilePath, FilePath)
+  , objectPath :: P.Path P.Abs P.File
   }
 
 objectFormat :: ObjectType -> BL.ByteString -> BL.ByteString
@@ -103,59 +65,106 @@ objectFormat objType contents = mconcat [
   , contents
   ]
 
-hashToPath :: B.ByteString -> FilePath -> (FilePath, FilePath)
-hashToPath sha1 hgd = (
-    intercalate "/" [ hgd, "objects", BU.toString $ B.take 2 sha1 ]
-  , BU.toString $ B.drop 2 sha1
-  )
+hashToObjectPath :: MonadCatch m
+    => B.ByteString
+    -> HMGitT m (Either (P.Path P.Abs P.Dir) (P.Path P.Abs P.File))
+hashToObjectPath sha1
+    | B.length sha1 < 2 = lift
+        $ throw
+        $ invalidArgument "hash prefix must be 2 or more characters"
+    | otherwise = do
+        (dir, fname) <- firstM P.parseRelDir $ both BU.toString $ B.splitAt 2 sha1
+        ((\x y -> Right $ x P.</> $(P.mkRelDir "objects") P.</> dir P.</> y)
+            <$> hmGitDBPath
+            <*> lift (P.parseRelFile fname))
+            `catches`
+                [ Handler $ \(P.InvalidRelFile []) ->
+                    hmGitDBPath <&> Left . (P.</> ($(P.mkRelDir "objects") P.</> dir))
+                , Handler $ \e@(SomeException _) -> lift $ throw e
+                ]
 
-fromContents :: ObjectType -> BL.ByteString -> FilePath -> ObjectInfo
-fromContents objType contents hgd = ObjectInfo {
-    objectId = objId
-  , objectData = compress objFormat
-  , objectPath = hashToPath objId hgd
-  }
+fromContents :: MonadCatch m
+    => ObjectType
+    -> BL.ByteString
+    -> HMGitT m ObjectInfo
+fromContents objType contents = hashToObjectPath objId
+    >>= either (const $ throw $ BugException "fromContents: hashToObjectPath must give the Abs file")
+        (pure . ObjectInfo objId (compress objFormat))
     where
         objFormat = objectFormat objType contents
         objId = hashlazy objFormat
 
-storeObject :: MonadIO m => ObjectType -> BL.ByteString -> HMGitT m B.ByteString
+storeObject :: (MonadIO m, MonadCatch m)
+    => ObjectType
+    -> BL.ByteString
+    -> HMGitT m B.ByteString
 storeObject objType contents = do
-    objInfo <- asks $ fromContents objType contents . hmGitDir
-    liftIO (createDirectoryIfMissing True (fst $ objectPath objInfo))
-        *> liftIO (BL.writeFile (uncurry (</>) $ objectPath objInfo) (objectData objInfo))
+    objInfo <- fromContents objType contents
+    P.createDirIfMissing True (P.parent $ objectPath objInfo)
+        *> liftIO (BL.writeFile (P.toFilePath $ objectPath objInfo) $ objectData objInfo)
         $> objectId objInfo
 
-loadObject :: (MonadIO m, MonadThrow m) => B.ByteString -> HMGitT m (ObjectType, BL.ByteString)
-loadObject sha1
-    | B.length sha1 < 2 = lift $ throw $ invalidArgument "hash prefix must be 2 or more characters"
-    | otherwise = runMaybeT loadObject' >>= \case
-        Nothing -> lift $ throw $ noSuchThing $ unwords [
-            "objects"
-          , BU.toString sha1
-          , "not found or multiple object ("
-          , show $ B.length sha1
-          , ") with prefix"
-          , BU.toString sha1
-          ]
-        Just (fname, object) -> case M.runParser objectParser fname object of
-            Left errorBundle      -> lift $ throw errorBundle
-            Right (objType, body) -> lift $ pure (objType, body)
+loadObject :: (MonadIO m, MonadCatch m, MonadPlus m)
+    => B.ByteString
+    -> HMGitT m (ObjectType, BL.ByteString)
+loadObject sha1 = do
+    fname <- hashToObjectPath sha1
+        >>= uncurry findTarget . either (,mempty) (first P.parent . second (P.toFilePath . P.filename) . dupe)
+    liftIO (BL.readFile $ P.toFilePath fname)
+        >>= runByteStringParser objectParser fname . decompress
     where
-        loadObject' = do
-            (dir, rest) <- lift $ asks $ hashToPath sha1 . hmGitDir
-            fname <- MaybeT (LN.nonEmpty . filter (isPrefixOf rest) <$> lift (liftIO (listDirectory dir)))
-                >>= stateEmpty . first head . LN.splitAt 1
-                <&> (dir </>)
-            (fname,) <$> lift (lift (decompress <$> liftIO (BL.readFile fname)))
+        findTarget dir fname = findTargetObject dir fname `catchAny` \(SomeException _) -> lift
+            $ throw
+            $ noSuchThing
+            $ printf "objects %s not found or multiple object (%d) with prefix %s"
+                (BU.toString sha1) (B.length sha1) (BU.toString sha1)
 
-loadTreeFromData :: MonadThrow m => BL.ByteString -> Int -> m [(CMode, FilePath, String)]
-loadTreeFromData body treeLimit = either throw pure $ M.runParser (treeParser treeLimit) mempty body
+        findTargetObject dir fname = P.listDirRel dir
+            >>= strictOne . filter (isPrefixOf fname . P.toFilePath) . snd
+            <&> (dir P.</>)
+
+loadTree :: MonadThrow m
+    => BL.ByteString
+    -> HMGitT m [(CMode, P.Path P.Rel P.File, String)]
+loadTree body = hmGitTreeLim
+    >>= flip (`runByteStringParser` $(P.mkRelFile "index")) body
+     . treeParser
 
 loadIndex :: (MonadIO m, MonadThrow m) => HMGitT m [IndexEntry]
 loadIndex = do
-    fname <- asks $ (</> "index") . hmGitDir
-    liftIO (BL.readFile fname)
-        <&> M.runParser indexParser fname
-        >>= fromMonad (Nothing :: Maybe Void)
+    fname <- (P.</> $(P.mkRelFile "index")) <$> hmGitDBPath
+    liftIO (BL.readFile $ P.toFilePath fname)
+        >>= runByteStringParser indexParser fname
 
+data Status = Status {
+    statusChanged :: S.Set (P.Path P.Rel P.File)
+  , statusNew     :: S.Set (P.Path P.Rel P.File)
+  , statusDeleted :: S.Set (P.Path P.Rel P.File)
+  }
+
+{-
+getStatus :: (MonadIO m, MonadThrow m) => HMGitT m Status
+getStatus = do
+    root <- hmGitRoot
+    allFiles <- liftIO (glob (printf "%s/**/**" root) >>= filterM doesFileExist) -- gitignore とかドットファイルとか
+    allFilesHash <- ML.fromList
+         . zip (map (dropPrefix $ root <> "/") allFiles)
+        <$> mapM (liftIO . BL.readFile >=> fmap (BL.fromStrict . objectId) . fromContents Blob) allFiles
+    indexedFilesHash <- ML.fromList . map (first (BLU.toString . iePath) . second ieSha1 . dupe)
+        <$> loadIndex
+
+    liftIO $ print allFilesHash
+    liftIO $ print $ length allFilesHash
+
+    liftIO $ print indexedFilesHash
+    liftIO $ print $ length indexedFilesHash
+
+    pure $ Status {
+        statusChanged = ML.keysSet
+            $ ML.filter (not . BL.null)
+            $ ML.intersectionWith (\l r -> if l /= r then r else mempty) allFilesHash indexedFilesHash
+      , statusNew = ML.keysSet (allFilesHash `ML.difference` indexedFilesHash)
+      , statusDeleted = ML.keysSet (indexedFilesHash `ML.difference` allFilesHash)
+      }
+
+      -}

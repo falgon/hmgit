@@ -21,6 +21,7 @@ import           Data.List                  (isPrefixOf)
 import qualified Data.List.NonEmpty         as LN
 import           Data.Tuple.Extra           (secondM)
 import           Numeric                    (readOct)
+import qualified Path                       as P
 import           System.Posix.Types         (CMode (..))
 import qualified Text.Megaparsec            as M
 import qualified Text.Megaparsec.Char       as MC
@@ -43,15 +44,19 @@ instance Read ObjectType where
         | otherwise = []
 
 pObjectTypes :: ByteStringParser ObjectType
-pObjectTypes = read . BLC.unpack <$> foldChoice (MC.string . BLU.fromString . show) [ Blob .. Tree ]
+pObjectTypes = read . BLC.unpack
+    <$> foldChoice (MC.string . BLU.fromString . show) [ Blob .. Tree ]
 
-pHeader :: (Read i, Integral i) => ByteStringParser (ObjectType, i)
-pHeader = (,) <$> pObjectTypes <*> (pSpace *> pDecimals <* pNull)
+pHeader :: Read i => ByteStringParser (ObjectType, i)
+pHeader = (,)
+    <$> pObjectTypes
+    <*> (pSpace *> pDecimals <* pNull)
 
 objectParser :: ByteStringParser (ObjectType, BL.ByteString)
-objectParser = (secondM (fmap BL.pack . flip M.count M.anySingle) =<< pHeader) <* M.eof
+objectParser = (pHeader >>= secondM (fmap BL.pack . flip M.count M.anySingle))
+    <* M.eof
 
-treeParser :: Int -> ByteStringParser [(CMode, FilePath, String)]
+treeParser :: Int -> ByteStringParser [(CMode, P.Path P.Rel P.File, String)]
 treeParser limit = runMaybeT treeParser'
     >>= maybe (M.customFailure $ TreeParser "failed to parse octet value of cmode") pure
     where
@@ -62,7 +67,7 @@ treeParser limit = runMaybeT treeParser'
                     <$> MaybeT (LN.nonEmpty . readOct . show <$> pDecimals')
                     <* lift pSpace
                 (.) Just . (.) (, succ limitCount) . (cmode,,)
-                    <$> lift (S.decode <$> M.manyTill M.anySingle pNull)
+                    <$> MaybeT (P.parseRelFile . S.decode <$> M.manyTill M.anySingle pNull)
                     <*> MaybeT (formatHexStrings <$> M.count 20 M.anySingle)
 
         pDecimals' = pDecimals :: ByteStringParser Integer
