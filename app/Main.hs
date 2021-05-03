@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 module Main where
 
 import           HMGit                              (HMGitConfig (..), HMGitT,
@@ -7,11 +8,13 @@ import           HMGit.Commands.Plumbing.CatFile
 import           HMGit.Commands.Plumbing.HashObject
 import           HMGit.Commands.Plumbing.LsFiles
 
-import           Control.Exception.Safe             (MonadThrow)
+import           Control.Exception.Safe             (MonadThrow, tryAny)
 import           Control.Monad.IO.Class             (MonadIO)
 import qualified Data.ByteString.UTF8               as B
 import           Data.Functor                       ((<&>))
 import qualified Options.Applicative                as OA
+import           System.Exit                        (exitFailure)
+import           System.IO                          (hPutStrLn, stderr)
 
 programOptions :: (MonadThrow m, MonadIO m) => OA.Parser (Cmd m)
 programOptions = OA.hsubparser $ mconcat [
@@ -27,13 +30,13 @@ optsParser = OA.info (OA.helper <*> programOptions) $ mconcat [
   ]
 
 cmdToHMGitT :: (MonadThrow m, MonadIO m) => Cmd m -> HMGitT m ()
-cmdToHMGitT (CmdCatFile mode object) = catFile (getCatFileRunner mode) (B.fromString object)
-cmdToHMGitT (CmdHashObject objType mode fpath) = hashObject (getHashObjectRunner mode) objType fpath
-cmdToHMGitT (CmdLsFiles mode globs) = lsFiles (getLsFilesRunner mode) globs
+cmdToHMGitT (CmdCatFile mode object) = catFile mode (B.fromString object)
+cmdToHMGitT (CmdHashObject objType mode fpath) = hashObject mode objType fpath
+cmdToHMGitT (CmdLsFiles mode globs) = lsFiles mode globs
 
 main :: IO ()
 main = do
-    hmGitPath <- getHMGitPath ".hmgit"
-    OA.customExecParser (OA.prefs OA.showHelpOnError) optsParser
-        <&> cmdToHMGitT
-        >>= flip runHMGit (HMGitConfig { hmGitDir = hmGitPath, hmGitTreeLimit = 1000 })
+    cmd <- OA.customExecParser (OA.prefs OA.showHelpOnError) optsParser <&> cmdToHMGitT
+    tryAny (getHMGitPath ".hmgit") >>= \case
+        Left err -> hPutStrLn stderr (show err) *> exitFailure
+        Right hmGitPath -> runHMGit cmd (HMGitConfig { hmGitDir = hmGitPath, hmGitTreeLimit = 1000 })

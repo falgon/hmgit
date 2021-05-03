@@ -38,6 +38,7 @@ import           Data.List                  (intercalate, isPrefixOf)
 import           Data.List.Extra            (dropPrefix)
 import qualified Data.List.NonEmpty         as LN
 import           Data.Tuple.Extra           (first)
+import           Data.Void                  (Void)
 import           Prelude                    hiding (init)
 import           System.Directory           (canonicalizePath,
                                              createDirectoryIfMissing,
@@ -153,7 +154,8 @@ loadTreeFromData body treeLimit = either throw pure $ M.runParser (treeParser tr
 
 loadIndex :: (MonadIO m, MonadThrow m) => HMGitT m [IndexEntry]
 loadIndex = do
-    fname <- asks ((</> "index") . hmGitDir)
-    M.runParser indexParser fname <$> liftIO (BL.readFile fname)
-        >>= either throw pure
+    fname <- asks $ (</> "index") . hmGitDir
+    liftIO (BL.readFile fname)
+        <&> M.runParser indexParser fname
+        >>= fromMonad (Nothing :: Maybe Void)
 

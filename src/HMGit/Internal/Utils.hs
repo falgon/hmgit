@@ -8,8 +8,10 @@ module HMGit.Internal.Utils (
   , first3M
 ) where
 
+import           HMGit.Internal.Exceptions  (MonadThrowable (..))
+
 import           Control.Applicative        (Alternative (..))
-import           Control.Exception.Safe     (MonadThrow, throwString)
+import           Control.Exception.Safe     (MonadThrow, StringException (..))
 import           Control.Monad              (MonadPlus (..))
 import           Control.Monad.Extra        (concatMapM)
 import qualified Data.ByteString            as B
@@ -20,6 +22,7 @@ import           Data.Char                  (ord)
 import qualified Data.List.NonEmpty         as LN
 import           Data.Monoid                (Alt (..))
 import           Data.Word                  (Word8)
+import           GHC.Stack                  (callStack)
 import           Numeric                    (readHex, showHex)
 import           Text.Printf                (printf)
 
@@ -31,9 +34,6 @@ stateEmpty x
 foldChoice :: (Foldable t, Alternative f) => (a -> f b) -> t a -> f b
 foldChoice f = getAlt . foldMap (Alt . f)
 
-hexFormat :: Word8 -> String
-hexFormat = printf "%02x"
-
 formatBase :: (MonadPlus f, Eq a, Num a, Monoid b) => (a -> c) -> (d -> b -> String) -> d -> Maybe (f c)
 formatBase formatter baseShow = fmap (fmap formatter . stateEmpty . LN.head)
     . LN.nonEmpty
@@ -41,8 +41,9 @@ formatBase formatter baseShow = fmap (fmap formatter . stateEmpty . LN.head)
     . flip baseShow mempty
 
 formatHexStrings :: MonadThrow m => (Integral a, Show a) => [a] -> m String
-formatHexStrings = maybe (throwString "cannot parse a hex value") (pure . concat)
-    . concatMapM (formatBase hexFormat showHex)
+formatHexStrings = fmap concat
+    . fromMonad (Just $ StringException "cannot parse a hex value" callStack)
+    . concatMapM (formatBase (printf "%02x" :: Word8 -> String) showHex)
 
 formatHexByteString :: MonadThrow m => BL.ByteString -> m String
 formatHexByteString = formatHexStrings . map ord . BLC.unpack

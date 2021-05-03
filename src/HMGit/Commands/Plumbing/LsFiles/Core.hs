@@ -1,6 +1,5 @@
-{-# LANGUAGE Rank2Types, ScopedTypeVariables #-}
 module HMGit.Commands.Plumbing.LsFiles.Core (
-    LsFilesOpt (..)
+    LsFiles (..)
   , lsFilesShow
   , lsFilesDetail
   , lsFiles
@@ -28,11 +27,11 @@ import           System.FilePath.Glob       (CompOptions (..),
                                              matchWith)
 import           Text.Printf                (printf)
 
-newtype LsFilesOpt m = LsFilesOpt ([Pattern] -> HMGitT m ())
+newtype LsFiles m = LsFiles ([Pattern] -> HMGitT m ())
 
-instance Plumbing LsFilesOpt where
-    runPlumbing (LsFilesOpt f) (PAFilePatterns patterns) = f patterns
-    runPlumbing _ _                                      = pure ()
+instance Plumbing LsFiles where
+    runPlumbing (LsFiles f) (PAFilePatterns patterns) = f patterns
+    runPlumbing _ _                                   = pure ()
 
 match :: Pattern -> FilePath -> Bool
 match = matchWith $ matchPosix { matchDotsImplicitly = True }
@@ -61,8 +60,8 @@ putLsDetail e currentDir = case formatHexByteString $ ieSha1 e of
         $ BLC.unpack
         $ iePath e
 
-lsFilesBase :: forall m. (MonadThrow m, MonadIO m) => (IndexEntry -> FilePath -> m ()) -> LsFilesOpt m
-lsFilesBase printer = LsFilesOpt $ \patterns -> do
+lsFilesBase :: (MonadThrow m, MonadIO m) => (IndexEntry -> FilePath -> m ()) -> LsFiles m
+lsFilesBase printer = LsFiles $ \patterns -> do
     f <- execLs patterns <$> getCurrentDirectoryFromHMGit
     loadIndex >>= lift . mapM_ f
     where
@@ -70,13 +69,13 @@ lsFilesBase printer = LsFilesOpt $ \patterns -> do
             when (path `isMatchAnyOf` patterns && currentDir `isPrefixOf` path)
               $ printer e currentDir
 
-lsFilesShow :: (MonadThrow m, MonadIO m) => LsFilesOpt m
+lsFilesShow :: (MonadThrow m, MonadIO m) => LsFiles m
 lsFilesShow = lsFilesBase putLs
 
-lsFilesDetail :: (MonadThrow m, MonadIO m) => LsFilesOpt m
+lsFilesDetail :: (MonadThrow m, MonadIO m) => LsFiles m
 lsFilesDetail = lsFilesBase putLsDetail
 
-lsFiles :: (MonadThrow m, MonadIO m) => LsFilesOpt m -> [FilePath] -> HMGitT m ()
+lsFiles :: (MonadThrow m, MonadIO m) => LsFiles m -> [FilePath] -> HMGitT m ()
 lsFiles lsFilesOpt = runPlumbing lsFilesOpt
     . PAFilePatterns
     . map (\x -> compile $ if "*" `isPrefixOf` x then "**" </> x else x)

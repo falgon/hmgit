@@ -2,24 +2,24 @@ module HMGit.Commands.Plumbing.HashObject.Cmd (
     hashObjectCmd
 ) where
 
-import           HMGit.Commands                                (Cmd (..))
-import           HMGit.Commands.Plumbing.HashObject.Cmd.Runner
-import           HMGit.Commands.Plumbing.HashObject.Core       (hashObjectShow,
-                                                                hashObjectWrite)
-import           HMGit.Internal.Parser                         (ObjectType (..))
+import           HMGit.Commands                          (Cmd (..))
+import           HMGit.Commands.Plumbing.HashObject.Core (HashObject,
+                                                          hashObjectShow,
+                                                          hashObjectWrite)
+import           HMGit.Internal.Parser                   (ObjectType (..))
 
-import           Control.Exception.Safe                        (MonadThrow)
-import           Control.Monad.IO.Class                        (MonadIO)
-import           Data.Foldable                                 (asum)
-import qualified Options.Applicative                           as OA
+import           Control.Exception.Safe                  (MonadThrow)
+import           Control.Monad.IO.Class                  (MonadIO)
+import           Data.Foldable                           (asum)
+import qualified Options.Applicative                     as OA
 
 hashObjectMode :: (MonadThrow m, MonadIO m) => OA.Parser (HashObject m)
 hashObjectMode = asum [
-    OA.flag' (HashObject hashObjectWrite) $ mconcat [
+    OA.flag' hashObjectWrite $ mconcat [
         OA.short 'w'
       , OA.help "Actually write the object into the object database."
       ]
-  , pure (HashObject hashObjectShow)
+  , pure hashObjectShow
   ]
 
 hashObjectType :: OA.Parser ObjectType

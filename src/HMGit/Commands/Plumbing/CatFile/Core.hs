@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP, LambdaCase, OverloadedStrings #-}
 module HMGit.Commands.Plumbing.CatFile.Core (
-    CatOpt (..)
+    CatFile (..)
   , catOptObject
   , catOptObjectType
   , catOptObjectSize
@@ -21,6 +21,7 @@ import           Control.Monad.Trans.Reader (asks)
 import qualified Data.ByteString            as B
 import qualified Data.ByteString.Lazy       as BL
 import qualified Data.ByteString.Lazy.Char8 as BLC
+import           Data.String                (IsString (..))
 import           Numeric                    (showOct)
 import           Prelude                    hiding (init)
 import           System.Posix.Types         (CMode (..))
@@ -37,11 +38,14 @@ sIsDir = (== sIFDIR) . (.&. sIFMT)
         sIFDIR = 0o040000
 #endif
 
-data CatOpt m = CatOptObjectType ObjectType (ObjectType -> BL.ByteString -> HMGitT m ())
-    | CatOptMode (ObjectType -> BL.ByteString -> HMGitT m ())
+data CatFile m = CatFileObjectType ObjectType (ObjectType -> BL.ByteString -> HMGitT m ())
+    | CatFileMode (ObjectType -> BL.ByteString -> HMGitT m ())
 
-instance Plumbing CatOpt where
-    runPlumbing (CatOptObjectType specifiedObjType f) (PAObject objType body)
+instance MonadIO m => IsString (CatFile m) where
+    fromString = catOptObject . read
+
+instance Plumbing CatFile where
+    runPlumbing (CatFileObjectType specifiedObjType f) (PAObject objType body)
         | specifiedObjType /= objType = throw $ invalidArgument $ unwords [
             "expected object type"
             , show specifiedObjType <> ","
@@ -49,20 +53,20 @@ instance Plumbing CatOpt where
             , show objType
             ]
         | otherwise = f objType body
-    runPlumbing (CatOptMode f) (PAObject objType body) = f objType body
+    runPlumbing (CatFileMode f) (PAObject objType body) = f objType body
     runPlumbing _ _ = pure ()
 
-catOptObject :: MonadIO m => ObjectType -> CatOpt m
-catOptObject = flip CatOptObjectType $ const (liftIO . BLC.putStrLn)
+catOptObject :: MonadIO m => ObjectType -> CatFile m
+catOptObject = flip CatFileObjectType $ const (liftIO . BLC.putStrLn)
 
-catOptObjectType :: MonadIO m => CatOpt m
-catOptObjectType = CatOptMode $ const . liftIO . print
+catOptObjectType :: MonadIO m => CatFile m
+catOptObjectType = CatFileMode $ const . liftIO . print
 
-catOptObjectSize :: MonadIO m => CatOpt m
-catOptObjectSize = CatOptMode $ const $ liftIO . print . BL.length
+catOptObjectSize :: MonadIO m => CatFile m
+catOptObjectSize = CatFileMode $ const $ liftIO . print . BL.length
 
-catOptObjectPP :: (MonadIO m, MonadThrow m) => CatOpt m
-catOptObjectPP = CatOptMode $ \objType body -> if objType `elem` [ Commit, Blob ] then
+catOptObjectPP :: (MonadIO m, MonadThrow m) => CatFile m
+catOptObjectPP = CatFileMode $ \objType body -> if objType `elem` [ Commit, Blob ] then
     liftIO (BLC.putStrLn body) else
         asks (loadTreeFromData body . hmGitTreeLimit) >>= \case
             Left err -> throw err
@@ -73,6 +77,6 @@ catOptObjectPP = CatOptMode $ \objType body -> if objType `elem` [ Commit, Blob 
                   , sha1
                   ] <> "\t" <> fpath
 
-catFile :: (MonadIO m, MonadThrow m) => CatOpt m -> B.ByteString -> HMGitT m ()
+catFile :: (MonadIO m, MonadThrow m) => CatFile m -> B.ByteString -> HMGitT m ()
 catFile catOpt sha1 = loadObject sha1
     >>= runPlumbing catOpt . uncurry PAObject

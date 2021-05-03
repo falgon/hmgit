@@ -3,28 +3,27 @@ module HMGit.Commands.Plumbing.CatFile.Cmd (
 ) where
 
 
-import           HMGit.Commands                             (Cmd (..))
-import           HMGit.Commands.Plumbing.CatFile.Cmd.Runner
-import           HMGit.Commands.Plumbing.CatFile.Core       (catOptObjectPP,
-                                                             catOptObjectSize,
-                                                             catOptObjectType)
+import           HMGit.Commands                       (Cmd (..))
+import           HMGit.Commands.Plumbing.CatFile.Core (CatFile, catOptObjectPP,
+                                                       catOptObjectSize,
+                                                       catOptObjectType)
 
-import           Control.Exception.Safe                     (MonadThrow)
-import           Control.Monad.IO.Class                     (MonadIO)
-import           Data.Foldable                              (asum)
-import qualified Options.Applicative                        as OA
+import           Control.Exception.Safe               (MonadThrow)
+import           Control.Monad.IO.Class               (MonadIO)
+import           Data.Foldable                        (asum)
+import qualified Options.Applicative                  as OA
 
 catFileMode :: (MonadThrow m, MonadIO m) => OA.Parser (CatFile m)
 catFileMode = asum [
-    OA.flag' (CatFile catOptObjectType) $ mconcat [
+    OA.flag' catOptObjectType $ mconcat [
         OA.short 't'
       , OA.help "Instead of content, show the object type identified by <object>."
       ]
-  , OA.flag' (CatFile catOptObjectSize) $ mconcat [
+  , OA.flag' catOptObjectSize $ mconcat [
         OA.short 's'
       , OA.help "Instead of the content, show the object size identified by <object>."
       ]
-  , OA.flag' (CatFile catOptObjectPP) $ mconcat [
+  , OA.flag' catOptObjectPP $ mconcat [
         OA.short 'p'
       , OA.help "Pretty-print the contents of <object> based on its type."
       ]

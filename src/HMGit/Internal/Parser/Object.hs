@@ -57,7 +57,10 @@ treeParser limit = runMaybeT treeParser'
     where
         treeParser' = flip unfoldrM 0 $ \limitCount ->
             ifM ((limitCount >= limit ||) <$> lift M.atEnd) (pure Nothing) $ do
-                cmode <- stateEmpty =<< LN.head <$> MaybeT (LN.nonEmpty . readOct . show <$> pDecimals') <* lift pSpace
+                cmode <- stateEmpty
+                    =<< LN.head
+                    <$> MaybeT (LN.nonEmpty . readOct . show <$> pDecimals')
+                    <* lift pSpace
                 (.) Just . (.) (, succ limitCount) . (cmode,,)
                     <$> lift (S.decode <$> M.manyTill M.anySingle pNull)
                     <*> MaybeT (formatHexStrings <$> M.count 20 M.anySingle)

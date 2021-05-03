@@ -1,5 +1,5 @@
 module HMGit.Commands.Plumbing.HashObject.Core (
-    HashObjectOpt (..)
+    HashObject (..)
   , hashObjectShow
   , hashObjectWrite
   , hashObject
@@ -18,22 +18,22 @@ import           Control.Monad.Trans.Reader (asks)
 import qualified Data.ByteString.Lazy       as BL
 import qualified Data.ByteString.Lazy.UTF8  as BLU
 
-newtype HashObjectOpt m = HashObjectOpt (ObjectType -> BL.ByteString -> HMGitT m ())
+newtype HashObject m = HashObject (ObjectType -> BL.ByteString -> HMGitT m ())
 
-instance Plumbing HashObjectOpt where
-    runPlumbing (HashObjectOpt f) (PAObject objType body) = f objType body
-    runPlumbing _ _                                       = pure ()
+instance Plumbing HashObject where
+    runPlumbing (HashObject f) (PAObject objType body) = f objType body
+    runPlumbing _ _                                    = pure ()
 
-hashObjectShow :: (MonadThrow m, MonadIO m) => HashObjectOpt m
-hashObjectShow = HashObjectOpt $ \objType contents ->
+hashObjectShow :: (MonadThrow m, MonadIO m) => HashObject m
+hashObjectShow = HashObject $ \objType contents ->
     asks (formatHexByteString' . objectId . fromContents objType contents . hmGitDir)
         >>= either throw (liftIO . putStrLn)
 
-hashObjectWrite :: (MonadThrow m, MonadIO m) => HashObjectOpt m
-hashObjectWrite = HashObjectOpt $ \objType contents ->
+hashObjectWrite :: (MonadThrow m, MonadIO m) => HashObject m
+hashObjectWrite = HashObject $ \objType contents ->
     storeObject objType contents
         >>= either throw (liftIO . putStrLn) . formatHexByteString'
 
-hashObject :: (MonadThrow m, MonadIO m) => HashObjectOpt m -> ObjectType -> FilePath -> HMGitT m ()
+hashObject :: (MonadThrow m, MonadIO m) => HashObject m -> ObjectType -> FilePath -> HMGitT m ()
 hashObject hashObjectOpt objType fpath = BLU.fromString <$> liftIO (readFile fpath)
     >>= runPlumbing hashObjectOpt . PAObject objType
