@@ -5,7 +5,6 @@ module HMGit.Commands.Plumbing.HashObject.Core (
   , hashObject
 ) where
 
-import           HMGit.Commands.Plumbing   (Plumbing (..), PlumbingArgs (..))
 import           HMGit.Internal.Core       (HMGitT, ObjectInfo (..),
                                             fromContents, storeObject)
 import           HMGit.Internal.Parser     (ObjectType (..))
@@ -17,10 +16,6 @@ import qualified Data.ByteString.Lazy      as BL
 import qualified Data.ByteString.Lazy.UTF8 as BLU
 
 newtype HashObject m = HashObject (ObjectType -> BL.ByteString -> HMGitT m ())
-
-instance Plumbing HashObject where
-    runPlumbing (HashObject f) (PAObject objType body) = f objType body
-    runPlumbing _ _                                    = pure ()
 
 hashObjectShow :: (MonadCatch m, MonadIO m) => HashObject m
 hashObjectShow = HashObject $ \objType contents ->
@@ -37,5 +32,5 @@ hashObject :: (MonadCatch m, MonadIO m)
     -> ObjectType
     -> FilePath
     -> HMGitT m ()
-hashObject hashObjectOpt objType fpath = BLU.fromString <$> liftIO (readFile fpath)
-    >>= runPlumbing hashObjectOpt . PAObject objType
+hashObject (HashObject f) objType fpath = liftIO (readFile fpath)
+    >>= f objType . BLU.fromString

@@ -9,6 +9,7 @@ import           HMGit.Commands.Plumbing.HashObject
 import           HMGit.Commands.Plumbing.LsFiles
 import           HMGit.Commands.Porcelain.Init
 
+import           Control.Applicative                (Alternative)
 import           Control.Exception.Safe             (MonadCatch,
                                                      displayException, throw,
                                                      tryAny)
@@ -30,7 +31,7 @@ optDBName = OA.option OA.str $ mconcat [
   , OA.help "hmgit database name"
   ]
 
-programOptions :: (MonadCatch m, MonadIO m) => OA.Parser (Opts m)
+programOptions :: (MonadCatch m, MonadIO m, Alternative m) => OA.Parser (Opts m)
 programOptions = Opts
     <$> optDBName
     <*> OA.hsubparser (mconcat [
@@ -40,7 +41,7 @@ programOptions = Opts
       , lsFilesCmd
       ])
 
-optsParser :: (MonadCatch m, MonadIO m) => OA.ParserInfo (Opts m)
+optsParser :: (MonadCatch m, MonadIO m, Alternative m) => OA.ParserInfo (Opts m)
 optsParser = OA.info (OA.helper <*> programOptions) $ mconcat [
     OA.fullDesc
   , OA.progDesc "the subset of awesome content tracker"

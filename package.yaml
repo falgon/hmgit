@@ -38,8 +38,9 @@ dependencies:
 - natural-transformation
 - Glob
 - containers
-- path
+- path >= 0.8.0
 - path-io
+- regex-posix
 
 library:
   source-dirs: src
@@ -74,4 +75,7 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - hmgit
-
+    - HUnit
+    - hspec
+    - hspec-core
+    - hspec-contrib

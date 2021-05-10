@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e06b75e1213813cff7ec432486eb3bc8d5c61e650956dc899b5fc83a05e00b1f
+-- hash: 81ec256aaf4840a00a09e37eb8b9666f5f143723c186cc3e733e82684a8aa26b
 
 name:           hmgit
 version:        0.1.0.0
@@ -29,7 +29,6 @@ library
   exposed-modules:
       HMGit
       HMGit.Commands
-      HMGit.Commands.Plumbing
       HMGit.Commands.Plumbing.CatFile
       HMGit.Commands.Plumbing.CatFile.Cmd
       HMGit.Commands.Plumbing.CatFile.Core
@@ -52,6 +51,8 @@ library
       HMGit.Internal.Parser.Core.ByteString
       HMGit.Internal.Parser.Index
       HMGit.Internal.Parser.Object
+      HMGit.Internal.Parser.Pathspecs
+      HMGit.Internal.Parser.Pathspecs.Glob
       HMGit.Internal.Utils
   other-modules:
       Paths_hmgit
@@ -72,8 +73,9 @@ library
     , mtl
     , natural-transformation
     , optparse-applicative
-    , path
+    , path >=0.8.0
     , path-io
+    , regex-posix
     , safe-exceptions
     , transformers
     , utf8-string
@@ -101,8 +103,9 @@ executable hmgit
     , mtl
     , natural-transformation
     , optparse-applicative
-    , path
+    , path >=0.8.0
     , path-io
+    , regex-posix
     , safe-exceptions
     , transformers
     , utf8-string
@@ -122,6 +125,7 @@ test-suite hmgit-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       Glob
+    , HUnit
     , base >=4.7 && <5
     , binary
     , bytestring
@@ -131,13 +135,17 @@ test-suite hmgit-test
     , extra
     , filepath
     , hmgit
+    , hspec
+    , hspec-contrib
+    , hspec-core
     , megaparsec
     , monad-loops
     , mtl
     , natural-transformation
     , optparse-applicative
-    , path
+    , path >=0.8.0
     , path-io
+    , regex-posix
     , safe-exceptions
     , transformers
     , utf8-string

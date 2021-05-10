@@ -10,6 +10,7 @@ import           Control.Exception.Safe    (MonadThrow, throw)
 import           Control.Monad.Extra       (andM, ifM)
 import           Control.Monad.Fix         (fix)
 import           Control.Monad.IO.Class    (MonadIO (..))
+import           Path                      (Dir, Rel)
 import qualified Path                      as P
 import qualified Path.IO                   as P
 import           Text.Printf               (printf)

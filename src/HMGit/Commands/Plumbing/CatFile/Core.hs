@@ -8,7 +8,6 @@ module HMGit.Commands.Plumbing.CatFile.Core (
   , catFile
 ) where
 
-import           HMGit.Commands.Plumbing    (Plumbing (..), PlumbingArgs (..))
 import           HMGit.Internal.Core        (HMGitT, loadObject, loadTree)
 import           HMGit.Internal.Exceptions
 import           HMGit.Internal.Parser
@@ -45,18 +44,6 @@ data CatFile m = CatFileObjectType ObjectType (ObjectType -> BL.ByteString -> HM
 instance MonadIO m => IsString (CatFile m) where
     fromString = catOptObject . read
 
-instance Plumbing CatFile where
-    runPlumbing (CatFileObjectType specifiedObjType f) (PAObject objType body)
-        | specifiedObjType /= objType = throw $ invalidArgument $ unwords [
-            "expected object type"
-            , show specifiedObjType <> ","
-            , "but got"
-            , show objType
-            ]
-        | otherwise = f objType body
-    runPlumbing (CatFileMode f) (PAObject objType body) = f objType body
-    runPlumbing _ _ = pure ()
-
 catOptObject :: MonadIO m => ObjectType -> CatFile m
 catOptObject = flip CatFileObjectType $ const (liftIO . BLC.putStr)
 
@@ -77,6 +64,21 @@ catOptObjectPP = CatFileMode $ \objType body ->
               , sha1
               ] <> printf "\t%s" (P.toFilePath fpath))
 
-catFile :: (MonadIO m, MonadCatch m, MonadPlus m) => CatFile m -> B.ByteString -> HMGitT m ()
-catFile catOpt sha1 = loadObject sha1
-    >>= runPlumbing catOpt . uncurry PAObject
+catFile :: (MonadIO m, MonadCatch m, MonadPlus m)
+    => CatFile m
+    -> B.ByteString
+    -> HMGitT m ()
+catFile catOpt sha1 = do
+    (objType, body) <- loadObject sha1
+    case catOpt of
+        CatFileObjectType specifiedObjType f
+            | specifiedObjType /= objType -> throw
+                $ invalidArgument
+                $ unwords [
+                    "expected object type"
+                  , show specifiedObjType <> ","
+                  , "but got"
+                  , show objType
+                  ]
+            | otherwise -> f objType body
+        CatFileMode f -> f objType body

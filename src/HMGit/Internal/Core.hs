@@ -1,9 +1,9 @@
 {-# LANGUAGE OverloadedStrings, TemplateHaskell, TupleSections #-}
-{-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
+-- {-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
 module HMGit.Internal.Core (
     HMGitT
   , hmGitRoot
-  , getCurrentDirectoryFromHMGit
+  , getCurrentDirFromHMGit
   , runHMGit
   , ObjectInfo (..)
   , fromContents
@@ -23,9 +23,9 @@ import           HMGit.Internal.Parser      (IndexEntry (..), ObjectType (..),
 import           HMGit.Internal.Utils       (strictOne)
 
 import           Codec.Compression.Zlib     (compress, decompress)
-import           Control.Exception.Safe     (Handler (..), MonadCatch,
-                                             MonadThrow, SomeException (..),
-                                             catchAny, catches, throw)
+import           Control.Exception.Safe     (MonadCatch, MonadThrow,
+                                             SomeException (..), catch,
+                                             catchAny, throw)
 import           Text.Printf                (printf)
 -- import           Control.Monad              (filterM, (>=>))
 import           Control.Monad              (MonadPlus)
@@ -42,6 +42,7 @@ import           Data.List                  (isPrefixOf)
 -- import qualified Data.Map.Lazy              as ML
 import qualified Data.Set                   as S
 import           Data.Tuple.Extra           (both, dupe, first, firstM, second)
+import           Path                       (Dir, File, Rel)
 import qualified Path                       as P
 import qualified Path.IO                    as P
 import           Prelude                    hiding (init)
@@ -50,13 +51,18 @@ import           System.Posix.Types         (CMode (..))
 import qualified Text.Megaparsec            as M
 -- import           Text.Printf                (printf)
 
+hmGitObjectsDirLength :: Int
+hmGitObjectsDirLength = 2
+
 data ObjectInfo = ObjectInfo {
     objectId   :: BU.ByteString
   , objectData :: BL.ByteString
   , objectPath :: P.Path P.Abs P.File
   }
 
-objectFormat :: ObjectType -> BL.ByteString -> BL.ByteString
+objectFormat :: ObjectType
+    -> BL.ByteString
+    -> BL.ByteString
 objectFormat objType contents = mconcat [
     BLU.fromString $ show objType
   , " "
@@ -69,19 +75,19 @@ hashToObjectPath :: MonadCatch m
     => B.ByteString
     -> HMGitT m (Either (P.Path P.Abs P.Dir) (P.Path P.Abs P.File))
 hashToObjectPath sha1
-    | B.length sha1 < 2 = lift
+    | B.length sha1 < hmGitObjectsDirLength = lift
         $ throw
-        $ invalidArgument "hash prefix must be 2 or more characters"
+        $ invalidArgument
+        $ printf "hash prefix must be %d or more characters"
+            hmGitObjectsDirLength
     | otherwise = do
-        (dir, fname) <- firstM P.parseRelDir $ both BU.toString $ B.splitAt 2 sha1
+        (dir, fname) <- firstM P.parseRelDir $ both BU.toString $ B.splitAt hmGitObjectsDirLength sha1
         ((\x y -> Right $ x P.</> $(P.mkRelDir "objects") P.</> dir P.</> y)
             <$> hmGitDBPath
             <*> lift (P.parseRelFile fname))
-            `catches`
-                [ Handler $ \(P.InvalidRelFile []) ->
-                    hmGitDBPath <&> Left . (P.</> ($(P.mkRelDir "objects") P.</> dir))
-                , Handler $ \e@(SomeException _) -> lift $ throw e
-                ]
+            `catch` \e@(P.InvalidRelFile fp) -> if null fp
+                then hmGitDBPath <&> Left . (P.</> ($(P.mkRelDir "objects") P.</> dir))
+                else lift $ throw e
 
 fromContents :: MonadCatch m
     => ObjectType
