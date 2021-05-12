@@ -11,6 +11,7 @@ module HMGit.Internal.Core (
   , loadObject
   , loadTree
   , loadIndex
+  , showIndexPath
   , Status (..)
  -- , getStatus
 ) where
@@ -141,6 +142,13 @@ loadIndex = do
     fname <- (P.</> $(P.mkRelFile "index")) <$> hmGitDBPath
     liftIO (BL.readFile $ P.toFilePath fname)
         >>= runByteStringParser indexParser fname
+
+showIndexPath :: (MonadIO m, MonadCatch m)
+    => IndexEntry
+    -> HMGitT m (P.Path P.Rel P.File)
+showIndexPath idx = do
+    currentDir <- getCurrentDirFromHMGit
+    P.stripProperPrefix currentDir (iePath idx) `catchAny` const (pure $ iePath idx)
 
 data Status = Status {
     statusChanged :: S.Set (P.Path P.Rel P.File)

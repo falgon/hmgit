@@ -35,15 +35,18 @@ hmGitRoot = P.parent <$> hmGitDBPath
 hmGitTreeLim :: Monad m => HMGitT m Int
 hmGitTreeLim = asks hmGitTreeLimit
 
-getCurrentDirFromHMGit :: (MonadThrow m, MonadIO m) => HMGitT m (P.Path P.Rel P.Dir)
+getCurrentDirFromHMGit :: (MonadThrow m, MonadIO m)
+    => HMGitT m (P.Path P.Rel P.Dir)
 getCurrentDirFromHMGit = do
     currentDir <- P.toFilePath <$> P.getCurrentDir
     rootPath <- P.toFilePath <$> hmGitRoot
-    if rootPath `isPrefixOf` currentDir then let path = dropPrefix rootPath currentDir in
-        P.parseRelDir $ if null path then "./" else path
+    if rootPath `isPrefixOf` currentDir then
+        let path = dropPrefix rootPath currentDir in
+            P.parseRelDir $ if null path then "./" else path
     else
         hmGitDBName
-            >>= throwString . printf "The current working directory is not in %s repository"
+            >>= throwString
+             . printf "The current working directory is not in %s repository"
 
 runHMGit :: HMGitT m a -> HMGitConfig -> m a
 runHMGit = runReaderT
