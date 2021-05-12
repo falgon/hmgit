@@ -11,7 +11,6 @@ module HMGit.Internal.Core (
   , loadObject
   , loadTree
   , loadIndex
-  , showIndexPath
   , Status (..)
  -- , getStatus
 ) where
@@ -120,7 +119,8 @@ loadObject sha1 = do
     liftIO (BL.readFile $ P.toFilePath fname)
         >>= runByteStringParser objectParser fname . decompress
     where
-        findTarget dir fname = findTargetObject dir fname `catchAny` \(SomeException _) -> lift
+        findTarget dir fname = catchAny (findTargetObject dir fname) $ const
+            $ lift
             $ throw
             $ noSuchThing
             $ printf "objects %s not found or multiple object (%d) with prefix %s"
@@ -143,13 +143,6 @@ loadIndex = do
     liftIO (BL.readFile $ P.toFilePath fname)
         >>= runByteStringParser indexParser fname
 
-showIndexPath :: (MonadIO m, MonadCatch m)
-    => IndexEntry
-    -> HMGitT m (P.Path P.Rel P.File)
-showIndexPath idx = do
-    currentDir <- getCurrentDirFromHMGit
-    P.stripProperPrefix currentDir (iePath idx) `catchAny` const (pure $ iePath idx)
-
 data Status = Status {
     statusChanged :: S.Set (P.Path P.Rel P.File)
   , statusNew     :: S.Set (P.Path P.Rel P.File)
@@ -160,7 +153,7 @@ data Status = Status {
 getStatus :: (MonadIO m, MonadThrow m) => HMGitT m Status
 getStatus = do
     root <- hmGitRoot
-    allFiles <- liftIO (glob (printf "%s/**/**" root) >>= filterM doesFileExist) -- gitignore とかドットファイルとか
+    allFiles <- liftIO (glob (printf "%s/**/**" root) >>= filterM doesFileExist)
     allFilesHash <- ML.fromList
          . zip (map (dropPrefix $ root <> "/") allFiles)
         <$> mapM (liftIO . BL.readFile >=> fmap (BL.fromStrict . objectId) . fromContents Blob) allFiles
@@ -180,5 +173,4 @@ getStatus = do
       , statusNew = ML.keysSet (allFilesHash `ML.difference` indexedFilesHash)
       , statusDeleted = ML.keysSet (indexedFilesHash `ML.difference` allFilesHash)
       }
-
-      -}
+-}

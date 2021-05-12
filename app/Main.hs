@@ -30,7 +30,7 @@ optDBName = OA.option OA.str $ mconcat [
   , OA.help "hmgit database name"
   ]
 
-programOptions :: (MonadCatch m, MonadIO m) => OA.Parser (Opts m)
+programOptions :: (MonadCatch m, MonadIO m, OA.Alternative m) => OA.Parser (Opts m)
 programOptions = Opts
     <$> optDBName
     <*> OA.hsubparser (mconcat [
@@ -40,7 +40,7 @@ programOptions = Opts
       , lsFilesCmd
       ])
 
-optsParser :: (MonadCatch m, MonadIO m) => OA.ParserInfo (Opts m)
+optsParser :: (MonadCatch m, MonadIO m, OA.Alternative m) => OA.ParserInfo (Opts m)
 optsParser = OA.info (OA.helper <*> programOptions) $ mconcat [
     OA.fullDesc
   , OA.progDesc "the subset of awesome content tracker"

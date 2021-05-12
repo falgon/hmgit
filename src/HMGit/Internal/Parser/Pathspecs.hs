@@ -4,36 +4,41 @@ module HMGit.Internal.Parser.Pathspecs (
 
 import           HMGit.Internal.Core                  (HMGitT, hmGitRoot)
 import qualified HMGit.Internal.Parser.Pathspecs.Glob as G
+import           HMGit.Internal.Utils                 (foldChoiceM,
+                                                       makeRelativeEx, (?*>))
 
-import           Control.Exception.Safe               (MonadCatch, catchAny)
-import           Control.Monad.Extra                  (anyM)
+import           Control.Applicative                  (Alternative (..))
+import           Control.Exception.Safe               (MonadCatch, catchAny,
+                                                       throwString)
 import           Control.Monad.IO.Class               (MonadIO (..))
-import           Data.Functor                         ((<&>))
 import qualified Path                                 as P
 import qualified Path.IO                              as P
+import           Text.Printf                          (printf)
 
-pathspec :: (MonadCatch m, MonadIO m)
+pathspec :: (MonadCatch m, MonadIO m, Alternative m)
     => P.Path P.Abs P.Dir
     -> P.Path P.Abs P.File
     -> String
-    -> m Bool
-pathspec cDir fpath pat = ($ G.transpile pat) $ maybe (pure False) $ \ir ->
-    if not (G.isLiteral ir) then
-        (P.stripProperPrefix cDir fpath <&> flip G.match ir . P.toFilePath) `catchAny`
-            const (pure False)
-    else do
-        x <- P.resolveDir cDir pat
-        pure $ P.isProperPrefixOf x fpath || P.toFilePath fpath == init (P.toFilePath x)
+    -> m FilePath
+pathspec cDir fpath pat = pathspec' `catchAny`
+    const (throwString $ printf "%s does not match in pattern %s" (P.toFilePath fpath) pat)
+    where
+        pathspec' = do
+            x <- P.resolveDir cDir pat
+            ir <- G.transpile $ init $ P.toFilePath x
+            if G.isLiteral ir then
+                (P.isProperPrefixOf x fpath || P.toFilePath fpath == init (P.toFilePath x))
+                    ?*> makeRelativeEx (P.toFilePath cDir) (P.toFilePath fpath)
+            else
+                G.match (P.toFilePath fpath) ir
+                    ?*> makeRelativeEx (P.toFilePath cDir) (P.toFilePath fpath)
 
-pathspecs :: (MonadCatch m, MonadIO m)
-    => P.SomeBase P.File -- target file path
+pathspecs :: (MonadCatch m, MonadIO m, Alternative m)
+    => P.Path P.Abs P.Dir -- the current directory
+    -> P.SomeBase P.File -- target file path
     -> [String] -- directories or globs
-    -> HMGitT m Bool
-pathspecs fpath [] = pathspecs fpath ["."]
-pathspecs (P.Abs fpath) pat = do
-    c <- P.getCurrentDir
-    anyM (pathspec c fpath) pat
-pathspecs (P.Rel fpath) pat = do
-    absPath <- (P.</> fpath) <$> hmGitRoot
-    c <- P.getCurrentDir
-    anyM (pathspec c absPath) pat
+    -> HMGitT m FilePath
+pathspecs cDir fpath [] = pathspecs cDir fpath ["."]
+pathspecs cDir (P.Abs fpath) pat = foldChoiceM (pathspec cDir fpath) pat
+pathspecs cDir (P.Rel fpath) pat = (pathspec <$> pure cDir <*> ((P.</> fpath) <$> hmGitRoot))
+    >>= flip foldChoiceM pat

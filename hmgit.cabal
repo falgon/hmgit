@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 81ec256aaf4840a00a09e37eb8b9666f5f143723c186cc3e733e82684a8aa26b
+-- hash: aa9b7a915c73ec574a2900bb616f89aee0e347049620dac8e8b1da8074d0f304
 
 name:           hmgit
 version:        0.1.0.0
@@ -66,6 +66,7 @@ library
     , containers
     , cryptohash
     , directory
+    , directory-tree
     , extra
     , filepath
     , megaparsec
@@ -95,6 +96,7 @@ executable hmgit
     , containers
     , cryptohash
     , directory
+    , directory-tree
     , extra
     , filepath
     , hmgit
@@ -119,10 +121,11 @@ test-suite hmgit-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Test.Utils
       Paths_hmgit
   hs-source-dirs:
       test
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints
   build-depends:
       Glob
     , HUnit
@@ -132,7 +135,9 @@ test-suite hmgit-test
     , containers
     , cryptohash
     , directory
+    , directory-tree
     , extra
+    , file-embed
     , filepath
     , hmgit
     , hspec
@@ -147,6 +152,7 @@ test-suite hmgit-test
     , path-io
     , regex-posix
     , safe-exceptions
+    , template-haskell
     , transformers
     , utf8-string
     , zlib

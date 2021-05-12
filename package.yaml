@@ -41,6 +41,7 @@ dependencies:
 - path >= 0.8.0
 - path-io
 - regex-posix
+- directory-tree
 
 library:
   source-dirs: src
@@ -73,9 +74,16 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    - -Wall
+    - -Wcompat
+    - -Wincomplete-record-updates
+    - -Wincomplete-uni-patterns
+    - -Wredundant-constraints
     dependencies:
     - hmgit
     - HUnit
     - hspec
     - hspec-core
     - hspec-contrib
+    - file-embed
+    - template-haskell
