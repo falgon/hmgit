@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: aa9b7a915c73ec574a2900bb616f89aee0e347049620dac8e8b1da8074d0f304
+-- hash: 2c04b4304aec3cc62cb190e72eddd005fc80fbd320767fb4597c9fbdc0a8994b
 
 name:           hmgit
 version:        0.1.0.0
@@ -66,7 +66,6 @@ library
     , containers
     , cryptohash
     , directory
-    , directory-tree
     , extra
     , filepath
     , megaparsec
@@ -96,7 +95,6 @@ executable hmgit
     , containers
     , cryptohash
     , directory
-    , directory-tree
     , extra
     , filepath
     , hmgit
@@ -135,7 +133,6 @@ test-suite hmgit-test
     , containers
     , cryptohash
     , directory
-    , directory-tree
     , extra
     , file-embed
     , filepath

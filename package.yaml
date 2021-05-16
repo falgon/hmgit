@@ -41,7 +41,6 @@ dependencies:
 - path >= 0.8.0
 - path-io
 - regex-posix
-- directory-tree
 
 library:
   source-dirs: src

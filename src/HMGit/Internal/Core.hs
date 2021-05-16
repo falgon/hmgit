@@ -1,4 +1,5 @@
-{-# LANGUAGE OverloadedStrings, TemplateHaskell, TupleSections #-}
+{-# LANGUAGE FlexibleContexts, GADTs, OverloadedStrings, TemplateHaskell,
+             TupleSections #-}
 -- {-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
 module HMGit.Internal.Core (
     HMGitT
@@ -12,7 +13,9 @@ module HMGit.Internal.Core (
   , loadTree
   , loadIndex
   , Status (..)
- -- , getStatus
+  , latestBlobHashes
+  , indexedBlobHashes
+  , getStatus
 ) where
 
 import           HMGit.Internal.Core.Runner
@@ -20,14 +23,13 @@ import           HMGit.Internal.Exceptions
 import           HMGit.Internal.Parser      (IndexEntry (..), ObjectType (..),
                                              indexParser, objectParser,
                                              runByteStringParser, treeParser)
-import           HMGit.Internal.Utils       (strictOne)
+import           HMGit.Internal.Utils       (formatHexByteString', strictOne)
 
 import           Codec.Compression.Zlib     (compress, decompress)
 import           Control.Exception.Safe     (MonadCatch, MonadThrow,
                                              SomeException (..), catch,
                                              catchAny, throw)
-import           Text.Printf                (printf)
--- import           Control.Monad              (filterM, (>=>))
+import           Control.Monad              (filterM, (>=>))
 import           Control.Monad              (MonadPlus)
 import           Control.Monad.IO.Class     (MonadIO (..))
 import           Control.Monad.Trans        (lift)
@@ -38,17 +40,17 @@ import qualified Data.ByteString.Lazy.UTF8  as BLU
 import qualified Data.ByteString.UTF8       as BU
 import           Data.Functor               (($>), (<&>))
 import           Data.List                  (isPrefixOf)
--- import           Data.List.Extra            (dropPrefix)
--- import qualified Data.Map.Lazy              as ML
+import qualified Data.Map.Lazy              as ML
 import qualified Data.Set                   as S
-import           Data.Tuple.Extra           (both, dupe, first, firstM, second)
+import           Data.Tuple.Extra           (both, dupe, first, firstM, second,
+                                             secondM)
 import           Path                       (Dir, File, Rel)
 import qualified Path                       as P
 import qualified Path.IO                    as P
 import           Prelude                    hiding (init)
--- import           System.FilePath.Glob       (glob)
 import           System.Posix.Types         (CMode (..))
 import qualified Text.Megaparsec            as M
+import           Text.Printf                (printf)
 -- import           Text.Printf                (printf)
 
 hmGitObjectsDirLength :: Int
@@ -81,7 +83,9 @@ hashToObjectPath sha1
         $ printf "hash prefix must be %d or more characters"
             hmGitObjectsDirLength
     | otherwise = do
-        (dir, fname) <- firstM P.parseRelDir $ both BU.toString $ B.splitAt hmGitObjectsDirLength sha1
+        (dir, fname) <- firstM P.parseRelDir
+            $ both BU.toString
+            $ B.splitAt hmGitObjectsDirLength sha1
         ((\x y -> Right $ x P.</> $(P.mkRelDir "objects") P.</> dir P.</> y)
             <$> hmGitDBPath
             <*> lift (P.parseRelFile fname))
@@ -93,12 +97,14 @@ fromContents :: MonadCatch m
     => ObjectType
     -> BL.ByteString
     -> HMGitT m ObjectInfo
-fromContents objType contents = hashToObjectPath objId
-    >>= either (const $ throw $ BugException "fromContents: hashToObjectPath must give the Abs file")
-        (pure . ObjectInfo objId (compress objFormat))
+fromContents objType contents = do
+    objId <- BU.fromString <$> formatHexByteString' (hashlazy objFormat)
+    hashToObjectPath objId
+        >>= either
+            (const $ throw $ BugException "fromContents: hashToObjectPath must give the Abs file")
+            (pure . ObjectInfo objId (compress objFormat))
     where
         objFormat = objectFormat objType contents
-        objId = hashlazy objFormat
 
 storeObject :: (MonadIO m, MonadCatch m)
     => ObjectType
@@ -148,29 +154,51 @@ data Status = Status {
   , statusNew     :: S.Set (P.Path P.Rel P.File)
   , statusDeleted :: S.Set (P.Path P.Rel P.File)
   }
+  deriving Show
 
-{-
-getStatus :: (MonadIO m, MonadThrow m) => HMGitT m Status
+latestBlobHashes :: (MonadIO m, MonadCatch m)
+    => HMGitT m (ML.Map (P.Path P.Rel P.File) B.ByteString)
+latestBlobHashes = hmGitRoot
+    >>= P.walkDirAccumRel (Just dirPred) accum
+    <&> ML.fromList
+    where
+        dirPred d _ _
+            | $(P.mkRelDir "./") == d = do
+                dbDir <- hmGitDBName >>= P.parseRelDir
+                pure $ P.WalkExclude [
+                    dbDir
+                  , $(P.mkRelDir ".stack-work")
+                  ]
+            | otherwise = pure $ P.WalkExclude []
+
+        accum d _ files = zip (map (d P.</>) files)
+            <$> mapM
+                (\f -> (hmGitRoot <&> (P.</> (d P.</> f)))
+                    >>= liftIO . BL.readFile . P.toFilePath
+                    >>= fmap objectId . fromContents Blob)
+                files
+
+indexedBlobHashes :: (MonadIO m, MonadCatch m)
+    => HMGitT m (ML.Map (P.Path P.Rel P.File) B.ByteString)
+indexedBlobHashes = loadIndex
+    >>= mapM
+        (secondM (fmap BU.fromString . formatHexByteString' . BL.toStrict . ieSha1)
+        . first iePath
+        . dupe
+        )
+    <&> ML.fromList
+
+getStatus :: (MonadIO m, MonadCatch m) => HMGitT m Status
 getStatus = do
-    root <- hmGitRoot
-    allFiles <- liftIO (glob (printf "%s/**/**" root) >>= filterM doesFileExist)
-    allFilesHash <- ML.fromList
-         . zip (map (dropPrefix $ root <> "/") allFiles)
-        <$> mapM (liftIO . BL.readFile >=> fmap (BL.fromStrict . objectId) . fromContents Blob) allFiles
-    indexedFilesHash <- ML.fromList . map (first (BLU.toString . iePath) . second ieSha1 . dupe)
-        <$> loadIndex
-
-    liftIO $ print allFilesHash
-    liftIO $ print $ length allFilesHash
-
-    liftIO $ print indexedFilesHash
-    liftIO $ print $ length indexedFilesHash
-
+    latest <- latestBlobHashes
+    indexed <- indexedBlobHashes
     pure $ Status {
         statusChanged = ML.keysSet
-            $ ML.filter (not . BL.null)
-            $ ML.intersectionWith (\l r -> if l /= r then r else mempty) allFilesHash indexedFilesHash
-      , statusNew = ML.keysSet (allFilesHash `ML.difference` indexedFilesHash)
-      , statusDeleted = ML.keysSet (indexedFilesHash `ML.difference` allFilesHash)
+            $ ML.filter (not . B.null)
+            $ ML.intersectionWith (\l r -> if l /= r then r else mempty) latest indexed
+      , statusNew = ML.keysSet
+            $ latest `ML.difference` indexed
+      , statusDeleted = ML.keysSet
+            $ indexed `ML.difference` latest
       }
--}
+

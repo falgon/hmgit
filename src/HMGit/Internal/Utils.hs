@@ -12,6 +12,7 @@ module HMGit.Internal.Utils (
   , makeRelativeEx
   , (?*>)
   , (??)
+  , bothM
 ) where
 
 import           HMGit.Internal.Exceptions  (MonadThrowable (..),
@@ -138,3 +139,8 @@ b ?*> f = if b then f else empty
 (??) :: Functor f => f (a -> b) -> a -> f b
 fab ?? a = fmap ($ a) fab
 {-# INLINE (??) #-}
+
+bothM :: Monad m => (a -> m b) -> (a, a) -> m (b, b)
+bothM f (x, y) = do
+    x' <- f x
+    (x',) <$> f y
