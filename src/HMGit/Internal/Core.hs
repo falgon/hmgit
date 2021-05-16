@@ -26,10 +26,8 @@ import           HMGit.Internal.Parser      (IndexEntry (..), ObjectType (..),
 import           HMGit.Internal.Utils       (formatHexByteString', strictOne)
 
 import           Codec.Compression.Zlib     (compress, decompress)
-import           Control.Exception.Safe     (MonadCatch, MonadThrow,
-                                             SomeException (..), catch,
+import           Control.Exception.Safe     (MonadCatch, MonadThrow, catch,
                                              catchAny, throw)
-import           Control.Monad              (filterM, (>=>))
 import           Control.Monad              (MonadPlus)
 import           Control.Monad.IO.Class     (MonadIO (..))
 import           Control.Monad.Trans        (lift)
@@ -49,9 +47,7 @@ import qualified Path                       as P
 import qualified Path.IO                    as P
 import           Prelude                    hiding (init)
 import           System.Posix.Types         (CMode (..))
-import qualified Text.Megaparsec            as M
 import           Text.Printf                (printf)
--- import           Text.Printf                (printf)
 
 hmGitObjectsDirLength :: Int
 hmGitObjectsDirLength = 2

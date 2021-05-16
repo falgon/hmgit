@@ -11,6 +11,20 @@ packages:
       sha256: c58c61bad023ab64b99018013684f53f5f38fa47548cf64cfd899d4622674b98
   original:
     hackage: path-0.8.0@sha256:4a522e0a8c0f54bd3d1e5690b22e29c35a7dee91cc2caff68bfe2a5c49ea700b,3191
+- completed:
+    hackage: htoml-megaparsec-2.1.0.4@sha256:9b6f3a4669a72c5d014b3166574bd5498a2c2782ab7f63405364e7b3831487ec,3361
+    pantry-tree:
+      size: 10518
+      sha256: db4685642a1e3d4c7983f5b40a40a5a62e145df3778c5f29bf81991451aca02b
+  original:
+    hackage: htoml-megaparsec-2.1.0.4@sha256:9b6f3a4669a72c5d014b3166574bd5498a2c2782ab7f63405364e7b3831487ec,3361
+- completed:
+    hackage: composition-prelude-3.0.0.2@sha256:1ffed216bd28d810fce0b5be83a661e2a892696d73b3f8de5c0f5edb9b5f0090,1216
+    pantry-tree:
+      size: 284
+      sha256: 94fc1c55e9065ae575315ac52a552d0e03beaefef4669a58a9745c6d71b4dd6b
+  original:
+    hackage: composition-prelude-3.0.0.2@sha256:1ffed216bd28d810fce0b5be83a661e2a892696d73b3f8de5c0f5edb9b5f0090,1216
 snapshots:
 - completed:
     size: 565720

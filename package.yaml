@@ -41,6 +41,8 @@ dependencies:
 - path >= 0.8.0
 - path-io
 - regex-posix
+- htoml-megaparsec
+- text
 
 library:
   source-dirs: src

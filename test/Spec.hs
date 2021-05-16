@@ -100,6 +100,7 @@ main = do
     tests <- runHMGit testMain $ HMGitConfig {
         hmGitDir = hmGitPath
       , hmGitTreeLimit = 1000
+      , hmGitModulesFile = Nothing
       }
     runSpec (parallel $ fromHUnitTest tests) (defaultConfig { configPrintCpuTime = True })
         >>= evaluateSummary
