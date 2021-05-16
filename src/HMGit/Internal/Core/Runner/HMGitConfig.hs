@@ -16,9 +16,8 @@ import qualified Path.IO                   as P
 import           Text.Printf               (printf)
 
 data HMGitConfig = HMGitConfig {
-    hmGitDir         :: P.Path P.Abs P.Dir
-  , hmGitModulesFile :: Maybe (P.Path P.Abs P.File)
-  , hmGitTreeLimit   :: Int
+    hmGitDir       :: P.Path P.Abs P.Dir
+  , hmGitTreeLimit :: Int
   } | HMGitConfigInit
 
 isHMGitDir :: MonadIO m
@@ -50,11 +49,7 @@ hmGitConfig :: (MonadThrow m, MonadIO m)
     -> m HMGitConfig
 hmGitConfig dbName = do
     hmGitPath <- getHMGitPath dbName
-    hmGitModulesPath <- (P.parent hmGitPath P.</>) <$> P.parseRelFile (dbName <> "module")
-    hmGitModulesPath' <- ifM (P.doesFileExist hmGitModulesPath)
-        (pure $ Just hmGitModulesPath) $ pure Nothing
     pure $ HMGitConfig {
         hmGitDir = hmGitPath
-      , hmGitModulesFile = hmGitModulesPath'
       , hmGitTreeLimit = 1000
       }
