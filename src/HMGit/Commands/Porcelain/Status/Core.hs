@@ -11,7 +11,7 @@ import           HMGit.Internal.Parser.Pathspecs (pathspecs)
 
 import           Control.Applicative             (Alternative (..))
 import           Control.Exception.Safe          (MonadCatch, catchAny)
-import           Control.Monad                   (foldM, zipWithM_)
+import           Control.Monad                   (foldM, zipWithM_, (>=>))
 import           Control.Monad.IO.Class          (MonadIO (..))
 import           Control.Monad.Trans             (lift)
 import           Control.Monad.Trans.Reader      (ReaderT (..), ask)
@@ -44,13 +44,12 @@ statusShow sctor title = do
                 *> mapM_ (liftIO . printer) fs
 
 statusDefault :: (MonadIO m, MonadCatch m, Alternative m) => Status m
-statusDefault = Status $ \pats -> cfg pats
-    >>= runReaderT statusShow'
+statusDefault = Status (cfg >=> runReaderT statusShow')
     where
         cfg pats = (, pats, , liftIO . putStrLn . printf "\t%s")
             <$> getStatus
             <*> P.getCurrentDir
-        statusShow' = sequence_ $ zipWith statusShow
+        statusShow' = zipWithM_ statusShow
             [ statusChanged, statusNew, statusDeleted ]
             [ "Changes not staged for commit:\n", "New files:\n", "Deleted files:\n" ]
 

@@ -41,6 +41,8 @@ dependencies:
 - path >= 0.8.0
 - path-io
 - regex-posix
+- Diff
+- pretty
 
 library:
   source-dirs: src

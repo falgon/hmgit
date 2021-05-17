@@ -13,6 +13,7 @@ module HMGit.Internal.Core (
   , loadTree
   , loadIndex
   , HMGitStatus (..)
+  , indexedBlobHashes
   , getStatus
 ) where
 
@@ -150,6 +151,9 @@ data HMGitStatus = HMGitStatus {
   }
   deriving Show
 
+-- Currently `latestBlobHashes` does not support gitignore and submodule,
+-- so we are embedding content to ignore directly in the code.
+-- Comments HACK below are the relevant part.
 latestBlobHashes :: (MonadIO m, MonadCatch m)
     => HMGitT m (ML.Map (P.Path P.Rel P.File) B.ByteString)
 latestBlobHashes = hmGitRoot
@@ -161,8 +165,11 @@ latestBlobHashes = hmGitRoot
                 dbDir <- hmGitDBName >>= P.parseRelDir
                 pure $ P.WalkExclude [
                     dbDir
-                  , $(P.mkRelDir ".stack-work")
+                  , $(P.mkRelDir ".stack-work") -- HACK
                   ]
+            | $(P.mkRelDir "test") == d = pure $ P.WalkExclude [ -- HACK
+                $(P.mkRelDir "external")
+              ]
             | otherwise = pure $ P.WalkExclude []
 
         accum d _ files = zip (map (d P.</>) files)

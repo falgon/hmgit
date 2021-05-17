@@ -7,6 +7,7 @@ import           HMGit.Commands                     (Cmd (..))
 import           HMGit.Commands.Plumbing.CatFile
 import           HMGit.Commands.Plumbing.HashObject
 import           HMGit.Commands.Plumbing.LsFiles
+import           HMGit.Commands.Porcelain.Diff
 import           HMGit.Commands.Porcelain.Init
 import           HMGit.Commands.Porcelain.Status
 
@@ -31,18 +32,19 @@ optDBName = OA.option OA.str $ mconcat [
   , OA.help "hmgit database name"
   ]
 
-programOptions :: (MonadCatch m, MonadIO m, OA.Alternative m) => OA.Parser (Opts m)
+programOptions :: (MonadCatch m, MonadIO m, MonadPlus m) => OA.Parser (Opts m)
 programOptions = Opts
     <$> optDBName
     <*> OA.hsubparser (mconcat [
         initCmd
       , statusCmd
+      , diffCmd
       , catFileCmd
       , hashObjectCmd
       , lsFilesCmd
       ])
 
-optsParser :: (MonadCatch m, MonadIO m, OA.Alternative m) => OA.ParserInfo (Opts m)
+optsParser :: (MonadCatch m, MonadIO m, MonadPlus m) => OA.ParserInfo (Opts m)
 optsParser = OA.info (OA.helper <*> programOptions) $ mconcat [
     OA.fullDesc
   , OA.progDesc "the subset of awesome content tracker"
@@ -61,6 +63,7 @@ optsToHMGitT (Opts dbName cmd) = (,)
         fromCmd (CmdHashObject objType runner fpath) = pure $ hashObject runner objType fpath
         fromCmd (CmdLsFiles runner pathspecs) = pure $ lsFiles runner pathspecs
         fromCmd (CmdStatus runner pathspecs) = pure $ status runner pathspecs
+        fromCmd (CmdDiff runner paths) = pure $ diff runner paths
         fromCmd _ = throw $ BugException "never reach here"
 
 main :: IO ()

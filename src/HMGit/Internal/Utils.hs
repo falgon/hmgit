@@ -104,7 +104,7 @@ makeRelativeEx :: (MonadIO m, MonadThrow m)
     -> FilePath
     -> m FilePath
 makeRelativeEx pathA pathB
-    | isRelative makeRelativePathAPathB = pure $ makeRelativePathAPathB
+    | isRelative makeRelativePathAPathB = pure makeRelativePathAPathB
     | otherwise = do
         a' <- liftIO $ canonicalizePath pathA
         b' <- liftIO $ canonicalizePath pathB

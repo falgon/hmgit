@@ -79,7 +79,7 @@ testPathspecs = do
       ]
     where
         pathspecs' x y = P.getCurrentDir
-            >>= flip (flip pathspecs x) y
+            >>= flip (`pathspecs` x) y
 
 testMain :: (MonadIO m, MonadMask m, Alternative m) => HMGitT m Test
 testMain = do
