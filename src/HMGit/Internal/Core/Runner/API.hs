@@ -1,9 +1,11 @@
+{-# LANGUAGE TemplateHaskell #-}
 module HMGit.Internal.Core.Runner.API (
     HMGitT
   , hmGitDBPath
   , hmGitDBName
   , hmGitRoot
   , hmGitTreeLim
+  , hmGitIndexPath
   , getCurrentDirFromHMGit
   , runHMGit
 ) where
@@ -16,6 +18,7 @@ import           Control.Monad.IO.Class                 (MonadIO (..))
 import           Control.Monad.Trans.Reader             (ReaderT (..), asks)
 import           Data.List                              (isPrefixOf)
 import           Data.List.Extra                        (dropPrefix)
+import           Path                                   (File, Rel)
 import qualified Path                                   as P
 import qualified Path.IO                                as P
 import           System.FilePath                        (takeFileName)
@@ -34,6 +37,9 @@ hmGitRoot = P.parent <$> hmGitDBPath
 
 hmGitTreeLim :: Monad m => HMGitT m Int
 hmGitTreeLim = asks hmGitTreeLimit
+
+hmGitIndexPath :: Monad m => HMGitT m (P.Path P.Abs P.File)
+hmGitIndexPath = (P.</> $(P.mkRelFile "index")) <$> hmGitDBPath
 
 getCurrentDirFromHMGit :: (MonadThrow m, MonadIO m)
     => HMGitT m (P.Path P.Rel P.Dir)

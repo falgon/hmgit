@@ -3,16 +3,20 @@
 module HMGit.Internal.Parser.Index (
     IndexEntry (..)
   , indexParser
+  , putIndex
 ) where
 
 import           HMGit.Internal.Parser.Core.ByteString
+import           HMGit.Internal.Utils                  (foldMapM)
 
 import qualified Codec.Binary.UTF8.String              as BUS
-import           Control.Monad.Extra                   (ifM, orM)
+import           Control.Monad.Extra                   (ifM, orM, replicateM_)
 import           Control.Monad.Loops                   (unfoldM)
 import           Control.Natural                       (type (~>))
 import           Crypto.Hash.SHA1                      (hashlazy)
 import qualified Data.Binary.Get                       as BG
+import qualified Data.Binary.Put                       as BP
+import qualified Data.ByteString.Char8                 as BC
 import qualified Data.ByteString.Lazy                  as BL
 import           Data.Char                             (ord)
 import           Data.Tuple.Extra                      (thd3)
@@ -28,6 +32,11 @@ data IndexHeader = IndexHeader {
   , ihNumEntries :: Word32          -- ^ Number of index entries.
   }
   deriving Show
+
+putIndexHeader :: Word32 -> BP.Put
+putIndexHeader len = BP.putByteString "DIRC"
+    *> BP.putWord32be 2
+    *> BP.putWord32be len
 
 -- ^ Index entry, ref. https://github.com/git/git/blob/v2.17.1/Documentation/technical/index-format.txt#L38
 data IndexEntry = IndexEntry {
@@ -46,6 +55,29 @@ data IndexEntry = IndexEntry {
   , iePath   :: P.Path P.Rel P.File
   }
   deriving Show
+
+putIndexEntry :: IndexEntry -> BP.Put
+putIndexEntry ie = BP.putWord32be (ieCtimeS ie)
+    *> BP.putWord32be (ieCtimeN ie)
+    *> BP.putWord32be (ieMTimeS ie)
+    *> BP.putWord32be (ieMTimeN ie)
+    *> BP.putWord32be (ieDev ie)
+    *> BP.putWord32be (ieIno ie)
+    *> BP.putWord32be (ieMode ie)
+    *> BP.putWord32be (ieUid ie)
+    *> BP.putWord32be (ieGid ie)
+    *> BP.putWord32be (ieSize ie)
+    *> BP.putLazyByteString (ieSha1 ie)
+    *> BP.putWord16be (ieFlags ie)
+    *> BP.putByteString (BC.pack $ P.toFilePath $ iePath ie)
+    *> replicateM_ (packedLen - 62 - pLen) (BP.putWord8 0)
+    where
+        pLen = length $ P.toFilePath $ iePath ie
+        packedLen = ((62 + pLen + 8) `div` 8) * 8
+
+putIndex :: Foldable t => t IndexEntry -> BP.Put
+putIndex ies = putIndexHeader (fromIntegral $ length ies)
+    *> foldMapM putIndexEntry ies
 
 fromBinaryGetter' :: BG.Get ~> ByteStringParser
 fromBinaryGetter' = fromBinaryGetter IndexParser

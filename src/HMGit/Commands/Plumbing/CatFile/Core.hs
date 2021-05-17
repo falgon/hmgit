@@ -28,14 +28,12 @@ import           System.Posix.Internals     (s_isdir)
 sIsDir :: CMode -> Bool
 sIsDir = s_isdir
 #else
-{-
 import           Data.Bits                  ((.&.))
 sIsDir :: CMode -> Bool
 sIsDir = (== sIFDIR) . (.&. sIFMT)
     where
         sIFMT = 0o170000
         sIFDIR = 0o040000
-        -}
 #endif
 
 data CatFile m = CatFileObjectType ObjectType (ObjectType -> BL.ByteString -> HMGitT m ())

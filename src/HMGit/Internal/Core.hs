@@ -12,6 +12,7 @@ module HMGit.Internal.Core (
   , loadObject
   , loadTree
   , loadIndex
+  , storeIndex
   , HMGitStatus (..)
   , indexedBlobHashes
   , getStatus
@@ -21,7 +22,8 @@ import           HMGit.Internal.Core.Runner
 import           HMGit.Internal.Exceptions
 import           HMGit.Internal.Parser      (IndexEntry (..), ObjectType (..),
                                              indexParser, objectParser,
-                                             runByteStringParser, treeParser)
+                                             putIndex, runByteStringParser,
+                                             treeParser)
 import           HMGit.Internal.Utils       (formatHexByteString', strictOne)
 
 import           Codec.Compression.Zlib     (compress, decompress)
@@ -31,6 +33,7 @@ import           Control.Monad              (MonadPlus)
 import           Control.Monad.IO.Class     (MonadIO (..))
 import           Control.Monad.Trans        (lift)
 import           Crypto.Hash.SHA1           (hashlazy)
+import qualified Data.Binary.Put            as BP
 import qualified Data.ByteString            as B
 import qualified Data.ByteString.Lazy       as BL
 import qualified Data.ByteString.Lazy.UTF8  as BLU
@@ -140,9 +143,18 @@ loadTree body = hmGitTreeLim
 
 loadIndex :: (MonadIO m, MonadThrow m) => HMGitT m [IndexEntry]
 loadIndex = do
-    fname <- (P.</> $(P.mkRelFile "index")) <$> hmGitDBPath
+    fname <- hmGitIndexPath
     liftIO (BL.readFile $ P.toFilePath fname)
         >>= runByteStringParser indexParser fname
+
+storeIndex :: (MonadIO m, Foldable t)
+    => t IndexEntry
+    -> HMGitT m ()
+storeIndex es = hmGitIndexPath
+    >>= liftIO . flip B.writeFile (idxData <> digest) . P.toFilePath
+    where
+        idxData = BL.toStrict $ BP.runPut $ putIndex es
+        digest = hashlazy $ BL.fromStrict idxData
 
 data HMGitStatus = HMGitStatus {
     statusChanged :: S.Set (P.Path P.Rel P.File)
