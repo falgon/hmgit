@@ -5,11 +5,14 @@ module HMGit.Internal.Exceptions (
   , noSuchThing
   , BugException (..)
   , MonadThrowable (..)
+  , truncOtherThanBugs
 ) where
 
 import           Control.Arrow                ((|||))
-import           Control.Exception.Safe       (Exception, MonadThrow, throw,
-                                               throwString)
+import           Control.Exception.Safe       (Exception, Handler (..),
+                                               MonadCatch, MonadThrow,
+                                               SomeException (..), catches,
+                                               throw, throwString)
 import           Control.Monad                ((>=>))
 import           Control.Monad.Error          (ErrorT, runErrorT)
 import           Control.Monad.Trans.Except   (ExceptT, runExceptT)
@@ -75,3 +78,12 @@ instance MonadThrowable m => MonadThrowable (ListT m) where
 
 instance (Exception e, MonadThrowable m) => MonadThrowable (ErrorT e m) where
     fromMonad e = fromMonad e . runErrorT >=> fromMonad e
+
+truncOtherThanBugs :: MonadCatch m
+    => m ()
+    -> m ()
+truncOtherThanBugs m = m
+    `catches`
+        [ Handler $ \e@(BugException _) -> throw e
+        , Handler $ \(SomeException _) -> pure ()
+        ]

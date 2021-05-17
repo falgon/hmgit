@@ -38,10 +38,10 @@ putLsDetail idx fp = do
 lsFilesBase :: (MonadCatch m, MonadIO m, Alternative m)
     => (IndexEntry -> FilePath -> HMGitT m ())
     -> LsFiles m
-lsFilesBase printer = LsFiles $ \pat -> do
+lsFilesBase printer = LsFiles $ \pat -> let pat' = if null pat then ["."] else pat in do
     cDir <- P.getCurrentDir
     loadIndex
-        >>= mapM_ (\e -> (pathspecs cDir (P.Rel (iePath e)) pat >>= printer e) `catchAny`
+        >>= mapM_ (\e -> (pathspecs cDir (P.Rel (iePath e)) pat' >>= printer e) `catchAny`
                 const (pure ()))
 
 lsFilesShow :: (MonadCatch m, MonadIO m, Alternative m) => LsFiles m

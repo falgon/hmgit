@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts, GADTs, OverloadedStrings, TemplateHaskell,
              TupleSections #-}
--- {-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
+{-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
 module HMGit.Internal.Core (
     HMGitT
   , hmGitRoot
@@ -12,9 +12,7 @@ module HMGit.Internal.Core (
   , loadObject
   , loadTree
   , loadIndex
-  , Status (..)
-  , latestBlobHashes
-  , indexedBlobHashes
+  , HMGitStatus (..)
   , getStatus
 ) where
 
@@ -26,10 +24,8 @@ import           HMGit.Internal.Parser      (IndexEntry (..), ObjectType (..),
 import           HMGit.Internal.Utils       (formatHexByteString', strictOne)
 
 import           Codec.Compression.Zlib     (compress, decompress)
-import           Control.Exception.Safe     (MonadCatch, MonadThrow,
-                                             SomeException (..), catch,
+import           Control.Exception.Safe     (MonadCatch, MonadThrow, catch,
                                              catchAny, throw)
-import           Control.Monad              (filterM, (>=>))
 import           Control.Monad              (MonadPlus)
 import           Control.Monad.IO.Class     (MonadIO (..))
 import           Control.Monad.Trans        (lift)
@@ -49,9 +45,7 @@ import qualified Path                       as P
 import qualified Path.IO                    as P
 import           Prelude                    hiding (init)
 import           System.Posix.Types         (CMode (..))
-import qualified Text.Megaparsec            as M
 import           Text.Printf                (printf)
--- import           Text.Printf                (printf)
 
 hmGitObjectsDirLength :: Int
 hmGitObjectsDirLength = 2
@@ -149,7 +143,7 @@ loadIndex = do
     liftIO (BL.readFile $ P.toFilePath fname)
         >>= runByteStringParser indexParser fname
 
-data Status = Status {
+data HMGitStatus = HMGitStatus {
     statusChanged :: S.Set (P.Path P.Rel P.File)
   , statusNew     :: S.Set (P.Path P.Rel P.File)
   , statusDeleted :: S.Set (P.Path P.Rel P.File)
@@ -188,11 +182,11 @@ indexedBlobHashes = loadIndex
         )
     <&> ML.fromList
 
-getStatus :: (MonadIO m, MonadCatch m) => HMGitT m Status
+getStatus :: (MonadIO m, MonadCatch m) => HMGitT m HMGitStatus
 getStatus = do
     latest <- latestBlobHashes
     indexed <- indexedBlobHashes
-    pure $ Status {
+    pure $ HMGitStatus {
         statusChanged = ML.keysSet
             $ ML.filter (not . B.null)
             $ ML.intersectionWith (\l r -> if l /= r then r else mempty) latest indexed

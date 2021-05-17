@@ -58,6 +58,7 @@ testPathspecs = do
         (lift . P.setCurrentDir . P.parent . P.parent)
       $ const
       $ pathspecs' (P.Rel $(P.mkRelFile "hello.txt")) ["../../*.txt"]
+    t14 <- pathspecs' (P.Rel $(P.mkRelFile "hello.txt")) []
     pure $ TestLabel "Pathspecs" $ TestList [
         TestLabel "pathspecs" $ TestList [
             "hello.txt: ." ~: t1 ~?= "hello.txt"
@@ -73,6 +74,7 @@ testPathspecs = do
           , "hello.txt: ../foo/.." ~: t11 ~?= "../hello.txt"
           , "hello.txt: *.txt" ~: isLeft t12 ~?= True
           , "hello.txt: ../../*.txt" ~: t13 ~?= "../../hello.txt"
+          , "hello.txt: " ~: t14 ~?= "hello.txt"
           ]
       ]
     where

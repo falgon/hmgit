@@ -8,6 +8,7 @@ import           HMGit.Commands.Plumbing.CatFile
 import           HMGit.Commands.Plumbing.HashObject
 import           HMGit.Commands.Plumbing.LsFiles
 import           HMGit.Commands.Porcelain.Init
+import           HMGit.Commands.Porcelain.Status
 
 import           Control.Exception.Safe             (MonadCatch,
                                                      displayException, throw,
@@ -35,6 +36,7 @@ programOptions = Opts
     <$> optDBName
     <*> OA.hsubparser (mconcat [
         initCmd
+      , statusCmd
       , catFileCmd
       , hashObjectCmd
       , lsFilesCmd
@@ -57,7 +59,8 @@ optsToHMGitT (Opts dbName cmd) = (,)
     where
         fromCmd (CmdCatFile runner object) = pure $ catFile runner (B.fromString object)
         fromCmd (CmdHashObject objType runner fpath) = pure $ hashObject runner objType fpath
-        fromCmd (CmdLsFiles runner globs) = pure $ lsFiles runner globs
+        fromCmd (CmdLsFiles runner pathspecs) = pure $ lsFiles runner pathspecs
+        fromCmd (CmdStatus runner pathspecs) = pure $ status runner pathspecs
         fromCmd _ = throw $ BugException "never reach here"
 
 main :: IO ()
