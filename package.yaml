@@ -43,6 +43,8 @@ dependencies:
 - regex-posix
 - Diff
 - pretty
+- unix
+- time
 
 library:
   source-dirs: src

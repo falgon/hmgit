@@ -58,11 +58,11 @@ statusShort = Status $ \pats -> do
     cDir <- P.getCurrentDir
     st <- getStatus
     zipWithM_ (\x -> runReaderT (statusShow x ""))
-      [ statusChanged
-      , statusNew
-      , statusDeleted
-      ]
-      [ (st, pats, cDir, putStrLn . printf " M %s")
-      , (st, pats, cDir, putStrLn . printf "?? %s")
-      , (st, pats, cDir, putStrLn . printf " D %s")
-      ]
+        [ statusChanged
+        , statusNew
+        , statusDeleted
+        ]
+        [ (st, pats, cDir, putStrLn . printf " M %s")
+        , (st, pats, cDir, putStrLn . printf "?? %s")
+        , (st, pats, cDir, putStrLn . printf " D %s")
+        ]

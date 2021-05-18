@@ -6,7 +6,9 @@ module HMGit.Internal.Core (
   , hmGitRoot
   , getCurrentDirFromHMGit
   , runHMGit
+  , ObjectType (..)
   , ObjectInfo (..)
+  , IndexEntry (..)
   , fromContents
   , storeObject
   , loadObject
@@ -30,6 +32,7 @@ import           Codec.Compression.Zlib     (compress, decompress)
 import           Control.Exception.Safe     (MonadCatch, MonadThrow, catch,
                                              catchAny, throw)
 import           Control.Monad              (MonadPlus)
+import           Control.Monad.Extra        (ifM)
 import           Control.Monad.IO.Class     (MonadIO (..))
 import           Control.Monad.Trans        (lift)
 import           Crypto.Hash.SHA1           (hashlazy)
@@ -42,7 +45,7 @@ import           Data.Functor               (($>), (<&>))
 import           Data.List                  (isPrefixOf)
 import qualified Data.Map.Lazy              as ML
 import qualified Data.Set                   as S
-import           Data.Tuple.Extra           (both, dupe, first, firstM, second,
+import           Data.Tuple.Extra           (dupe, first, firstM, second,
                                              secondM)
 import           Path                       (Dir, File, Rel)
 import qualified Path                       as P
@@ -72,18 +75,17 @@ objectFormat objType contents = mconcat [
   ]
 
 hashToObjectPath :: MonadCatch m
-    => B.ByteString
+    => String
     -> HMGitT m (Either (P.Path P.Abs P.Dir) (P.Path P.Abs P.File))
-hashToObjectPath sha1
-    | B.length sha1 < hmGitObjectsDirLength = lift
+hashToObjectPath hexSha1
+    | length hexSha1 < hmGitObjectsDirLength = lift
         $ throw
         $ invalidArgument
         $ printf "hash prefix must be %d or more characters"
             hmGitObjectsDirLength
     | otherwise = do
         (dir, fname) <- firstM P.parseRelDir
-            $ both BU.toString
-            $ B.splitAt hmGitObjectsDirLength sha1
+            $ splitAt hmGitObjectsDirLength hexSha1
         ((\x y -> Right $ x P.</> $(P.mkRelDir "objects") P.</> dir P.</> y)
             <$> hmGitDBPath
             <*> lift (P.parseRelFile fname))
@@ -96,12 +98,13 @@ fromContents :: MonadCatch m
     -> BL.ByteString
     -> HMGitT m ObjectInfo
 fromContents objType contents = do
-    objId <- BU.fromString <$> formatHexByteString' (hashlazy objFormat)
-    hashToObjectPath objId
+    hexObjId <- formatHexByteString' objId
+    hashToObjectPath hexObjId
         >>= either
             (const $ throw $ BugException "fromContents: hashToObjectPath must give the Abs file")
             (pure . ObjectInfo objId (compress objFormat))
     where
+        objId = hashlazy objFormat
         objFormat = objectFormat objType contents
 
 storeObject :: (MonadIO m, MonadCatch m)
@@ -115,7 +118,7 @@ storeObject objType contents = do
         $> objectId objInfo
 
 loadObject :: (MonadIO m, MonadCatch m, MonadPlus m)
-    => B.ByteString
+    => String
     -> HMGitT m (ObjectType, BL.ByteString)
 loadObject sha1 = do
     fname <- hashToObjectPath sha1
@@ -128,7 +131,7 @@ loadObject sha1 = do
             $ throw
             $ noSuchThing
             $ printf "objects %s not found or multiple object (%d) with prefix %s"
-                (BU.toString sha1) (B.length sha1) (BU.toString sha1)
+                sha1 (length sha1) sha1
 
         findTargetObject dir fname = P.listDirRel dir
             >>= strictOne . filter (isPrefixOf fname . P.toFilePath) . snd
@@ -144,8 +147,9 @@ loadTree body = hmGitTreeLim
 loadIndex :: (MonadIO m, MonadThrow m) => HMGitT m [IndexEntry]
 loadIndex = do
     fname <- hmGitIndexPath
-    liftIO (BL.readFile $ P.toFilePath fname)
-        >>= runByteStringParser indexParser fname
+    ifM (not <$> P.doesFileExist fname) (pure []) $
+        liftIO (BL.readFile $ P.toFilePath fname)
+            >>= runByteStringParser indexParser fname
 
 storeIndex :: (MonadIO m, Foldable t)
     => t IndexEntry
@@ -153,8 +157,8 @@ storeIndex :: (MonadIO m, Foldable t)
 storeIndex es = hmGitIndexPath
     >>= liftIO . flip B.writeFile (idxData <> digest) . P.toFilePath
     where
-        idxData = BL.toStrict $ BP.runPut $ putIndex es
         digest = hashlazy $ BL.fromStrict idxData
+        idxData = BL.toStrict $ BP.runPut $ putIndex es
 
 data HMGitStatus = HMGitStatus {
     statusChanged :: S.Set (P.Path P.Rel P.File)
@@ -167,7 +171,7 @@ data HMGitStatus = HMGitStatus {
 -- so we are embedding content to ignore directly in the code.
 -- Comments HACK below are the relevant part.
 latestBlobHashes :: (MonadIO m, MonadCatch m)
-    => HMGitT m (ML.Map (P.Path P.Rel P.File) B.ByteString)
+    => HMGitT m (ML.Map (P.Path P.Rel P.File) String)
 latestBlobHashes = hmGitRoot
     >>= P.walkDirAccumRel (Just dirPred) accum
     <&> ML.fromList
@@ -188,18 +192,21 @@ latestBlobHashes = hmGitRoot
             <$> mapM
                 (\f -> (hmGitRoot <&> (P.</> (d P.</> f)))
                     >>= liftIO . BL.readFile . P.toFilePath
-                    >>= fmap objectId . fromContents Blob)
+                    >>= fromContents Blob
+                    >>= formatHexByteString' . objectId)
                 files
 
 indexedBlobHashes :: (MonadIO m, MonadCatch m)
-    => HMGitT m (ML.Map (P.Path P.Rel P.File) B.ByteString)
-indexedBlobHashes = loadIndex
-    >>= mapM
-        (secondM (fmap BU.fromString . formatHexByteString' . BL.toStrict . ieSha1)
-        . first iePath
-        . dupe
-        )
-    <&> ML.fromList
+    => HMGitT m (ML.Map (P.Path P.Rel P.File) String)
+indexedBlobHashes = ifM (hmGitIndexPath >>= P.doesFileExist <&> not)
+   (pure ML.empty)
+ $ loadIndex
+        >>= mapM
+            (secondM (formatHexByteString' . BL.toStrict . ieSha1)
+            . first iePath
+            . dupe
+            )
+        <&> ML.fromList
 
 getStatus :: (MonadIO m, MonadCatch m) => HMGitT m HMGitStatus
 getStatus = do
@@ -207,7 +214,7 @@ getStatus = do
     indexed <- indexedBlobHashes
     pure $ HMGitStatus {
         statusChanged = ML.keysSet
-            $ ML.filter (not . B.null)
+            $ ML.filter (not . null)
             $ ML.intersectionWith (\l r -> if l /= r then r else mempty) latest indexed
       , statusNew = ML.keysSet
             $ latest `ML.difference` indexed

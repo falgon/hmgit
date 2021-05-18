@@ -7,6 +7,7 @@ import           HMGit.Commands                     (Cmd (..))
 import           HMGit.Commands.Plumbing.CatFile
 import           HMGit.Commands.Plumbing.HashObject
 import           HMGit.Commands.Plumbing.LsFiles
+import           HMGit.Commands.Porcelain.Add
 import           HMGit.Commands.Porcelain.Diff
 import           HMGit.Commands.Porcelain.Init
 import           HMGit.Commands.Porcelain.Status
@@ -16,7 +17,6 @@ import           Control.Exception.Safe             (MonadCatch,
                                                      tryAny)
 import           Control.Monad                      (MonadPlus, (>=>))
 import           Control.Monad.IO.Class             (MonadIO)
-import qualified Data.ByteString.UTF8               as B
 import qualified Options.Applicative                as OA
 import           Prelude                            hiding (init)
 import           System.Exit                        (exitFailure)
@@ -36,12 +36,13 @@ programOptions :: (MonadCatch m, MonadIO m, MonadPlus m) => OA.Parser (Opts m)
 programOptions = Opts
     <$> optDBName
     <*> OA.hsubparser (mconcat [
-        initCmd
-      , statusCmd
-      , diffCmd
+        addCmd
       , catFileCmd
+      , diffCmd
       , hashObjectCmd
+      , initCmd
       , lsFilesCmd
+      , statusCmd
       ])
 
 optsParser :: (MonadCatch m, MonadIO m, MonadPlus m) => OA.ParserInfo (Opts m)
@@ -59,11 +60,12 @@ optsToHMGitT (Opts dbName cmd) = (,)
     <$> fromCmd cmd
     <*> hmGitConfig dbName
     where
-        fromCmd (CmdCatFile runner object) = pure $ catFile runner (B.fromString object)
+        fromCmd (CmdCatFile runner object) = pure $ catFile runner object
         fromCmd (CmdHashObject objType runner fpath) = pure $ hashObject runner objType fpath
         fromCmd (CmdLsFiles runner pathspecs) = pure $ lsFiles runner pathspecs
         fromCmd (CmdStatus runner pathspecs) = pure $ status runner pathspecs
         fromCmd (CmdDiff runner paths) = pure $ diff runner paths
+        fromCmd (CmdAdd runner pathspecs) = pure $ add runner pathspecs
         fromCmd _ = throw $ BugException "never reach here"
 
 main :: IO ()

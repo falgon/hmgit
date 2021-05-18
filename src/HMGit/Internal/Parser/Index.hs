@@ -19,6 +19,7 @@ import qualified Data.Binary.Put                       as BP
 import qualified Data.ByteString.Char8                 as BC
 import qualified Data.ByteString.Lazy                  as BL
 import           Data.Char                             (ord)
+import           Data.Functor                          ((<&>))
 import           Data.Tuple.Extra                      (thd3)
 import           Data.Word                             (Word16, Word32)
 import qualified Path                                  as P
@@ -124,6 +125,9 @@ indexBody expectedEntriesNum = unfoldM (ifM stopConditions (pure Nothing) idxFie
           , M.option False (True <$ M.lookAhead (M.satisfy ((`elem` map ord ['A'..'Z']) . fromIntegral)))
           ]
 
+        fileModeRegular = BG.getWord32be
+            <&> \x -> if x == 0o100664 then 0o100644 else x
+
         idxField = do
             entry <- fromBinaryGetter' $ IndexEntry
                 <$> BG.getWord32be
@@ -132,7 +136,7 @@ indexBody expectedEntriesNum = unfoldM (ifM stopConditions (pure Nothing) idxFie
                 <*> BG.getWord32be
                 <*> BG.getWord32be
                 <*> BG.getWord32be
-                <*> BG.getWord32be
+                <*> fileModeRegular
                 <*> BG.getWord32be
                 <*> BG.getWord32be
                 <*> BG.getWord32be

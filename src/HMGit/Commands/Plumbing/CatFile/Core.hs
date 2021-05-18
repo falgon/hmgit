@@ -16,7 +16,6 @@ import           Text.Printf                (printf)
 import           Control.Exception.Safe     (MonadCatch, MonadThrow, throw)
 import           Control.Monad              (MonadPlus)
 import           Control.Monad.IO.Class     (MonadIO (..))
-import qualified Data.ByteString            as B
 import qualified Data.ByteString.Lazy       as BL
 import qualified Data.ByteString.Lazy.Char8 as BLC
 import           Data.String                (IsString (..))
@@ -28,13 +27,12 @@ import           System.Posix.Internals     (s_isdir)
 sIsDir :: CMode -> Bool
 sIsDir = s_isdir
 #else
-{-
 import           Data.Bits                  ((.&.))
 sIsDir :: CMode -> Bool
 sIsDir = (== sIFDIR) . (.&. sIFMT)
     where
         sIFMT = 0o170000
-        sIFDIR = 0o040000 -}
+        sIFDIR = 0o040000
 #endif
 
 data CatFile m = CatFileObjectType ObjectType (ObjectType -> BL.ByteString -> HMGitT m ())
@@ -65,7 +63,7 @@ catOptObjectPP = CatFileMode $ \objType body ->
 
 catFile :: (MonadIO m, MonadCatch m, MonadPlus m)
     => CatFile m
-    -> B.ByteString
+    -> String
     -> HMGitT m ()
 catFile catOpt sha1 = do
     (objType, body) <- loadObject sha1
