@@ -13,6 +13,7 @@ module HMGit.Internal.Core (
   , storeObject
   , loadObject
   , loadTree
+  , storeTree
   , loadIndex
   , storeIndex
   , HMGitStatus (..)
@@ -39,9 +40,9 @@ import           Crypto.Hash.SHA1           (hashlazy)
 import qualified Data.Binary.Put            as BP
 import qualified Data.ByteString            as B
 import qualified Data.ByteString.Lazy       as BL
-import qualified Data.ByteString.Lazy.UTF8  as BLU
 import qualified Data.ByteString.UTF8       as BU
 import           Data.Functor               (($>), (<&>))
+import Data.String (IsString (..))
 import           Data.List                  (isPrefixOf)
 import qualified Data.Map.Lazy              as ML
 import qualified Data.Set                   as S
@@ -66,13 +67,12 @@ data ObjectInfo = ObjectInfo {
 objectFormat :: ObjectType
     -> BL.ByteString
     -> BL.ByteString
-objectFormat objType contents = mconcat [
-    BLU.fromString $ show objType
-  , " "
-  , BLU.fromString $ show $ BL.length contents
-  , BL.singleton 0
-  , contents
-  ]
+objectFormat objType contents = BP.runPut $
+    BP.putByteString (fromString $ show objType)
+        *> BP.putByteString " "
+        *> BP.putByteString (fromString $ show $ BL.length contents)
+        *> BP.putWord8 0
+        *> BP.putLazyByteString contents
 
 hashToObjectPath :: MonadCatch m
     => String
@@ -104,8 +104,8 @@ fromContents objType contents = do
             (const $ throw $ BugException "fromContents: hashToObjectPath must give the Abs file")
             (pure . ObjectInfo objId (compress objFormat))
     where
-        objId = hashlazy objFormat
         objFormat = objectFormat objType contents
+        objId = hashlazy objFormat
 
 storeObject :: (MonadIO m, MonadCatch m)
     => ObjectType
@@ -144,6 +144,13 @@ loadTree body = hmGitTreeLim
     >>= flip (`runByteStringParser` $(P.mkRelFile "index")) body
      . treeParser
 
+storeTree :: (MonadIO m, MonadCatch m) => HMGitT m B.ByteString -- buggy
+storeTree = loadIndex
+    >>= storeObject Tree . foldMap (BP.runPut . putter)
+    where
+        putter e = BP.putLazyByteString (fromString (printf "%o %s\0" (ieMode e) (P.toFilePath $ iePath e)))
+            *> BP.putLazyByteString (ieSha1 e)
+
 loadIndex :: (MonadIO m, MonadThrow m) => HMGitT m [IndexEntry]
 loadIndex = do
     fname <- hmGitIndexPath
@@ -167,7 +174,7 @@ data HMGitStatus = HMGitStatus {
   }
   deriving Show
 
--- Currently `latestBlobHashes` does not support gitignore and submodule,
+-- ^ Currently `latestBlobHashes` does not support gitignore and submodule,
 -- so we are embedding content to ignore directly in the code.
 -- Comments HACK below are the relevant part.
 latestBlobHashes :: (MonadIO m, MonadCatch m)

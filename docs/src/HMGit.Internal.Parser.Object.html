@@ -1,0 +1,554 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span id="%24maxtag_Dmw9Rrz7nlL6GH9F5ebKKS"><span id="%24tag2con_Dmw9Rrz7nlL6GH9F5ebKKS"><span id="%24con2tag_Dmw9Rrz7nlL6GH9F5ebKKS"></span></span></span><span class="hs-pragma">{-# LANGUAGE OverloadedStrings, TupleSections #-}</span><span>
+</span><span id="line-2"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">HMGit.Internal.Parser.Object</span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-3"></span><span>    </span><span class="annot"><a href="HMGit.Internal.Parser.Object.html#ObjectType"><span class="hs-identifier">ObjectType</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-4"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Object.html#objectParser"><span class="hs-identifier">objectParser</span></a></span><span>
+</span><span id="line-5"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Object.html#treeParser"><span class="hs-identifier">treeParser</span></a></span><span>
+</span><span id="line-6"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-7"></span><span>
+</span><span id="line-8"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="HMGit.Internal.Parser.Core.html"><span class="hs-identifier">HMGit.Internal.Parser.Core</span></a></span><span>
+</span><span id="line-9"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="HMGit.Internal.Utils.html"><span class="hs-identifier">HMGit.Internal.Utils</span></a></span><span>       </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Utils.html#foldChoice"><span class="hs-identifier">foldChoice</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Utils.html#formatHexStrings"><span class="hs-identifier">formatHexStrings</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-10"></span><span>                                             </span><span class="annot"><a href="HMGit.Internal.Utils.html#stateEmpty"><span class="hs-identifier">stateEmpty</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-11"></span><span>
+</span><span id="line-12"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Codec.Binary.UTF8.String</span></span><span>   </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">S</span></span><span>
+</span><span id="line-13"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Monad.Extra</span></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ifM</span></span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Monad.Loops</span></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">unfoldrM</span></span><span class="hs-special">)</span><span>
+</span><span id="line-15"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Monad.Trans</span></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">lift</span></span><span class="hs-special">)</span><span>
+</span><span id="line-16"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Monad.Trans.Maybe</span></span><span>  </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MaybeT</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">runMaybeT</span></span><span class="hs-special">)</span><span>
+</span><span id="line-17"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString.Lazy</span></span><span>       </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">BL</span></span><span>
+</span><span id="line-18"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString.Lazy.Char8</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">BLC</span></span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString.Lazy.UTF8</span></span><span>  </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">BLU</span></span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.List</span></span><span>                  </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">isPrefixOf</span></span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.List.NonEmpty</span></span><span>         </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">LN</span></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Tuple.Extra</span></span><span>           </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">secondM</span></span><span class="hs-special">)</span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Numeric</span></span><span>                    </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">readOct</span></span><span class="hs-special">)</span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Path</span></span><span>                       </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">P</span></span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">System.Posix.Types</span></span><span>         </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">CMode</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Text.Megaparsec</span></span><span>            </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">M</span></span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Text.Megaparsec.Char</span></span><span>       </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">MC</span></span><span>
+</span><span id="line-28"></span><span>
+</span><span id="line-29"></span><span class="hs-keyword">data</span><span> </span><span id="ObjectType"><span class="annot"><a href="HMGit.Internal.Parser.Object.html#ObjectType"><span class="hs-identifier hs-var">ObjectType</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Blob"><span class="annot"><a href="HMGit.Internal.Parser.Object.html#Blob"><span class="hs-identifier hs-var">Blob</span></a></span></span><span>
+</span><span id="line-30"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="Commit"><span class="annot"><a href="HMGit.Internal.Parser.Object.html#Commit"><span class="hs-identifier hs-var">Commit</span></a></span></span><span>
+</span><span id="line-31"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="Tree"><span class="annot"><a href="HMGit.Internal.Parser.Object.html#Tree"><span class="hs-identifier hs-var">Tree</span></a></span></span><span>
+</span><span id="line-32"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679152800"><span id="local-6989586621679152802"><span class="annot"><span class="annottext">ObjectType -&gt; ObjectType -&gt; Bool
+(ObjectType -&gt; ObjectType -&gt; Bool)
+-&gt; (ObjectType -&gt; ObjectType -&gt; Bool) -&gt; Eq ObjectType
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+/= :: ObjectType -&gt; ObjectType -&gt; Bool
+$c/= :: ObjectType -&gt; ObjectType -&gt; Bool
+== :: ObjectType -&gt; ObjectType -&gt; Bool
+$c== :: ObjectType -&gt; ObjectType -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679152783"><span id="local-6989586621679152785"><span id="local-6989586621679152787"><span id="local-6989586621679152789"><span id="local-6989586621679152791"><span id="local-6989586621679152793"><span id="local-6989586621679152795"><span id="local-6989586621679152797"><span class="annot"><span class="annottext">Int -&gt; ObjectType
+ObjectType -&gt; Int
+ObjectType -&gt; [ObjectType]
+ObjectType -&gt; ObjectType
+ObjectType -&gt; ObjectType -&gt; [ObjectType]
+ObjectType -&gt; ObjectType -&gt; ObjectType -&gt; [ObjectType]
+(ObjectType -&gt; ObjectType)
+-&gt; (ObjectType -&gt; ObjectType)
+-&gt; (Int -&gt; ObjectType)
+-&gt; (ObjectType -&gt; Int)
+-&gt; (ObjectType -&gt; [ObjectType])
+-&gt; (ObjectType -&gt; ObjectType -&gt; [ObjectType])
+-&gt; (ObjectType -&gt; ObjectType -&gt; [ObjectType])
+-&gt; (ObjectType -&gt; ObjectType -&gt; ObjectType -&gt; [ObjectType])
+-&gt; Enum ObjectType
+forall a.
+(a -&gt; a)
+-&gt; (a -&gt; a)
+-&gt; (Int -&gt; a)
+-&gt; (a -&gt; Int)
+-&gt; (a -&gt; [a])
+-&gt; (a -&gt; a -&gt; [a])
+-&gt; (a -&gt; a -&gt; [a])
+-&gt; (a -&gt; a -&gt; a -&gt; [a])
+-&gt; Enum a
+enumFromThenTo :: ObjectType -&gt; ObjectType -&gt; ObjectType -&gt; [ObjectType]
+$cenumFromThenTo :: ObjectType -&gt; ObjectType -&gt; ObjectType -&gt; [ObjectType]
+enumFromTo :: ObjectType -&gt; ObjectType -&gt; [ObjectType]
+$cenumFromTo :: ObjectType -&gt; ObjectType -&gt; [ObjectType]
+enumFromThen :: ObjectType -&gt; ObjectType -&gt; [ObjectType]
+$cenumFromThen :: ObjectType -&gt; ObjectType -&gt; [ObjectType]
+enumFrom :: ObjectType -&gt; [ObjectType]
+$cenumFrom :: ObjectType -&gt; [ObjectType]
+fromEnum :: ObjectType -&gt; Int
+$cfromEnum :: ObjectType -&gt; Int
+toEnum :: Int -&gt; ObjectType
+$ctoEnum :: Int -&gt; ObjectType
+pred :: ObjectType -&gt; ObjectType
+$cpred :: ObjectType -&gt; ObjectType
+succ :: ObjectType -&gt; ObjectType
+$csucc :: ObjectType -&gt; ObjectType
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Enum</span></span></span></span></span></span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span>
+</span><span id="line-34"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679152777"><span id="local-6989586621679152780"><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Object.html#ObjectType"><span class="hs-identifier hs-type">ObjectType</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-35"></span><span>    </span><span id="local-6989586621679152775"><span class="annot"><span class="annottext">show :: ObjectType -&gt; String
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">show</span></span></span><span> </span><span class="annot"><span class="annottext">ObjectType
+</span><a href="HMGit.Internal.Parser.Object.html#Blob"><span class="hs-identifier hs-var">Blob</span></a></span><span>   </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;blob&quot;</span></span><span>
+</span><span id="line-36"></span><span>    </span><span class="annot"><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">ObjectType
+</span><a href="HMGit.Internal.Parser.Object.html#Commit"><span class="hs-identifier hs-var">Commit</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;commit&quot;</span></span><span>
+</span><span id="line-37"></span><span>    </span><span class="annot"><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">ObjectType
+</span><a href="HMGit.Internal.Parser.Object.html#Tree"><span class="hs-identifier hs-var">Tree</span></a></span><span>   </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;tree&quot;</span></span><span>
+</span><span id="line-38"></span><span>
+</span><span id="line-39"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679152767"><span id="local-6989586621679152769"><span id="local-6989586621679152771"><span class="annot"><span class="hs-identifier hs-type">Read</span></span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Object.html#ObjectType"><span class="hs-identifier hs-type">ObjectType</span></a></span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-40"></span><span>    </span><span id="local-6989586621679152765"><span class="annot"><span class="annottext">readsPrec :: Int -&gt; ReadS ObjectType
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">readsPrec</span></span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679152763"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152763"><span class="hs-identifier hs-var">s</span></a></span></span><span>
+</span><span id="line-41"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;blob&quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; Bool
+forall a. Eq a =&gt; [a] -&gt; [a] -&gt; Bool
+</span><span class="hs-operator hs-var">`isPrefixOf`</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152763"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="annottext">ObjectType
+</span><a href="HMGit.Internal.Parser.Object.html#Blob"><span class="hs-identifier hs-var">Blob</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Int -&gt; ShowS
+forall a. Int -&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">drop</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">4</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152763"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-42"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;commit&quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; Bool
+forall a. Eq a =&gt; [a] -&gt; [a] -&gt; Bool
+</span><span class="hs-operator hs-var">`isPrefixOf`</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152763"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="annottext">ObjectType
+</span><a href="HMGit.Internal.Parser.Object.html#Commit"><span class="hs-identifier hs-var">Commit</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Int -&gt; ShowS
+forall a. Int -&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">drop</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">6</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152763"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-43"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;tree&quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; Bool
+forall a. Eq a =&gt; [a] -&gt; [a] -&gt; Bool
+</span><span class="hs-operator hs-var">`isPrefixOf`</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152763"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="annottext">ObjectType
+</span><a href="HMGit.Internal.Parser.Object.html#Tree"><span class="hs-identifier hs-var">Tree</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Int -&gt; ShowS
+forall a. Int -&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">drop</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">4</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152763"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-44"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-45"></span><span>
+</span><span id="line-46"></span><span class="annot"><a href="HMGit.Internal.Parser.Object.html#pObjectTypes"><span class="hs-identifier hs-type">pObjectTypes</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#ByteStringParser"><span class="hs-identifier hs-type">ByteStringParser</span></a></span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Object.html#ObjectType"><span class="hs-identifier hs-type">ObjectType</span></a></span><span>
+</span><span id="line-47"></span><span id="pObjectTypes"><span class="annot"><span class="annottext">pObjectTypes :: ByteStringParser ObjectType
+</span><a href="HMGit.Internal.Parser.Object.html#pObjectTypes"><span class="hs-identifier hs-var hs-var">pObjectTypes</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; ObjectType
+forall a. Read a =&gt; String -&gt; a
+</span><span class="hs-identifier hs-var">read</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; ObjectType)
+-&gt; (ByteString -&gt; String) -&gt; ByteString -&gt; ObjectType
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; String
+</span><span class="hs-identifier hs-var">BLC.unpack</span></span><span>
+</span><span id="line-48"></span><span>    </span><span class="annot"><span class="annottext">(ByteString -&gt; ObjectType)
+-&gt; ParsecT ParseException ByteString Identity ByteString
+-&gt; ByteStringParser ObjectType
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(ObjectType
+ -&gt; ParsecT ParseException ByteString Identity ByteString)
+-&gt; [ObjectType]
+-&gt; ParsecT ParseException ByteString Identity ByteString
+forall (t :: * -&gt; *) (f :: * -&gt; *) a b.
+(Foldable t, Alternative f) =&gt;
+(a -&gt; f b) -&gt; t a -&gt; f b
+</span><a href="HMGit.Internal.Utils.html#foldChoice"><span class="hs-identifier hs-var">foldChoice</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ByteString -&gt; ParsecT ParseException ByteString Identity ByteString
+forall e s (m :: * -&gt; *).
+MonadParsec e s m =&gt;
+Tokens s -&gt; m (Tokens s)
+</span><span class="hs-identifier hs-var">MC.string</span></span><span> </span><span class="annot"><span class="annottext">(ByteString
+ -&gt; ParsecT ParseException ByteString Identity ByteString)
+-&gt; (ObjectType -&gt; ByteString)
+-&gt; ObjectType
+-&gt; ParsecT ParseException ByteString Identity ByteString
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ByteString
+</span><span class="hs-identifier hs-var">BLU.fromString</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; ByteString)
+-&gt; (ObjectType -&gt; String) -&gt; ObjectType -&gt; ByteString
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ObjectType -&gt; String
+forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-identifier hs-var">show</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">ObjectType
+</span><a href="HMGit.Internal.Parser.Object.html#Blob"><span class="hs-identifier hs-var">Blob</span></a></span><span> </span><span class="hs-glyph">..</span><span> </span><span class="annot"><span class="annottext">ObjectType
+</span><a href="HMGit.Internal.Parser.Object.html#Tree"><span class="hs-identifier hs-var">Tree</span></a></span><span> </span><span class="hs-special">]</span><span>
+</span><span id="line-49"></span><span>
+</span><span id="line-50"></span><span id="local-6989586621679152895"><span class="annot"><a href="HMGit.Internal.Parser.Object.html#pHeader"><span class="hs-identifier hs-type">pHeader</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Read</span></span><span> </span><span class="annot"><a href="#local-6989586621679152895"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#ByteStringParser"><span class="hs-identifier hs-type">ByteStringParser</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Parser.Object.html#ObjectType"><span class="hs-identifier hs-type">ObjectType</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621679152895"><span class="hs-identifier hs-type">i</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-51"></span><span id="pHeader"><span class="annot"><span class="annottext">pHeader :: ByteStringParser (ObjectType, i)
+</span><a href="HMGit.Internal.Parser.Object.html#pHeader"><span class="hs-identifier hs-var hs-var">pHeader</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="hs-special">,</span><span class="hs-special">)</span><span>
+</span><span id="line-52"></span><span>    </span><span class="annot"><span class="annottext">(ObjectType -&gt; i -&gt; (ObjectType, i))
+-&gt; ByteStringParser ObjectType
+-&gt; ParsecT
+     ParseException ByteString Identity (i -&gt; (ObjectType, i))
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">ByteStringParser ObjectType
+</span><a href="HMGit.Internal.Parser.Object.html#pObjectTypes"><span class="hs-identifier hs-var">pObjectTypes</span></a></span><span>
+</span><span id="line-53"></span><span>    </span><span class="annot"><span class="annottext">ParsecT ParseException ByteString Identity (i -&gt; (ObjectType, i))
+-&gt; ParsecT ParseException ByteString Identity i
+-&gt; ByteStringParser (ObjectType, i)
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ByteStringParser Word8
+</span><a href="HMGit.Internal.Parser.Core.ByteString.html#pSpace"><span class="hs-identifier hs-var">pSpace</span></a></span><span> </span><span class="annot"><span class="annottext">ByteStringParser Word8
+-&gt; ParsecT ParseException ByteString Identity i
+-&gt; ParsecT ParseException ByteString Identity i
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f a -&gt; f b -&gt; f b
+</span><span class="hs-operator hs-var">*&gt;</span></span><span> </span><span class="annot"><span class="annottext">ParsecT ParseException ByteString Identity i
+forall i. Read i =&gt; ByteStringParser i
+</span><a href="HMGit.Internal.Parser.Core.ByteString.html#pDecimals"><span class="hs-identifier hs-var">pDecimals</span></a></span><span> </span><span class="annot"><span class="annottext">ParsecT ParseException ByteString Identity i
+-&gt; ByteStringParser Word8
+-&gt; ParsecT ParseException ByteString Identity i
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f a -&gt; f b -&gt; f a
+</span><span class="hs-operator hs-var">&lt;*</span></span><span> </span><span class="annot"><span class="annottext">ByteStringParser Word8
+</span><a href="HMGit.Internal.Parser.Core.ByteString.html#pNull"><span class="hs-identifier hs-var">pNull</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-54"></span><span>
+</span><span id="line-55"></span><span class="annot"><a href="HMGit.Internal.Parser.Object.html#objectParser"><span class="hs-identifier hs-type">objectParser</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#ByteStringParser"><span class="hs-identifier hs-type">ByteStringParser</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Parser.Object.html#ObjectType"><span class="hs-identifier hs-type">ObjectType</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">BL.ByteString</span></span><span class="hs-special">)</span><span>
+</span><span id="line-56"></span><span id="objectParser"><span class="annot"><span class="annottext">objectParser :: ByteStringParser (ObjectType, ByteString)
+</span><a href="HMGit.Internal.Parser.Object.html#objectParser"><span class="hs-identifier hs-var hs-var">objectParser</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ByteStringParser (ObjectType, Int)
+forall i. Read i =&gt; ByteStringParser (ObjectType, i)
+</span><a href="HMGit.Internal.Parser.Object.html#pHeader"><span class="hs-identifier hs-var">pHeader</span></a></span><span> </span><span class="annot"><span class="annottext">ByteStringParser (ObjectType, Int)
+-&gt; ((ObjectType, Int) -&gt; ByteStringParser (ObjectType, ByteString))
+-&gt; ByteStringParser (ObjectType, ByteString)
+forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; ParsecT ParseException ByteString Identity ByteString)
+-&gt; (ObjectType, Int) -&gt; ByteStringParser (ObjectType, ByteString)
+forall (m :: * -&gt; *) b b' a.
+Functor m =&gt;
+(b -&gt; m b') -&gt; (a, b) -&gt; m (a, b')
+</span><span class="hs-identifier hs-var">secondM</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">([Word8] -&gt; ByteString)
+-&gt; ParsecT ParseException ByteString Identity [Word8]
+-&gt; ParsecT ParseException ByteString Identity ByteString
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">[Word8] -&gt; ByteString
+</span><span class="hs-identifier hs-var">BL.pack</span></span><span> </span><span class="annot"><span class="annottext">(ParsecT ParseException ByteString Identity [Word8]
+ -&gt; ParsecT ParseException ByteString Identity ByteString)
+-&gt; (Int -&gt; ParsecT ParseException ByteString Identity [Word8])
+-&gt; Int
+-&gt; ParsecT ParseException ByteString Identity ByteString
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(Int
+ -&gt; ByteStringParser Word8
+ -&gt; ParsecT ParseException ByteString Identity [Word8])
+-&gt; ByteStringParser Word8
+-&gt; Int
+-&gt; ParsecT ParseException ByteString Identity [Word8]
+forall a b c. (a -&gt; b -&gt; c) -&gt; b -&gt; a -&gt; c
+</span><span class="hs-identifier hs-var">flip</span></span><span> </span><span class="annot"><span class="annottext">Int
+-&gt; ByteStringParser Word8
+-&gt; ParsecT ParseException ByteString Identity [Word8]
+forall (m :: * -&gt; *) a. Monad m =&gt; Int -&gt; m a -&gt; m [a]
+</span><span class="hs-identifier hs-var">M.count</span></span><span> </span><span class="annot"><span class="annottext">ByteStringParser Word8
+forall e s (m :: * -&gt; *). MonadParsec e s m =&gt; m (Token s)
+</span><span class="hs-identifier hs-var">M.anySingle</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-57"></span><span>    </span><span class="annot"><span class="annottext">ByteStringParser (ObjectType, ByteString)
+-&gt; ParsecT ParseException ByteString Identity ()
+-&gt; ByteStringParser (ObjectType, ByteString)
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f a -&gt; f b -&gt; f a
+</span><span class="hs-operator hs-var">&lt;*</span></span><span> </span><span class="annot"><span class="annottext">ParsecT ParseException ByteString Identity ()
+forall e s (m :: * -&gt; *). MonadParsec e s m =&gt; m ()
+</span><span class="hs-identifier hs-var">M.eof</span></span><span>
+</span><span id="line-58"></span><span>
+</span><span id="line-59"></span><span class="annot"><a href="HMGit.Internal.Parser.Object.html#treeParser"><span class="hs-identifier hs-type">treeParser</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#ByteStringParser"><span class="hs-identifier hs-type">ByteStringParser</span></a></span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">CMode</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">P.Path</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">P.Rel</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">P.File</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-60"></span><span id="treeParser"><span class="annot"><span class="annottext">treeParser :: Int -&gt; ByteStringParser [(CMode, Path Rel File, String)]
+</span><a href="HMGit.Internal.Parser.Object.html#treeParser"><span class="hs-identifier hs-var hs-var">treeParser</span></a></span></span><span> </span><span id="local-6989586621679152744"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679152744"><span class="hs-identifier hs-var">limit</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">MaybeT
+  (ParsecT ParseException ByteString Identity)
+  [(CMode, Path Rel File, String)]
+-&gt; ParsecT
+     ParseException
+     ByteString
+     Identity
+     (Maybe [(CMode, Path Rel File, String)])
+forall (m :: * -&gt; *) a. MaybeT m a -&gt; m (Maybe a)
+</span><span class="hs-identifier hs-var hs-var">runMaybeT</span></span><span> </span><span class="annot"><span class="annottext">MaybeT
+  (ParsecT ParseException ByteString Identity)
+  [(CMode, Path Rel File, String)]
+</span><a href="#local-6989586621679152743"><span class="hs-identifier hs-var">treeParser'</span></a></span><span>
+</span><span id="line-61"></span><span>    </span><span class="annot"><span class="annottext">ParsecT
+  ParseException
+  ByteString
+  Identity
+  (Maybe [(CMode, Path Rel File, String)])
+-&gt; (Maybe [(CMode, Path Rel File, String)]
+    -&gt; ByteStringParser [(CMode, Path Rel File, String)])
+-&gt; ByteStringParser [(CMode, Path Rel File, String)]
+forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="annot"><span class="annottext">ByteStringParser [(CMode, Path Rel File, String)]
+-&gt; ([(CMode, Path Rel File, String)]
+    -&gt; ByteStringParser [(CMode, Path Rel File, String)])
+-&gt; Maybe [(CMode, Path Rel File, String)]
+-&gt; ByteStringParser [(CMode, Path Rel File, String)]
+forall b a. b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
+</span><span class="hs-identifier hs-var">maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ParseException -&gt; ByteStringParser [(CMode, Path Rel File, String)]
+forall e s (m :: * -&gt; *) a. MonadParsec e s m =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">M.customFailure</span></span><span> </span><span class="annot"><span class="annottext">(ParseException
+ -&gt; ByteStringParser [(CMode, Path Rel File, String)])
+-&gt; ParseException
+-&gt; ByteStringParser [(CMode, Path Rel File, String)]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ParseException
+</span><a href="HMGit.Internal.Parser.Core.ByteString.html#TreeParser"><span class="hs-identifier hs-var">TreeParser</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;failed to parse octet value of cmode&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[(CMode, Path Rel File, String)]
+-&gt; ByteStringParser [(CMode, Path Rel File, String)]
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span>
+</span><span id="line-62"></span><span>    </span><span class="hs-keyword">where</span><span>
+</span><span id="line-63"></span><span>        </span><span id="local-6989586621679152743"><span class="annot"><span class="annottext">treeParser' :: MaybeT
+  (ParsecT ParseException ByteString Identity)
+  [(CMode, Path Rel File, String)]
+</span><a href="#local-6989586621679152743"><span class="hs-identifier hs-var hs-var">treeParser'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">((Int
+  -&gt; MaybeT
+       (ParsecT ParseException ByteString Identity)
+       (Maybe ((CMode, Path Rel File, String), Int)))
+ -&gt; Int
+ -&gt; MaybeT
+      (ParsecT ParseException ByteString Identity)
+      [(CMode, Path Rel File, String)])
+-&gt; Int
+-&gt; (Int
+    -&gt; MaybeT
+         (ParsecT ParseException ByteString Identity)
+         (Maybe ((CMode, Path Rel File, String), Int)))
+-&gt; MaybeT
+     (ParsecT ParseException ByteString Identity)
+     [(CMode, Path Rel File, String)]
+forall a b c. (a -&gt; b -&gt; c) -&gt; b -&gt; a -&gt; c
+</span><span class="hs-identifier hs-var">flip</span></span><span> </span><span class="annot"><span class="annottext">(Int
+ -&gt; MaybeT
+      (ParsecT ParseException ByteString Identity)
+      (Maybe ((CMode, Path Rel File, String), Int)))
+-&gt; Int
+-&gt; MaybeT
+     (ParsecT ParseException ByteString Identity)
+     [(CMode, Path Rel File, String)]
+forall (m :: * -&gt; *) a b.
+Monad m =&gt;
+(a -&gt; m (Maybe (b, a))) -&gt; a -&gt; m [b]
+</span><span class="hs-identifier hs-var">unfoldrM</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span> </span><span class="annot"><span class="annottext">((Int
+  -&gt; MaybeT
+       (ParsecT ParseException ByteString Identity)
+       (Maybe ((CMode, Path Rel File, String), Int)))
+ -&gt; MaybeT
+      (ParsecT ParseException ByteString Identity)
+      [(CMode, Path Rel File, String)])
+-&gt; (Int
+    -&gt; MaybeT
+         (ParsecT ParseException ByteString Identity)
+         (Maybe ((CMode, Path Rel File, String), Int)))
+-&gt; MaybeT
+     (ParsecT ParseException ByteString Identity)
+     [(CMode, Path Rel File, String)]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679152739"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679152739"><span class="hs-identifier hs-var">limitCount</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-64"></span><span>            </span><span class="annot"><span class="annottext">MaybeT (ParsecT ParseException ByteString Identity) Bool
+-&gt; MaybeT
+     (ParsecT ParseException ByteString Identity)
+     (Maybe ((CMode, Path Rel File, String), Int))
+-&gt; MaybeT
+     (ParsecT ParseException ByteString Identity)
+     (Maybe ((CMode, Path Rel File, String), Int))
+-&gt; MaybeT
+     (ParsecT ParseException ByteString Identity)
+     (Maybe ((CMode, Path Rel File, String), Int))
+forall (m :: * -&gt; *) a. Monad m =&gt; m Bool -&gt; m a -&gt; m a -&gt; m a
+</span><span class="hs-identifier hs-var">ifM</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679152739"><span class="hs-identifier hs-var">limitCount</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&gt;=</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679152744"><span class="hs-identifier hs-var">limit</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">||</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Bool -&gt; Bool)
+-&gt; MaybeT (ParsecT ParseException ByteString Identity) Bool
+-&gt; MaybeT (ParsecT ParseException ByteString Identity) Bool
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">ParsecT ParseException ByteString Identity Bool
+-&gt; MaybeT (ParsecT ParseException ByteString Identity) Bool
+forall (t :: (* -&gt; *) -&gt; * -&gt; *) (m :: * -&gt; *) a.
+(MonadTrans t, Monad m) =&gt;
+m a -&gt; t m a
+</span><span class="hs-identifier hs-var">lift</span></span><span> </span><span class="annot"><span class="annottext">ParsecT ParseException ByteString Identity Bool
+forall e s (m :: * -&gt; *). MonadParsec e s m =&gt; m Bool
+</span><span class="hs-identifier hs-var">M.atEnd</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Maybe ((CMode, Path Rel File, String), Int)
+-&gt; MaybeT
+     (ParsecT ParseException ByteString Identity)
+     (Maybe ((CMode, Path Rel File, String), Int))
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">Maybe ((CMode, Path Rel File, String), Int)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(MaybeT
+   (ParsecT ParseException ByteString Identity)
+   (Maybe ((CMode, Path Rel File, String), Int))
+ -&gt; MaybeT
+      (ParsecT ParseException ByteString Identity)
+      (Maybe ((CMode, Path Rel File, String), Int)))
+-&gt; MaybeT
+     (ParsecT ParseException ByteString Identity)
+     (Maybe ((CMode, Path Rel File, String), Int))
+-&gt; MaybeT
+     (ParsecT ParseException ByteString Identity)
+     (Maybe ((CMode, Path Rel File, String), Int))
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-65"></span><span>                </span><span id="local-6989586621679152736"><span class="annot"><span class="annottext">CMode
+</span><a href="#local-6989586621679152736"><span class="hs-identifier hs-var">cmode</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">(CMode, String)
+-&gt; MaybeT (ParsecT ParseException ByteString Identity) CMode
+forall (t :: * -&gt; *) (m :: * -&gt; *) a b.
+(Foldable t, MonadPlus m) =&gt;
+(a, t b) -&gt; m a
+</span><a href="HMGit.Internal.Utils.html#stateEmpty"><span class="hs-identifier hs-var">stateEmpty</span></a></span><span>
+</span><span id="line-66"></span><span>                    </span><span class="annot"><span class="annottext">((CMode, String)
+ -&gt; MaybeT (ParsecT ParseException ByteString Identity) CMode)
+-&gt; MaybeT
+     (ParsecT ParseException ByteString Identity) (CMode, String)
+-&gt; MaybeT (ParsecT ParseException ByteString Identity) CMode
+forall (m :: * -&gt; *) a b. Monad m =&gt; (a -&gt; m b) -&gt; m a -&gt; m b
+</span><span class="hs-operator hs-var">=&lt;&lt;</span></span><span> </span><span class="annot"><span class="annottext">NonEmpty (CMode, String) -&gt; (CMode, String)
+forall a. NonEmpty a -&gt; a
+</span><span class="hs-identifier hs-var">LN.head</span></span><span>
+</span><span id="line-67"></span><span>                    </span><span class="annot"><span class="annottext">(NonEmpty (CMode, String) -&gt; (CMode, String))
+-&gt; MaybeT
+     (ParsecT ParseException ByteString Identity)
+     (NonEmpty (CMode, String))
+-&gt; MaybeT
+     (ParsecT ParseException ByteString Identity) (CMode, String)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">ParsecT
+  ParseException
+  ByteString
+  Identity
+  (Maybe (NonEmpty (CMode, String)))
+-&gt; MaybeT
+     (ParsecT ParseException ByteString Identity)
+     (NonEmpty (CMode, String))
+forall (m :: * -&gt; *) a. m (Maybe a) -&gt; MaybeT m a
+</span><span class="hs-identifier hs-var">MaybeT</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[(CMode, String)] -&gt; Maybe (NonEmpty (CMode, String))
+forall a. [a] -&gt; Maybe (NonEmpty a)
+</span><span class="hs-identifier hs-var">LN.nonEmpty</span></span><span> </span><span class="annot"><span class="annottext">([(CMode, String)] -&gt; Maybe (NonEmpty (CMode, String)))
+-&gt; (Integer -&gt; [(CMode, String)])
+-&gt; Integer
+-&gt; Maybe (NonEmpty (CMode, String))
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ReadS CMode
+forall a. (Eq a, Num a) =&gt; ReadS a
+</span><span class="hs-identifier hs-var">readOct</span></span><span> </span><span class="annot"><span class="annottext">ReadS CMode -&gt; (Integer -&gt; String) -&gt; Integer -&gt; [(CMode, String)]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Integer -&gt; String
+forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">(Integer -&gt; Maybe (NonEmpty (CMode, String)))
+-&gt; ParsecT ParseException ByteString Identity Integer
+-&gt; ParsecT
+     ParseException
+     ByteString
+     Identity
+     (Maybe (NonEmpty (CMode, String)))
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">ParsecT ParseException ByteString Identity Integer
+</span><a href="#local-6989586621679152731"><span class="hs-identifier hs-var">pDecimals'</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-68"></span><span>                    </span><span class="annot"><span class="annottext">MaybeT (ParsecT ParseException ByteString Identity) (CMode, String)
+-&gt; MaybeT (ParsecT ParseException ByteString Identity) Word8
+-&gt; MaybeT
+     (ParsecT ParseException ByteString Identity) (CMode, String)
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f a -&gt; f b -&gt; f a
+</span><span class="hs-operator hs-var">&lt;*</span></span><span> </span><span class="annot"><span class="annottext">ByteStringParser Word8
+-&gt; MaybeT (ParsecT ParseException ByteString Identity) Word8
+forall (t :: (* -&gt; *) -&gt; * -&gt; *) (m :: * -&gt; *) a.
+(MonadTrans t, Monad m) =&gt;
+m a -&gt; t m a
+</span><span class="hs-identifier hs-var">lift</span></span><span> </span><span class="annot"><span class="annottext">ByteStringParser Word8
+</span><a href="HMGit.Internal.Parser.Core.ByteString.html#pSpace"><span class="hs-identifier hs-var">pSpace</span></a></span><span>
+</span><span id="line-69"></span><span>                </span><span class="annot"><span class="annottext">(((CMode, Path Rel File, String), Int)
+ -&gt; Maybe ((CMode, Path Rel File, String), Int))
+-&gt; (String -&gt; ((CMode, Path Rel File, String), Int))
+-&gt; String
+-&gt; Maybe ((CMode, Path Rel File, String), Int)
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">(.)</span></span><span> </span><span class="annot"><span class="annottext">((CMode, Path Rel File, String), Int)
+-&gt; Maybe ((CMode, Path Rel File, String), Int)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">((String -&gt; ((CMode, Path Rel File, String), Int))
+ -&gt; String -&gt; Maybe ((CMode, Path Rel File, String), Int))
+-&gt; (Path Rel File
+    -&gt; String -&gt; ((CMode, Path Rel File, String), Int))
+-&gt; Path Rel File
+-&gt; String
+-&gt; Maybe ((CMode, Path Rel File, String), Int)
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">((CMode, Path Rel File, String)
+ -&gt; ((CMode, Path Rel File, String), Int))
+-&gt; (String -&gt; (CMode, Path Rel File, String))
+-&gt; String
+-&gt; ((CMode, Path Rel File, String), Int)
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">(.)</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-special">,</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int
+forall a. Enum a =&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">succ</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679152739"><span class="hs-identifier hs-var">limitCount</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((String -&gt; (CMode, Path Rel File, String))
+ -&gt; String -&gt; ((CMode, Path Rel File, String), Int))
+-&gt; (Path Rel File -&gt; String -&gt; (CMode, Path Rel File, String))
+-&gt; Path Rel File
+-&gt; String
+-&gt; ((CMode, Path Rel File, String), Int)
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">CMode
+</span><a href="#local-6989586621679152736"><span class="hs-identifier hs-var">cmode</span></a></span><span class="hs-special">,</span><span class="annot"><span class="hs-special">,</span></span><span class="hs-special">)</span><span>
+</span><span id="line-70"></span><span>                    </span><span class="annot"><span class="annottext">(Path Rel File
+ -&gt; String -&gt; Maybe ((CMode, Path Rel File, String), Int))
+-&gt; MaybeT
+     (ParsecT ParseException ByteString Identity) (Path Rel File)
+-&gt; MaybeT
+     (ParsecT ParseException ByteString Identity)
+     (String -&gt; Maybe ((CMode, Path Rel File, String), Int))
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">ParsecT ParseException ByteString Identity (Maybe (Path Rel File))
+-&gt; MaybeT
+     (ParsecT ParseException ByteString Identity) (Path Rel File)
+forall (m :: * -&gt; *) a. m (Maybe a) -&gt; MaybeT m a
+</span><span class="hs-identifier hs-var">MaybeT</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; Maybe (Path Rel File)
+forall (m :: * -&gt; *). MonadThrow m =&gt; String -&gt; m (Path Rel File)
+</span><span class="hs-identifier hs-var">P.parseRelFile</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; Maybe (Path Rel File))
+-&gt; ([Word8] -&gt; String) -&gt; [Word8] -&gt; Maybe (Path Rel File)
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">[Word8] -&gt; String
+</span><span class="hs-identifier hs-var">S.decode</span></span><span> </span><span class="annot"><span class="annottext">([Word8] -&gt; Maybe (Path Rel File))
+-&gt; ParsecT ParseException ByteString Identity [Word8]
+-&gt; ParsecT
+     ParseException ByteString Identity (Maybe (Path Rel File))
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">ByteStringParser Word8
+-&gt; ByteStringParser Word8
+-&gt; ParsecT ParseException ByteString Identity [Word8]
+forall (m :: * -&gt; *) a end. MonadPlus m =&gt; m a -&gt; m end -&gt; m [a]
+</span><span class="hs-identifier hs-var">M.manyTill</span></span><span> </span><span class="annot"><span class="annottext">ByteStringParser Word8
+forall e s (m :: * -&gt; *). MonadParsec e s m =&gt; m (Token s)
+</span><span class="hs-identifier hs-var">M.anySingle</span></span><span> </span><span class="annot"><span class="annottext">ByteStringParser Word8
+</span><a href="HMGit.Internal.Parser.Core.ByteString.html#pNull"><span class="hs-identifier hs-var">pNull</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-71"></span><span>                    </span><span class="annot"><span class="annottext">MaybeT
+  (ParsecT ParseException ByteString Identity)
+  (String -&gt; Maybe ((CMode, Path Rel File, String), Int))
+-&gt; MaybeT (ParsecT ParseException ByteString Identity) String
+-&gt; MaybeT
+     (ParsecT ParseException ByteString Identity)
+     (Maybe ((CMode, Path Rel File, String), Int))
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">ParsecT ParseException ByteString Identity (Maybe String)
+-&gt; MaybeT (ParsecT ParseException ByteString Identity) String
+forall (m :: * -&gt; *) a. m (Maybe a) -&gt; MaybeT m a
+</span><span class="hs-identifier hs-var">MaybeT</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Word8] -&gt; Maybe String
+forall (m :: * -&gt; *) a.
+(MonadThrow m, Integral a, Show a) =&gt;
+[a] -&gt; m String
+</span><a href="HMGit.Internal.Utils.html#formatHexStrings"><span class="hs-identifier hs-var">formatHexStrings</span></a></span><span> </span><span class="annot"><span class="annottext">([Word8] -&gt; Maybe String)
+-&gt; ParsecT ParseException ByteString Identity [Word8]
+-&gt; ParsecT ParseException ByteString Identity (Maybe String)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Int
+-&gt; ByteStringParser Word8
+-&gt; ParsecT ParseException ByteString Identity [Word8]
+forall (m :: * -&gt; *) a. Monad m =&gt; Int -&gt; m a -&gt; m [a]
+</span><span class="hs-identifier hs-var">M.count</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">20</span></span><span> </span><span class="annot"><span class="annottext">ByteStringParser Word8
+forall e s (m :: * -&gt; *). MonadParsec e s m =&gt; m (Token s)
+</span><span class="hs-identifier hs-var">M.anySingle</span></span><span class="hs-special">)</span><span>
+</span><span id="line-72"></span><span>
+</span><span id="line-73"></span><span>        </span><span id="local-6989586621679152731"><span class="annot"><span class="annottext">pDecimals' :: ParsecT ParseException ByteString Identity Integer
+</span><a href="#local-6989586621679152731"><span class="hs-identifier hs-var hs-var">pDecimals'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ParsecT ParseException ByteString Identity Integer
+forall i. Read i =&gt; ByteStringParser i
+</span><a href="HMGit.Internal.Parser.Core.ByteString.html#pDecimals"><span class="hs-identifier hs-var">pDecimals</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#ByteStringParser"><span class="hs-identifier hs-type">ByteStringParser</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span>
+</span><span id="line-74"></span></pre></body></html>

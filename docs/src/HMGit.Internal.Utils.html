@@ -1,0 +1,508 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE ExplicitForAll, TupleSections #-}</span><span>
+</span><span id="line-2"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">HMGit.Internal.Utils</span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-3"></span><span>    </span><span class="annot"><a href="HMGit.Internal.Utils.html#stateEmpty"><span class="hs-identifier">stateEmpty</span></a></span><span>
+</span><span id="line-4"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Utils.html#strictOne"><span class="hs-identifier">strictOne</span></a></span><span>
+</span><span id="line-5"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Utils.html#foldMapM"><span class="hs-identifier">foldMapM</span></a></span><span>
+</span><span id="line-6"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Utils.html#foldChoice"><span class="hs-identifier">foldChoice</span></a></span><span>
+</span><span id="line-7"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Utils.html#foldChoiceM"><span class="hs-identifier">foldChoiceM</span></a></span><span>
+</span><span id="line-8"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Utils.html#formatHexStrings"><span class="hs-identifier">formatHexStrings</span></a></span><span>
+</span><span id="line-9"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Utils.html#formatHexByteString"><span class="hs-identifier">formatHexByteString</span></a></span><span>
+</span><span id="line-10"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Utils.html#formatHexByteString%27"><span class="hs-identifier">formatHexByteString'</span></a></span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Utils.html#first3M"><span class="hs-identifier">first3M</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Utils.html#makeRelativeEx"><span class="hs-identifier">makeRelativeEx</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Utils.html#%3F%2A%3E"><span class="hs-operator">(?*&gt;)</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Utils.html#%3F%3F"><span class="hs-operator">(??)</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Utils.html#bothM"><span class="hs-identifier">bothM</span></a></span><span>
+</span><span id="line-16"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-17"></span><span>
+</span><span id="line-18"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="HMGit.Internal.Exceptions.html"><span class="hs-identifier">HMGit.Internal.Exceptions</span></a></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Exceptions.html#MonadThrowable"><span class="hs-identifier">MonadThrowable</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-19"></span><span>                                             </span><span class="annot"><a href="HMGit.Internal.Exceptions.html#invalidArgument"><span class="hs-identifier">invalidArgument</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-20"></span><span>
+</span><span id="line-21"></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Applicative</span></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Alternative</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Exception.Safe</span></span><span>     </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Exception</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">MonadThrow</span></span><span class="hs-special">,</span><span>
+</span><span id="line-24"></span><span>                                             </span><span class="annot"><span class="hs-identifier">StringException</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">throw</span></span><span class="hs-special">)</span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Monad</span></span><span>              </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadPlus</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-operator">(&gt;=&gt;)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Monad.Extra</span></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">concatMapM</span></span><span class="hs-special">)</span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Monad.IO.Class</span></span><span>     </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadIO</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString</span></span><span>            </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">B</span></span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString.Char8</span></span><span>      </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">BC</span></span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString.Lazy</span></span><span>       </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">BL</span></span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString.Lazy.Char8</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">BLC</span></span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Char</span></span><span>                  </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ord</span></span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Foldable</span></span><span>              </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">foldlM</span></span><span class="hs-special">)</span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.List.NonEmpty</span></span><span>         </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">LN</span></span><span>
+</span><span id="line-35"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Monoid</span></span><span>                </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Alt</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-36"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Tuple.Extra</span></span><span>           </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">first</span></span><span class="hs-special">)</span><span>
+</span><span id="line-37"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Word</span></span><span>                  </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Word8</span></span><span class="hs-special">)</span><span>
+</span><span id="line-38"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">GHC.Stack</span></span><span>                  </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">callStack</span></span><span class="hs-special">)</span><span>
+</span><span id="line-39"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Numeric</span></span><span>                    </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">readHex</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">showHex</span></span><span class="hs-special">)</span><span>
+</span><span id="line-40"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">System.Directory</span></span><span>           </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">canonicalizePath</span></span><span class="hs-special">)</span><span>
+</span><span id="line-41"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">System.FilePath</span></span><span>            </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">isRelative</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">makeRelative</span></span><span class="hs-special">,</span><span>
+</span><span id="line-42"></span><span>                                             </span><span class="annot"><span class="hs-identifier">takeDirectory</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">takeDrive</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-operator">(&lt;/&gt;)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-43"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Text.Printf</span></span><span>                </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">printf</span></span><span class="hs-special">)</span><span>
+</span><span id="line-44"></span><span>
+</span><span id="line-45"></span><span id="local-6989586621679152248"><span id="local-6989586621679152249"><span id="local-6989586621679152250"><span id="local-6989586621679152251"><span class="annot"><a href="HMGit.Internal.Utils.html#stateEmpty"><span class="hs-identifier hs-type">stateEmpty</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Foldable</span></span><span> </span><span class="annot"><a href="#local-6989586621679152251"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadPlus</span></span><span> </span><span class="annot"><a href="#local-6989586621679152250"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679152249"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621679152251"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679152248"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679152250"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679152249"><span class="hs-identifier hs-type">a</span></a></span></span></span></span></span><span>
+</span><span id="line-46"></span><span id="stateEmpty"><span class="annot"><span class="annottext">stateEmpty :: (a, t b) -&gt; m a
+</span><a href="HMGit.Internal.Utils.html#stateEmpty"><span class="hs-identifier hs-var hs-var">stateEmpty</span></a></span></span><span> </span><span id="local-6989586621679152109"><span class="annot"><span class="annottext">(a, t b)
+</span><a href="#local-6989586621679152109"><span class="hs-identifier hs-var">x</span></a></span></span><span>
+</span><span id="line-47"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="annot"><span class="annottext">(Bool -&gt; Bool) -&gt; Bool -&gt; Bool
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">t b -&gt; Bool
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="annot"><span class="annottext">(t b -&gt; Bool) -&gt; t b -&gt; Bool
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(a, t b) -&gt; t b
+forall a b. (a, b) -&gt; b
+</span><span class="hs-identifier hs-var">snd</span></span><span> </span><span class="annot"><span class="annottext">(a, t b)
+</span><a href="#local-6989586621679152109"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">m a
+forall (m :: * -&gt; *) a. MonadPlus m =&gt; m a
+</span><span class="hs-identifier hs-var">mzero</span></span><span>
+</span><span id="line-48"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; m a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">(a -&gt; m a) -&gt; a -&gt; m a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(a, t b) -&gt; a
+forall a b. (a, b) -&gt; a
+</span><span class="hs-identifier hs-var">fst</span></span><span> </span><span class="annot"><span class="annottext">(a, t b)
+</span><a href="#local-6989586621679152109"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-49"></span><span>
+</span><span id="line-50"></span><span id="local-6989586621679152256"><span id="local-6989586621679152257"><span class="annot"><a href="HMGit.Internal.Utils.html#nonEmpty"><span class="hs-identifier hs-type">nonEmpty</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadThrow</span></span><span> </span><span class="annot"><a href="#local-6989586621679152257"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621679152256"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679152257"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">LN.NonEmpty</span></span><span> </span><span class="annot"><a href="#local-6989586621679152256"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-51"></span><span id="nonEmpty"><span class="annot"><span class="annottext">nonEmpty :: [a] -&gt; m (NonEmpty a)
+</span><a href="HMGit.Internal.Utils.html#nonEmpty"><span class="hs-identifier hs-var hs-var">nonEmpty</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe StringException -&gt; Maybe ~&gt; m
+forall (m :: * -&gt; *) (n :: * -&gt; *) e.
+(MonadThrowable m, MonadThrow n, Exception e) =&gt;
+Maybe e -&gt; m ~&gt; n
+</span><a href="HMGit.Internal.Exceptions.html#fromMonad"><span class="hs-identifier hs-var">fromMonad</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">StringException -&gt; Maybe StringException
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(StringException -&gt; Maybe StringException)
+-&gt; StringException -&gt; Maybe StringException
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; CallStack -&gt; StringException
+</span><span class="hs-identifier hs-var">StringException</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;a given list is empty&quot;</span></span><span> </span><span class="annot"><span class="annottext">CallStack
+HasCallStack =&gt; CallStack
+</span><span class="hs-identifier hs-var">callStack</span></span><span class="hs-special">)</span><span>
+</span><span id="line-52"></span><span>    </span><span class="annot"><span class="annottext">(Maybe (NonEmpty a) -&gt; m (NonEmpty a))
+-&gt; ([a] -&gt; Maybe (NonEmpty a)) -&gt; [a] -&gt; m (NonEmpty a)
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">[a] -&gt; Maybe (NonEmpty a)
+forall a. [a] -&gt; Maybe (NonEmpty a)
+</span><span class="hs-identifier hs-var">LN.nonEmpty</span></span><span>
+</span><span id="line-53"></span><span>
+</span><span id="line-54"></span><span id="local-6989586621679152099"><span id="local-6989586621679152100"><span class="annot"><a href="HMGit.Internal.Utils.html#strictOne"><span class="hs-identifier hs-type">strictOne</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadPlus</span></span><span> </span><span class="annot"><a href="#local-6989586621679152100"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadThrow</span></span><span> </span><span class="annot"><a href="#local-6989586621679152100"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621679152099"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679152100"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679152099"><span class="hs-identifier hs-type">a</span></a></span></span></span><span>
+</span><span id="line-55"></span><span id="strictOne"><span class="annot"><span class="annottext">strictOne :: [a] -&gt; m a
+</span><a href="HMGit.Internal.Utils.html#strictOne"><span class="hs-identifier hs-var hs-var">strictOne</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[a] -&gt; m (NonEmpty a)
+forall (m :: * -&gt; *) a. MonadThrow m =&gt; [a] -&gt; m (NonEmpty a)
+</span><a href="HMGit.Internal.Utils.html#nonEmpty"><span class="hs-identifier hs-var">nonEmpty</span></a></span><span> </span><span class="annot"><span class="annottext">([a] -&gt; m (NonEmpty a)) -&gt; (NonEmpty a -&gt; m a) -&gt; [a] -&gt; m a
+forall (m :: * -&gt; *) a b c.
+Monad m =&gt;
+(a -&gt; m b) -&gt; (b -&gt; m c) -&gt; a -&gt; m c
+</span><span class="hs-operator hs-var">&gt;=&gt;</span></span><span> </span><span class="annot"><span class="annottext">(a, [a]) -&gt; m a
+forall (t :: * -&gt; *) (m :: * -&gt; *) a b.
+(Foldable t, MonadPlus m) =&gt;
+(a, t b) -&gt; m a
+</span><a href="HMGit.Internal.Utils.html#stateEmpty"><span class="hs-identifier hs-var">stateEmpty</span></a></span><span> </span><span class="annot"><span class="annottext">((a, [a]) -&gt; m a) -&gt; (NonEmpty a -&gt; (a, [a])) -&gt; NonEmpty a -&gt; m a
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">([a] -&gt; a) -&gt; ([a], [a]) -&gt; (a, [a])
+forall a a' b. (a -&gt; a') -&gt; (a, b) -&gt; (a', b)
+</span><span class="hs-identifier hs-var">first</span></span><span> </span><span class="annot"><span class="annottext">[a] -&gt; a
+forall a. [a] -&gt; a
+</span><span class="hs-identifier hs-var">head</span></span><span> </span><span class="annot"><span class="annottext">(([a], [a]) -&gt; (a, [a]))
+-&gt; (NonEmpty a -&gt; ([a], [a])) -&gt; NonEmpty a -&gt; (a, [a])
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; NonEmpty a -&gt; ([a], [a])
+forall a. Int -&gt; NonEmpty a -&gt; ([a], [a])
+</span><span class="hs-identifier hs-var">LN.splitAt</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span>
+</span><span id="line-56"></span><span>
+</span><span id="line-57"></span><span id="local-6989586621679152207"><span id="local-6989586621679152208"><span id="local-6989586621679152209"><span id="local-6989586621679152210"><span class="annot"><a href="HMGit.Internal.Utils.html#foldMapM"><span class="hs-identifier hs-type">foldMapM</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Monad</span></span><span> </span><span class="annot"><a href="#local-6989586621679152210"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Monoid</span></span><span> </span><span class="annot"><a href="#local-6989586621679152209"><span class="hs-identifier hs-type">w</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Foldable</span></span><span> </span><span class="annot"><a href="#local-6989586621679152208"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679152207"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679152210"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679152209"><span class="hs-identifier hs-type">w</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679152208"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679152207"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679152210"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679152209"><span class="hs-identifier hs-type">w</span></a></span></span></span></span></span><span>
+</span><span id="line-58"></span><span id="foldMapM"><span class="annot"><span class="annottext">foldMapM :: (a -&gt; m w) -&gt; t a -&gt; m w
+</span><a href="HMGit.Internal.Utils.html#foldMapM"><span class="hs-identifier hs-var hs-var">foldMapM</span></a></span></span><span> </span><span id="local-6989586621679152096"><span class="annot"><span class="annottext">a -&gt; m w
+</span><a href="#local-6989586621679152096"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(w -&gt; a -&gt; m w) -&gt; w -&gt; t a -&gt; m w
+forall (t :: * -&gt; *) (m :: * -&gt; *) b a.
+(Foldable t, Monad m) =&gt;
+(b -&gt; a -&gt; m b) -&gt; b -&gt; t a -&gt; m b
+</span><span class="hs-identifier hs-var">foldlM</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679152095"><span class="annot"><span class="annottext">w
+</span><a href="#local-6989586621679152095"><span class="hs-identifier hs-var">acc</span></a></span></span><span> </span><span id="local-6989586621679152094"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679152094"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span> </span><span class="hs-special">{</span><span> </span><span id="local-6989586621679152093"><span class="annot"><span class="annottext">w
+</span><a href="#local-6989586621679152093"><span class="hs-identifier hs-var">w</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">a -&gt; m w
+</span><a href="#local-6989586621679152096"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679152094"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">;</span><span> </span><span class="annot"><span class="annottext">w -&gt; m w
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">(w -&gt; m w) -&gt; w -&gt; m w
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$!</span></span><span> </span><span class="annot"><span class="annottext">w -&gt; w -&gt; w
+forall a. Monoid a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">mappend</span></span><span> </span><span class="annot"><span class="annottext">w
+</span><a href="#local-6989586621679152095"><span class="hs-identifier hs-var">acc</span></a></span><span> </span><span class="annot"><span class="annottext">w
+</span><a href="#local-6989586621679152093"><span class="hs-identifier hs-var">w</span></a></span><span> </span><span class="hs-special">}</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">w
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-59"></span><span>
+</span><span id="line-60"></span><span id="local-6989586621679152088"><span id="local-6989586621679152089"><span id="local-6989586621679152090"><span id="local-6989586621679152091"><span class="annot"><a href="HMGit.Internal.Utils.html#foldChoice"><span class="hs-identifier hs-type">foldChoice</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Foldable</span></span><span> </span><span class="annot"><a href="#local-6989586621679152091"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Alternative</span></span><span> </span><span class="annot"><a href="#local-6989586621679152090"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-61"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679152089"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679152090"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679152088"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-62"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679152091"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679152089"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-63"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679152090"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679152088"><span class="hs-identifier hs-type">b</span></a></span></span></span></span></span><span>
+</span><span id="line-64"></span><span id="foldChoice"><span class="annot"><span class="annottext">foldChoice :: (a -&gt; f b) -&gt; t a -&gt; f b
+</span><a href="HMGit.Internal.Utils.html#foldChoice"><span class="hs-identifier hs-var hs-var">foldChoice</span></a></span></span><span> </span><span id="local-6989586621679152087"><span class="annot"><span class="annottext">a -&gt; f b
+</span><a href="#local-6989586621679152087"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Alt f b -&gt; f b
+forall k (f :: k -&gt; *) (a :: k). Alt f a -&gt; f a
+</span><span class="hs-identifier hs-var hs-var">getAlt</span></span><span> </span><span class="annot"><span class="annottext">(Alt f b -&gt; f b) -&gt; (t a -&gt; Alt f b) -&gt; t a -&gt; f b
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(a -&gt; Alt f b) -&gt; t a -&gt; Alt f b
+forall (t :: * -&gt; *) m a.
+(Foldable t, Monoid m) =&gt;
+(a -&gt; m) -&gt; t a -&gt; m
+</span><span class="hs-identifier hs-var">foldMap</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">f b -&gt; Alt f b
+forall k (f :: k -&gt; *) (a :: k). f a -&gt; Alt f a
+</span><span class="hs-identifier hs-var">Alt</span></span><span> </span><span class="annot"><span class="annottext">(f b -&gt; Alt f b) -&gt; (a -&gt; f b) -&gt; a -&gt; Alt f b
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; f b
+</span><a href="#local-6989586621679152087"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-65"></span><span>
+</span><span id="line-66"></span><span id="local-6989586621679152079"><span id="local-6989586621679152080"><span id="local-6989586621679152081"><span id="local-6989586621679152082"><span id="local-6989586621679152083"><span class="annot"><a href="HMGit.Internal.Utils.html#foldChoiceM"><span class="hs-identifier hs-type">foldChoiceM</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Monad</span></span><span> </span><span class="annot"><a href="#local-6989586621679152083"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Alternative</span></span><span> </span><span class="annot"><a href="#local-6989586621679152082"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Foldable</span></span><span> </span><span class="annot"><a href="#local-6989586621679152081"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-67"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679152080"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679152083"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679152082"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679152079"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-68"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679152081"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679152080"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-69"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679152083"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679152082"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679152079"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span></span></span></span></span></span><span>
+</span><span id="line-70"></span><span id="foldChoiceM"><span class="annot"><span class="annottext">foldChoiceM :: (a -&gt; m (f b)) -&gt; t a -&gt; m (f b)
+</span><a href="HMGit.Internal.Utils.html#foldChoiceM"><span class="hs-identifier hs-var hs-var">foldChoiceM</span></a></span></span><span> </span><span id="local-6989586621679152078"><span class="annot"><span class="annottext">a -&gt; m (f b)
+</span><a href="#local-6989586621679152078"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Alt f b -&gt; f b) -&gt; m (Alt f b) -&gt; m (f b)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">Alt f b -&gt; f b
+forall k (f :: k -&gt; *) (a :: k). Alt f a -&gt; f a
+</span><span class="hs-identifier hs-var hs-var">getAlt</span></span><span> </span><span class="annot"><span class="annottext">(m (Alt f b) -&gt; m (f b)) -&gt; (t a -&gt; m (Alt f b)) -&gt; t a -&gt; m (f b)
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(a -&gt; m (Alt f b)) -&gt; t a -&gt; m (Alt f b)
+forall (m :: * -&gt; *) w (t :: * -&gt; *) a.
+(Monad m, Monoid w, Foldable t) =&gt;
+(a -&gt; m w) -&gt; t a -&gt; m w
+</span><a href="HMGit.Internal.Utils.html#foldMapM"><span class="hs-identifier hs-var">foldMapM</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(f b -&gt; Alt f b) -&gt; m (f b) -&gt; m (Alt f b)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">f b -&gt; Alt f b
+forall k (f :: k -&gt; *) (a :: k). f a -&gt; Alt f a
+</span><span class="hs-identifier hs-var">Alt</span></span><span> </span><span class="annot"><span class="annottext">(m (f b) -&gt; m (Alt f b)) -&gt; (a -&gt; m (f b)) -&gt; a -&gt; m (Alt f b)
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; m (f b)
+</span><a href="#local-6989586621679152078"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-71"></span><span>
+</span><span id="line-72"></span><span id="local-6989586621679152184"><span id="local-6989586621679152185"><span id="local-6989586621679152186"><span id="local-6989586621679152187"><span id="local-6989586621679152188"><span class="annot"><a href="HMGit.Internal.Utils.html#formatBase"><span class="hs-identifier hs-type">formatBase</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadPlus</span></span><span> </span><span class="annot"><a href="#local-6989586621679152188"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Eq</span></span><span> </span><span class="annot"><a href="#local-6989586621679152187"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Num</span></span><span> </span><span class="annot"><a href="#local-6989586621679152187"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Monoid</span></span><span> </span><span class="annot"><a href="#local-6989586621679152186"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-73"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679152187"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679152185"><span class="hs-identifier hs-type">c</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-74"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679152184"><span class="hs-identifier hs-type">d</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679152186"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span class="hs-special">)</span><span>
+</span><span id="line-75"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679152184"><span class="hs-identifier hs-type">d</span></a></span><span>
+</span><span id="line-76"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679152188"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679152185"><span class="hs-identifier hs-type">c</span></a></span><span class="hs-special">)</span></span></span></span></span></span><span>
+</span><span id="line-77"></span><span id="formatBase"><span class="annot"><span class="annottext">formatBase :: (a -&gt; c) -&gt; (d -&gt; b -&gt; String) -&gt; d -&gt; Maybe (f c)
+</span><a href="HMGit.Internal.Utils.html#formatBase"><span class="hs-identifier hs-var hs-var">formatBase</span></a></span></span><span> </span><span id="local-6989586621679152076"><span class="annot"><span class="annottext">a -&gt; c
+</span><a href="#local-6989586621679152076"><span class="hs-identifier hs-var">formatter</span></a></span></span><span> </span><span id="local-6989586621679152075"><span class="annot"><span class="annottext">d -&gt; b -&gt; String
+</span><a href="#local-6989586621679152075"><span class="hs-identifier hs-var">baseShow</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(NonEmpty (a, String) -&gt; f c)
+-&gt; Maybe (NonEmpty (a, String)) -&gt; Maybe (f c)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(a -&gt; c) -&gt; f a -&gt; f c
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; c
+</span><a href="#local-6989586621679152076"><span class="hs-identifier hs-var">formatter</span></a></span><span> </span><span class="annot"><span class="annottext">(f a -&gt; f c)
+-&gt; (NonEmpty (a, String) -&gt; f a) -&gt; NonEmpty (a, String) -&gt; f c
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(a, String) -&gt; f a
+forall (t :: * -&gt; *) (m :: * -&gt; *) a b.
+(Foldable t, MonadPlus m) =&gt;
+(a, t b) -&gt; m a
+</span><a href="HMGit.Internal.Utils.html#stateEmpty"><span class="hs-identifier hs-var">stateEmpty</span></a></span><span> </span><span class="annot"><span class="annottext">((a, String) -&gt; f a)
+-&gt; (NonEmpty (a, String) -&gt; (a, String))
+-&gt; NonEmpty (a, String)
+-&gt; f a
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">NonEmpty (a, String) -&gt; (a, String)
+forall a. NonEmpty a -&gt; a
+</span><span class="hs-identifier hs-var">LN.head</span></span><span class="hs-special">)</span><span>
+</span><span id="line-78"></span><span>    </span><span class="annot"><span class="annottext">(Maybe (NonEmpty (a, String)) -&gt; Maybe (f c))
+-&gt; (d -&gt; Maybe (NonEmpty (a, String))) -&gt; d -&gt; Maybe (f c)
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">[(a, String)] -&gt; Maybe (NonEmpty (a, String))
+forall a. [a] -&gt; Maybe (NonEmpty a)
+</span><span class="hs-identifier hs-var">LN.nonEmpty</span></span><span>
+</span><span id="line-79"></span><span>    </span><span class="annot"><span class="annottext">([(a, String)] -&gt; Maybe (NonEmpty (a, String)))
+-&gt; (d -&gt; [(a, String)]) -&gt; d -&gt; Maybe (NonEmpty (a, String))
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ReadS a
+forall a. (Eq a, Num a) =&gt; ReadS a
+</span><span class="hs-identifier hs-var">readHex</span></span><span>
+</span><span id="line-80"></span><span>    </span><span class="annot"><span class="annottext">ReadS a -&gt; (d -&gt; String) -&gt; d -&gt; [(a, String)]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(d -&gt; b -&gt; String) -&gt; b -&gt; d -&gt; String
+forall a b c. (a -&gt; b -&gt; c) -&gt; b -&gt; a -&gt; c
+</span><span class="hs-identifier hs-var">flip</span></span><span> </span><span class="annot"><span class="annottext">d -&gt; b -&gt; String
+</span><a href="#local-6989586621679152075"><span class="hs-identifier hs-var">baseShow</span></a></span><span> </span><span class="annot"><span class="annottext">b
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-81"></span><span>
+</span><span id="line-82"></span><span id="local-6989586621679152177"><span id="local-6989586621679152178"><span class="annot"><a href="HMGit.Internal.Utils.html#formatHexStrings"><span class="hs-identifier hs-type">formatHexStrings</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadThrow</span></span><span> </span><span class="annot"><a href="#local-6989586621679152178"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Integral</span></span><span> </span><span class="annot"><a href="#local-6989586621679152177"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="annot"><a href="#local-6989586621679152177"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621679152177"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679152178"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span></span></span><span>
+</span><span id="line-83"></span><span id="formatHexStrings"><span class="annot"><span class="annottext">formatHexStrings :: [a] -&gt; m String
+</span><a href="HMGit.Internal.Utils.html#formatHexStrings"><span class="hs-identifier hs-var hs-var">formatHexStrings</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">([String] -&gt; String) -&gt; m [String] -&gt; m String
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">[String] -&gt; String
+forall (t :: * -&gt; *) a. Foldable t =&gt; t [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">concat</span></span><span>
+</span><span id="line-84"></span><span>    </span><span class="annot"><span class="annottext">(m [String] -&gt; m String) -&gt; ([a] -&gt; m [String]) -&gt; [a] -&gt; m String
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Maybe StringException -&gt; Maybe ~&gt; m
+forall (m :: * -&gt; *) (n :: * -&gt; *) e.
+(MonadThrowable m, MonadThrow n, Exception e) =&gt;
+Maybe e -&gt; m ~&gt; n
+</span><a href="HMGit.Internal.Exceptions.html#fromMonad"><span class="hs-identifier hs-var">fromMonad</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">StringException -&gt; Maybe StringException
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(StringException -&gt; Maybe StringException)
+-&gt; StringException -&gt; Maybe StringException
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; CallStack -&gt; StringException
+</span><span class="hs-identifier hs-var">StringException</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;cannot parse a hex value&quot;</span></span><span> </span><span class="annot"><span class="annottext">CallStack
+HasCallStack =&gt; CallStack
+</span><span class="hs-identifier hs-var">callStack</span></span><span class="hs-special">)</span><span>
+</span><span id="line-85"></span><span>    </span><span class="annot"><span class="annottext">(Maybe [String] -&gt; m [String])
+-&gt; ([a] -&gt; Maybe [String]) -&gt; [a] -&gt; m [String]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(a -&gt; Maybe [String]) -&gt; [a] -&gt; Maybe [String]
+forall (m :: * -&gt; *) a b. Monad m =&gt; (a -&gt; m [b]) -&gt; [a] -&gt; m [b]
+</span><span class="hs-identifier hs-var">concatMapM</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Word8 -&gt; String) -&gt; (a -&gt; String -&gt; String) -&gt; a -&gt; Maybe [String]
+forall (f :: * -&gt; *) a b c d.
+(MonadPlus f, Eq a, Num a, Monoid b) =&gt;
+(a -&gt; c) -&gt; (d -&gt; b -&gt; String) -&gt; d -&gt; Maybe (f c)
+</span><a href="HMGit.Internal.Utils.html#formatBase"><span class="hs-identifier hs-var">formatBase</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; Word8 -&gt; String
+forall r. PrintfType r =&gt; String -&gt; r
+</span><span class="hs-identifier hs-var">printf</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;%02x&quot;</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word8</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">a -&gt; String -&gt; String
+forall a. (Integral a, Show a) =&gt; a -&gt; String -&gt; String
+</span><span class="hs-identifier hs-var">showHex</span></span><span class="hs-special">)</span><span>
+</span><span id="line-86"></span><span>
+</span><span id="line-87"></span><span id="local-6989586621679152071"><span class="annot"><a href="HMGit.Internal.Utils.html#formatHexByteString"><span class="hs-identifier hs-type">formatHexByteString</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadThrow</span></span><span> </span><span class="annot"><a href="#local-6989586621679152071"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">BL.ByteString</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679152071"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span></span><span>
+</span><span id="line-88"></span><span id="formatHexByteString"><span class="annot"><span class="annottext">formatHexByteString :: ByteString -&gt; m String
+</span><a href="HMGit.Internal.Utils.html#formatHexByteString"><span class="hs-identifier hs-var hs-var">formatHexByteString</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Int] -&gt; m String
+forall (m :: * -&gt; *) a.
+(MonadThrow m, Integral a, Show a) =&gt;
+[a] -&gt; m String
+</span><a href="HMGit.Internal.Utils.html#formatHexStrings"><span class="hs-identifier hs-var">formatHexStrings</span></a></span><span> </span><span class="annot"><span class="annottext">([Int] -&gt; m String)
+-&gt; (ByteString -&gt; [Int]) -&gt; ByteString -&gt; m String
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(Char -&gt; Int) -&gt; String -&gt; [Int]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Int
+</span><span class="hs-identifier hs-var">ord</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; [Int]) -&gt; (ByteString -&gt; String) -&gt; ByteString -&gt; [Int]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; String
+</span><span class="hs-identifier hs-var">BLC.unpack</span></span><span>
+</span><span id="line-89"></span><span>
+</span><span id="line-90"></span><span id="local-6989586621679152069"><span class="annot"><a href="HMGit.Internal.Utils.html#formatHexByteString%27"><span class="hs-identifier hs-type">formatHexByteString'</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadThrow</span></span><span> </span><span class="annot"><a href="#local-6989586621679152069"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">B.ByteString</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679152069"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span></span><span>
+</span><span id="line-91"></span><span id="formatHexByteString%27"><span class="annot"><span class="annottext">formatHexByteString' :: ByteString -&gt; m String
+</span><a href="HMGit.Internal.Utils.html#formatHexByteString%27"><span class="hs-identifier hs-var hs-var">formatHexByteString'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Int] -&gt; m String
+forall (m :: * -&gt; *) a.
+(MonadThrow m, Integral a, Show a) =&gt;
+[a] -&gt; m String
+</span><a href="HMGit.Internal.Utils.html#formatHexStrings"><span class="hs-identifier hs-var">formatHexStrings</span></a></span><span> </span><span class="annot"><span class="annottext">([Int] -&gt; m String)
+-&gt; (ByteString -&gt; [Int]) -&gt; ByteString -&gt; m String
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(Char -&gt; Int) -&gt; String -&gt; [Int]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Int
+</span><span class="hs-identifier hs-var">ord</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; [Int]) -&gt; (ByteString -&gt; String) -&gt; ByteString -&gt; [Int]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; String
+</span><span class="hs-identifier hs-var">BC.unpack</span></span><span>
+</span><span id="line-92"></span><span>
+</span><span id="line-93"></span><span id="local-6989586621679152063"><span id="local-6989586621679152064"><span id="local-6989586621679152065"><span id="local-6989586621679152066"><span id="local-6989586621679152067"><span class="annot"><a href="HMGit.Internal.Utils.html#first3M"><span class="hs-identifier hs-type">first3M</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Functor</span></span><span> </span><span class="annot"><a href="#local-6989586621679152067"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679152066"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679152067"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679152065"><span class="hs-identifier hs-type">a'</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679152066"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621679152064"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621679152063"><span class="hs-identifier hs-type">c</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679152067"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679152065"><span class="hs-identifier hs-type">a'</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621679152064"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621679152063"><span class="hs-identifier hs-type">c</span></a></span><span class="hs-special">)</span></span></span></span></span></span><span>
+</span><span id="line-94"></span><span id="first3M"><span class="annot"><span class="annottext">first3M :: (a -&gt; m a') -&gt; (a, b, c) -&gt; m (a', b, c)
+</span><a href="HMGit.Internal.Utils.html#first3M"><span class="hs-identifier hs-var hs-var">first3M</span></a></span></span><span> </span><span id="local-6989586621679152062"><span class="annot"><span class="annottext">a -&gt; m a'
+</span><a href="#local-6989586621679152062"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679152061"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679152061"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">,</span><span id="local-6989586621679152060"><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621679152060"><span class="hs-identifier hs-var">y</span></a></span></span><span class="hs-special">,</span><span id="local-6989586621679152059"><span class="annot"><span class="annottext">c
+</span><a href="#local-6989586621679152059"><span class="hs-identifier hs-var">z</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-special">,</span></span><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621679152060"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">,</span><span class="annot"><span class="annottext">c
+</span><a href="#local-6989586621679152059"><span class="hs-identifier hs-var">z</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(a' -&gt; (a', b, c)) -&gt; m a' -&gt; m (a', b, c)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; m a'
+</span><a href="#local-6989586621679152062"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679152061"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-95"></span><span>
+</span><span id="line-96"></span><span class="hs-keyword">newtype</span><span> </span><span id="DifferentDrives"><span class="annot"><a href="HMGit.Internal.Utils.html#DifferentDrives"><span class="hs-identifier hs-var">DifferentDrives</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="DifferentDrives"><span class="annot"><a href="HMGit.Internal.Utils.html#DifferentDrives"><span class="hs-identifier hs-var">DifferentDrives</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-97"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span id="local-6989586621679152051"><span id="local-6989586621679152053"><span id="local-6989586621679152055"><span class="annot"><span class="annottext">Int -&gt; DifferentDrives -&gt; String -&gt; String
+[DifferentDrives] -&gt; String -&gt; String
+DifferentDrives -&gt; String
+(Int -&gt; DifferentDrives -&gt; String -&gt; String)
+-&gt; (DifferentDrives -&gt; String)
+-&gt; ([DifferentDrives] -&gt; String -&gt; String)
+-&gt; Show DifferentDrives
+forall a.
+(Int -&gt; a -&gt; String -&gt; String)
+-&gt; (a -&gt; String) -&gt; ([a] -&gt; String -&gt; String) -&gt; Show a
+showList :: [DifferentDrives] -&gt; String -&gt; String
+$cshowList :: [DifferentDrives] -&gt; String -&gt; String
+show :: DifferentDrives -&gt; String
+$cshow :: DifferentDrives -&gt; String
+showsPrec :: Int -&gt; DifferentDrives -&gt; String -&gt; String
+$cshowsPrec :: Int -&gt; DifferentDrives -&gt; String -&gt; String
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span>
+</span><span id="line-98"></span><span>
+</span><span id="line-99"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679152042"><span id="local-6989586621679152044"><span id="local-6989586621679152046"><span class="annot"><span class="hs-identifier hs-type">Exception</span></span><span> </span><span class="annot"><a href="HMGit.Internal.Utils.html#DifferentDrives"><span class="hs-identifier hs-type">DifferentDrives</span></a></span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-100"></span><span>
+</span><span id="line-101"></span><span class="hs-comment">-- Inspired by Development.Shake.FilePath.makeRelativeEx</span><span>
+</span><span id="line-102"></span><span id="local-6989586621679152040"><span class="annot"><a href="HMGit.Internal.Utils.html#makeRelativeEx"><span class="hs-identifier hs-type">makeRelativeEx</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679152040"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadThrow</span></span><span> </span><span class="annot"><a href="#local-6989586621679152040"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-103"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span>
+</span><span id="line-104"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span>
+</span><span id="line-105"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679152040"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span></span><span>
+</span><span id="line-106"></span><span id="makeRelativeEx"><span class="annot"><span class="annottext">makeRelativeEx :: String -&gt; String -&gt; m String
+</span><a href="HMGit.Internal.Utils.html#makeRelativeEx"><span class="hs-identifier hs-var hs-var">makeRelativeEx</span></a></span></span><span> </span><span id="local-6989586621679152038"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152038"><span class="hs-identifier hs-var">pathA</span></a></span></span><span> </span><span id="local-6989586621679152037"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152037"><span class="hs-identifier hs-var">pathB</span></a></span></span><span>
+</span><span id="line-107"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">String -&gt; Bool
+</span><span class="hs-identifier hs-var">isRelative</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152036"><span class="hs-identifier hs-var">makeRelativePathAPathB</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; m String
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152036"><span class="hs-identifier hs-var">makeRelativePathAPathB</span></a></span><span>
+</span><span id="line-108"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-109"></span><span>        </span><span id="local-6989586621679152035"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152035"><span class="hs-identifier hs-var">a'</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IO String -&gt; m String
+forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">(IO String -&gt; m String) -&gt; IO String -&gt; m String
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; IO String
+</span><span class="hs-identifier hs-var">canonicalizePath</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152038"><span class="hs-identifier hs-var">pathA</span></a></span><span>
+</span><span id="line-110"></span><span>        </span><span id="local-6989586621679152033"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152033"><span class="hs-identifier hs-var">b'</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IO String -&gt; m String
+forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">(IO String -&gt; m String) -&gt; IO String -&gt; m String
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; IO String
+</span><span class="hs-identifier hs-var">canonicalizePath</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152037"><span class="hs-identifier hs-var">pathB</span></a></span><span>
+</span><span id="line-111"></span><span>        </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">String -&gt; String
+</span><span class="hs-identifier hs-var">takeDrive</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152035"><span class="hs-identifier hs-var">a'</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">/=</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; String
+</span><span class="hs-identifier hs-var">takeDrive</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152033"><span class="hs-identifier hs-var">b'</span></a></span><span>
+</span><span id="line-112"></span><span>            </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">DifferentDrives -&gt; m String
+forall (m :: * -&gt; *) e a. (MonadThrow m, Exception e) =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throw</span></span><span> </span><span class="annot"><span class="annottext">(DifferentDrives -&gt; m String) -&gt; DifferentDrives -&gt; m String
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; DifferentDrives
+</span><a href="HMGit.Internal.Utils.html#DifferentDrives"><span class="hs-identifier hs-var">DifferentDrives</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Two paths do not exist on the same drive&quot;</span></span><span>
+</span><span id="line-113"></span><span>            </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; m String
+forall (f :: * -&gt; *). MonadThrow f =&gt; String -&gt; String -&gt; f String
+</span><a href="#local-6989586621679152031"><span class="hs-identifier hs-var">makeRelativeEx'</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152035"><span class="hs-identifier hs-var">a'</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152033"><span class="hs-identifier hs-var">b'</span></a></span><span>
+</span><span id="line-114"></span><span>    </span><span class="hs-keyword">where</span><span>
+</span><span id="line-115"></span><span>        </span><span id="local-6989586621679152036"><span class="annot"><span class="annottext">makeRelativePathAPathB :: String
+</span><a href="#local-6989586621679152036"><span class="hs-identifier hs-var hs-var">makeRelativePathAPathB</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; String
+</span><span class="hs-identifier hs-var">makeRelative</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152038"><span class="hs-identifier hs-var">pathA</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152037"><span class="hs-identifier hs-var">pathB</span></a></span><span>
+</span><span id="line-116"></span><span>
+</span><span id="line-117"></span><span>        </span><span id="local-6989586621679152031"><span class="annot"><span class="annottext">makeRelativeEx' :: String -&gt; String -&gt; f String
+</span><a href="#local-6989586621679152031"><span class="hs-identifier hs-var hs-var">makeRelativeEx'</span></a></span></span><span> </span><span id="local-6989586621679152030"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152030"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679152029"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152029"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-118"></span><span>            </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679152028"><span class="annot"><span class="annottext">rel :: String
+</span><a href="#local-6989586621679152028"><span class="hs-identifier hs-var hs-var">rel</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; String
+</span><span class="hs-identifier hs-var">makeRelative</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152030"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152029"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-119"></span><span>                </span><span id="local-6989586621679152027"><span class="annot"><span class="annottext">parent :: String
+</span><a href="#local-6989586621679152027"><span class="hs-identifier hs-var hs-var">parent</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; String
+</span><span class="hs-identifier hs-var">takeDirectory</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152030"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-120"></span><span>            </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">String -&gt; Bool
+</span><span class="hs-identifier hs-var">isRelative</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152028"><span class="hs-identifier hs-var">rel</span></a></span><span>
+</span><span id="line-121"></span><span>                </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">String -&gt; f String
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152028"><span class="hs-identifier hs-var">rel</span></a></span><span>
+</span><span id="line-122"></span><span>                </span><span class="hs-keyword">else</span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152030"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">/=</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152027"><span class="hs-identifier hs-var">parent</span></a></span><span>
+</span><span id="line-123"></span><span>                    </span><span class="hs-keyword">then</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;..&quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; String
+</span><span class="hs-operator hs-var">&lt;/&gt;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(String -&gt; String) -&gt; f String -&gt; f String
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; f String
+</span><a href="#local-6989586621679152031"><span class="hs-identifier hs-var">makeRelativeEx'</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152027"><span class="hs-identifier hs-var">parent</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152029"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-124"></span><span>                    </span><span class="hs-comment">-- Impossible: makeRelative should have succeeded in finding</span><span>
+</span><span id="line-125"></span><span>                    </span><span class="hs-comment">-- a relative path once `a == &quot;/&quot;`.</span><span>
+</span><span id="line-126"></span><span>                    </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">IOException -&gt; f String
+forall (m :: * -&gt; *) e a. (MonadThrow m, Exception e) =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throw</span></span><span>
+</span><span id="line-127"></span><span>                        </span><span class="annot"><span class="annottext">(IOException -&gt; f String) -&gt; IOException -&gt; f String
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; IOException
+</span><a href="HMGit.Internal.Exceptions.html#invalidArgument"><span class="hs-identifier hs-var">invalidArgument</span></a></span><span>
+</span><span id="line-128"></span><span>                        </span><span class="annot"><span class="annottext">(String -&gt; IOException) -&gt; String -&gt; IOException
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[String] -&gt; String
+forall (t :: * -&gt; *) a. Foldable t =&gt; t [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">concat</span></span><span> </span><span class="hs-special">[</span><span>
+</span><span id="line-129"></span><span>                            </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Error calculating relative path from \&quot;&quot;</span></span><span>
+</span><span id="line-130"></span><span>                           </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152038"><span class="hs-identifier hs-var">pathA</span></a></span><span>
+</span><span id="line-131"></span><span>                           </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;\&quot; to \&quot;&quot;</span></span><span>
+</span><span id="line-132"></span><span>                           </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; String
+forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679152037"><span class="hs-identifier hs-var">pathB</span></a></span><span>
+</span><span id="line-133"></span><span>                           </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;\&quot;&quot;</span></span><span>
+</span><span id="line-134"></span><span>                           </span><span class="hs-special">]</span><span>
+</span><span id="line-135"></span><span>
+</span><span id="line-136"></span><span id="local-6989586621679152024"><span id="local-6989586621679152025"><span class="annot"><a href="HMGit.Internal.Utils.html#%3F%2A%3E"><span class="hs-operator hs-type">(?*&gt;)</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Alternative</span></span><span> </span><span class="annot"><a href="#local-6989586621679152025"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679152025"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679152024"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679152025"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679152024"><span class="hs-identifier hs-type">a</span></a></span></span></span><span>
+</span><span id="line-137"></span><span id="local-6989586621679152023"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679152023"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span id="%3F%2A%3E"><span class="annot"><span class="annottext">?*&gt; :: Bool -&gt; f a -&gt; f a
+</span><a href="HMGit.Internal.Utils.html#%3F%2A%3E"><span class="hs-operator hs-var hs-var">?*&gt;</span></a></span></span><span> </span><span id="local-6989586621679152022"><span class="annot"><span class="annottext">f a
+</span><a href="#local-6989586621679152022"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679152023"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">f a
+</span><a href="#local-6989586621679152022"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">f a
+forall (f :: * -&gt; *) a. Alternative f =&gt; f a
+</span><span class="hs-identifier hs-var">empty</span></span><span>
+</span><span id="line-138"></span><span>
+</span><span id="line-139"></span><span id="local-6989586621679152018"><span id="local-6989586621679152019"><span id="local-6989586621679152020"><span class="annot"><a href="HMGit.Internal.Utils.html#%3F%3F"><span class="hs-operator hs-type">(??)</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Functor</span></span><span> </span><span class="annot"><a href="#local-6989586621679152020"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679152020"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679152019"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679152018"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679152019"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679152020"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679152018"><span class="hs-identifier hs-type">b</span></a></span></span></span></span><span>
+</span><span id="line-140"></span><span id="local-6989586621679152017"><span class="annot"><span class="annottext">f (a -&gt; b)
+</span><a href="#local-6989586621679152017"><span class="hs-identifier hs-var">fab</span></a></span></span><span> </span><span id="%3F%3F"><span class="annot"><span class="annottext">?? :: f (a -&gt; b) -&gt; a -&gt; f b
+</span><a href="HMGit.Internal.Utils.html#%3F%3F"><span class="hs-operator hs-var hs-var">??</span></a></span></span><span> </span><span id="local-6989586621679152016"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679152016"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">((a -&gt; b) -&gt; b) -&gt; f (a -&gt; b) -&gt; f b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(a -&gt; b) -&gt; a -&gt; b
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679152016"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">f (a -&gt; b)
+</span><a href="#local-6989586621679152017"><span class="hs-identifier hs-var">fab</span></a></span><span>
+</span><span id="line-141"></span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="hs-pragma">(</span><span class="hs-pragma">??</span><span class="hs-pragma">)</span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-142"></span><span>
+</span><span id="line-143"></span><span id="local-6989586621679152013"><span id="local-6989586621679152014"><span id="local-6989586621679152015"><span class="annot"><a href="HMGit.Internal.Utils.html#bothM"><span class="hs-identifier hs-type">bothM</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Monad</span></span><span> </span><span class="annot"><a href="#local-6989586621679152015"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679152014"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679152015"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679152013"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679152014"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621679152014"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679152015"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679152013"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621679152013"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span></span></span></span><span>
+</span><span id="line-144"></span><span id="bothM"><span class="annot"><span class="annottext">bothM :: (a -&gt; m b) -&gt; (a, a) -&gt; m (b, b)
+</span><a href="HMGit.Internal.Utils.html#bothM"><span class="hs-identifier hs-var hs-var">bothM</span></a></span></span><span> </span><span id="local-6989586621679152012"><span class="annot"><span class="annottext">a -&gt; m b
+</span><a href="#local-6989586621679152012"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679152011"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679152011"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679152010"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679152010"><span class="hs-identifier hs-var">y</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-145"></span><span>    </span><span id="local-6989586621679152009"><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621679152009"><span class="hs-identifier hs-var">x'</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">a -&gt; m b
+</span><a href="#local-6989586621679152012"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679152011"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-146"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621679152009"><span class="hs-identifier hs-var">x'</span></a></span><span class="hs-special">,</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(b -&gt; (b, b)) -&gt; m b -&gt; m (b, b)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; m b
+</span><a href="#local-6989586621679152012"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679152010"><span class="hs-identifier hs-var">y</span></a></span><span>
+</span><span id="line-147"></span></pre></body></html>

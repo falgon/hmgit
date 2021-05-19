@@ -35,7 +35,7 @@ initBase gitName repoName = let hmGitRoot = repoName </> gitName in liftIO
 
 initDefault :: (MonadThrow m, MonadIO m) => String -> Init m
 initDefault gitName = Init $ \repoName -> initBase gitName repoName
-    *> liftIO (putStrLn ("initialized empty repository: " <> repoName))
+    *> liftIO (putStrLn ("Initialized empty HMGit repository in: " <> repoName))
 
 initQuiet :: MonadIO m => String -> Init m
 initQuiet gitName = Init $ initBase gitName

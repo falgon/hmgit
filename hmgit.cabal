@@ -4,11 +4,11 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 93652f55a169d5e04147c6a36a2bc1130845b0fef55a3efd6dbda7c462ff2d8c
+-- hash: c2b25792b99aab93b2d55942142b2d44d1665277023bbc5e792254143418820a
 
 name:           hmgit
 version:        1.0.0.0
-description:    Please see the README on GitHub at <https://github.com/githubuser/hmgit#readme>
+description:    Please see the README on GitHub at <https://github.com/falgon/hmgit#readme>
 homepage:       https://github.com/falgon/hmgit#readme
 bug-reports:    https://github.com/falgon/hmgit/issues
 author:         Roki

@@ -1,0 +1,165 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">HMGit.Commands.Plumbing.HashObject.Cmd</span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-2"></span><span>    </span><span class="annot"><a href="HMGit.Commands.Plumbing.HashObject.Cmd.html#hashObjectCmd"><span class="hs-identifier">hashObjectCmd</span></a></span><span>
+</span><span id="line-3"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-4"></span><span>
+</span><span id="line-5"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="HMGit.Commands.html"><span class="hs-identifier">HMGit.Commands</span></a></span><span>                          </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Commands.html#Cmd"><span class="hs-identifier">Cmd</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-6"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="HMGit.Commands.Plumbing.HashObject.Core.html"><span class="hs-identifier">HMGit.Commands.Plumbing.HashObject.Core</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Commands.Plumbing.HashObject.Core.html#HashObject"><span class="hs-identifier">HashObject</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-7"></span><span>                                                          </span><span class="annot"><a href="HMGit.Commands.Plumbing.HashObject.Core.html#hashObjectShow"><span class="hs-identifier">hashObjectShow</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-8"></span><span>                                                          </span><span class="annot"><a href="HMGit.Commands.Plumbing.HashObject.Core.html#hashObjectWrite"><span class="hs-identifier">hashObjectWrite</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-9"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="HMGit.Internal.Parser.html"><span class="hs-identifier">HMGit.Internal.Parser</span></a></span><span>                   </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Parser.Object.html#ObjectType"><span class="hs-identifier">ObjectType</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-10"></span><span>
+</span><span id="line-11"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Exception.Safe</span></span><span>                  </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadCatch</span></span><span class="hs-special">)</span><span>
+</span><span id="line-12"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Monad.IO.Class</span></span><span>                  </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadIO</span></span><span class="hs-special">)</span><span>
+</span><span id="line-13"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Foldable</span></span><span>                           </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">asum</span></span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Options.Applicative</span></span><span>                     </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">OA</span></span><span>
+</span><span id="line-15"></span><span>
+</span><span id="line-16"></span><span id="local-6989586621679154722"><span class="annot"><a href="HMGit.Commands.Plumbing.HashObject.Cmd.html#hashObjectMode"><span class="hs-identifier hs-type">hashObjectMode</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadCatch</span></span><span> </span><span class="annot"><a href="#local-6989586621679154722"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679154722"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">OA.Parser</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Commands.Plumbing.HashObject.Core.html#HashObject"><span class="hs-identifier hs-type">HashObject</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679154722"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-17"></span><span id="hashObjectMode"><span class="annot"><span class="annottext">hashObjectMode :: Parser (HashObject m)
+</span><a href="HMGit.Commands.Plumbing.HashObject.Cmd.html#hashObjectMode"><span class="hs-identifier hs-var hs-var">hashObjectMode</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Parser (HashObject m)] -&gt; Parser (HashObject m)
+forall (t :: * -&gt; *) (f :: * -&gt; *) a.
+(Foldable t, Alternative f) =&gt;
+t (f a) -&gt; f a
+</span><span class="hs-identifier hs-var">asum</span></span><span> </span><span class="hs-special">[</span><span>
+</span><span id="line-18"></span><span>    </span><span class="annot"><span class="annottext">HashObject m
+-&gt; Mod FlagFields (HashObject m) -&gt; Parser (HashObject m)
+forall a. a -&gt; Mod FlagFields a -&gt; Parser a
+</span><span class="hs-identifier hs-var">OA.flag'</span></span><span> </span><span class="annot"><span class="annottext">HashObject m
+forall (m :: * -&gt; *). (MonadCatch m, MonadIO m) =&gt; HashObject m
+</span><a href="HMGit.Commands.Plumbing.HashObject.Core.html#hashObjectWrite"><span class="hs-identifier hs-var">hashObjectWrite</span></a></span><span> </span><span class="annot"><span class="annottext">(Mod FlagFields (HashObject m) -&gt; Parser (HashObject m))
+-&gt; Mod FlagFields (HashObject m) -&gt; Parser (HashObject m)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Mod FlagFields (HashObject m)] -&gt; Mod FlagFields (HashObject m)
+forall a. Monoid a =&gt; [a] -&gt; a
+</span><span class="hs-identifier hs-var">mconcat</span></span><span> </span><span class="hs-special">[</span><span>
+</span><span id="line-19"></span><span>        </span><span class="annot"><span class="annottext">Char -&gt; Mod FlagFields (HashObject m)
+forall (f :: * -&gt; *) a. HasName f =&gt; Char -&gt; Mod f a
+</span><span class="hs-identifier hs-var">OA.short</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'w'</span></span><span>
+</span><span id="line-20"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; Mod FlagFields (HashObject m)
+forall (f :: * -&gt; *) a. String -&gt; Mod f a
+</span><span class="hs-identifier hs-var">OA.help</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Actually write the object into the object database.&quot;</span></span><span>
+</span><span id="line-21"></span><span>      </span><span class="hs-special">]</span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">HashObject m -&gt; Parser (HashObject m)
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">HashObject m
+forall (m :: * -&gt; *). (MonadCatch m, MonadIO m) =&gt; HashObject m
+</span><a href="HMGit.Commands.Plumbing.HashObject.Core.html#hashObjectShow"><span class="hs-identifier hs-var">hashObjectShow</span></a></span><span>
+</span><span id="line-23"></span><span>  </span><span class="hs-special">]</span><span>
+</span><span id="line-24"></span><span>
+</span><span id="line-25"></span><span class="annot"><a href="HMGit.Commands.Plumbing.HashObject.Cmd.html#hashObjectType"><span class="hs-identifier hs-type">hashObjectType</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">OA.Parser</span></span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Object.html#ObjectType"><span class="hs-identifier hs-type">ObjectType</span></a></span><span>
+</span><span id="line-26"></span><span id="hashObjectType"><span class="annot"><span class="annottext">hashObjectType :: Parser ObjectType
+</span><a href="HMGit.Commands.Plumbing.HashObject.Cmd.html#hashObjectType"><span class="hs-identifier hs-var hs-var">hashObjectType</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ReadM ObjectType
+-&gt; Mod OptionFields ObjectType -&gt; Parser ObjectType
+forall a. ReadM a -&gt; Mod OptionFields a -&gt; Parser a
+</span><span class="hs-identifier hs-var">OA.option</span></span><span> </span><span class="annot"><span class="annottext">ReadM ObjectType
+forall a. Read a =&gt; ReadM a
+</span><span class="hs-identifier hs-var">OA.auto</span></span><span> </span><span class="annot"><span class="annottext">(Mod OptionFields ObjectType -&gt; Parser ObjectType)
+-&gt; Mod OptionFields ObjectType -&gt; Parser ObjectType
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Mod OptionFields ObjectType] -&gt; Mod OptionFields ObjectType
+forall a. Monoid a =&gt; [a] -&gt; a
+</span><span class="hs-identifier hs-var">mconcat</span></span><span> </span><span class="hs-special">[</span><span>
+</span><span id="line-27"></span><span>    </span><span class="annot"><span class="annottext">Char -&gt; Mod OptionFields ObjectType
+forall (f :: * -&gt; *) a. HasName f =&gt; Char -&gt; Mod f a
+</span><span class="hs-identifier hs-var">OA.short</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'t'</span></span><span>
+</span><span id="line-28"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; Mod OptionFields ObjectType
+forall (f :: * -&gt; *) a. String -&gt; Mod f a
+</span><span class="hs-identifier hs-var">OA.help</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Specify the type&quot;</span></span><span>
+</span><span id="line-29"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; Mod OptionFields ObjectType
+forall (f :: * -&gt; *) a. HasMetavar f =&gt; String -&gt; Mod f a
+</span><span class="hs-identifier hs-var">OA.metavar</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;&lt;type&gt;&quot;</span></span><span>
+</span><span id="line-30"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ObjectType -&gt; Mod OptionFields ObjectType
+forall (f :: * -&gt; *) a. HasValue f =&gt; a -&gt; Mod f a
+</span><span class="hs-identifier hs-var">OA.value</span></span><span> </span><span class="annot"><span class="annottext">ObjectType
+</span><a href="HMGit.Internal.Parser.Object.html#Blob"><span class="hs-identifier hs-var">Blob</span></a></span><span>
+</span><span id="line-31"></span><span>  </span><span class="hs-special">]</span><span>
+</span><span id="line-32"></span><span>
+</span><span id="line-33"></span><span class="annot"><a href="HMGit.Commands.Plumbing.HashObject.Cmd.html#hashObjectFilePath"><span class="hs-identifier hs-type">hashObjectFilePath</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">OA.Parser</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-34"></span><span id="hashObjectFilePath"><span class="annot"><span class="annottext">hashObjectFilePath :: Parser String
+</span><a href="HMGit.Commands.Plumbing.HashObject.Cmd.html#hashObjectFilePath"><span class="hs-identifier hs-var hs-var">hashObjectFilePath</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Parser String] -&gt; Parser String
+forall (t :: * -&gt; *) (f :: * -&gt; *) a.
+(Foldable t, Alternative f) =&gt;
+t (f a) -&gt; f a
+</span><span class="hs-identifier hs-var">asum</span></span><span> </span><span class="hs-special">[</span><span>
+</span><span id="line-35"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; Mod FlagFields String -&gt; Parser String
+forall a. a -&gt; Mod FlagFields a -&gt; Parser a
+</span><span class="hs-identifier hs-var">OA.flag'</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;/dev/stdin&quot;</span></span><span> </span><span class="annot"><span class="annottext">(Mod FlagFields String -&gt; Parser String)
+-&gt; Mod FlagFields String -&gt; Parser String
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Mod FlagFields String] -&gt; Mod FlagFields String
+forall a. Monoid a =&gt; [a] -&gt; a
+</span><span class="hs-identifier hs-var">mconcat</span></span><span> </span><span class="hs-special">[</span><span>
+</span><span id="line-36"></span><span>        </span><span class="annot"><span class="annottext">String -&gt; Mod FlagFields String
+forall (f :: * -&gt; *) a. HasName f =&gt; String -&gt; Mod f a
+</span><span class="hs-identifier hs-var">OA.long</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;stdin&quot;</span></span><span>
+</span><span id="line-37"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; Mod FlagFields String
+forall (f :: * -&gt; *) a. String -&gt; Mod f a
+</span><span class="hs-identifier hs-var">OA.help</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Read the object from standard input instead of from a file.&quot;</span></span><span>
+</span><span id="line-38"></span><span>      </span><span class="hs-special">]</span><span>
+</span><span id="line-39"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Mod ArgumentFields String -&gt; Parser String
+forall s. IsString s =&gt; Mod ArgumentFields s -&gt; Parser s
+</span><span class="hs-identifier hs-var">OA.strArgument</span></span><span> </span><span class="annot"><span class="annottext">(Mod ArgumentFields String -&gt; Parser String)
+-&gt; Mod ArgumentFields String -&gt; Parser String
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Mod ArgumentFields String] -&gt; Mod ArgumentFields String
+forall a. Monoid a =&gt; [a] -&gt; a
+</span><span class="hs-identifier hs-var">mconcat</span></span><span> </span><span class="hs-special">[</span><span>
+</span><span id="line-40"></span><span>        </span><span class="annot"><span class="annottext">String -&gt; Mod ArgumentFields String
+forall (f :: * -&gt; *) a. HasMetavar f =&gt; String -&gt; Mod f a
+</span><span class="hs-identifier hs-var">OA.metavar</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;&lt;file&gt;&quot;</span></span><span>
+</span><span id="line-41"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; Mod ArgumentFields String
+forall (f :: * -&gt; *) a. String -&gt; Mod f a
+</span><span class="hs-identifier hs-var">OA.help</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;File path&quot;</span></span><span>
+</span><span id="line-42"></span><span>      </span><span class="hs-special">]</span><span>
+</span><span id="line-43"></span><span>  </span><span class="hs-special">]</span><span>
+</span><span id="line-44"></span><span>
+</span><span id="line-45"></span><span id="local-6989586621679154703"><span class="annot"><a href="HMGit.Commands.Plumbing.HashObject.Cmd.html#hashObjectCmd"><span class="hs-identifier hs-type">hashObjectCmd</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadCatch</span></span><span> </span><span class="annot"><a href="#local-6989586621679154703"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679154703"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">OA.Mod</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">OA.CommandFields</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Commands.html#Cmd"><span class="hs-identifier hs-type">Cmd</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679154703"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-46"></span><span id="hashObjectCmd"><span class="annot"><span class="annottext">hashObjectCmd :: Mod CommandFields (Cmd m)
+</span><a href="HMGit.Commands.Plumbing.HashObject.Cmd.html#hashObjectCmd"><span class="hs-identifier hs-var hs-var">hashObjectCmd</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; ParserInfo (Cmd m) -&gt; Mod CommandFields (Cmd m)
+forall a. String -&gt; ParserInfo a -&gt; Mod CommandFields a
+</span><span class="hs-identifier hs-var">OA.command</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;hash-object&quot;</span></span><span>
+</span><span id="line-47"></span><span>    </span><span class="annot"><span class="annottext">(ParserInfo (Cmd m) -&gt; Mod CommandFields (Cmd m))
+-&gt; ParserInfo (Cmd m) -&gt; Mod CommandFields (Cmd m)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Parser (Cmd m) -&gt; InfoMod (Cmd m) -&gt; ParserInfo (Cmd m)
+forall a. Parser a -&gt; InfoMod a -&gt; ParserInfo a
+</span><span class="hs-identifier hs-var">OA.info</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ObjectType -&gt; HashObject m -&gt; String -&gt; Cmd m
+forall (m :: * -&gt; *). ObjectType -&gt; HashObject m -&gt; String -&gt; Cmd m
+</span><a href="HMGit.Commands.html#CmdHashObject"><span class="hs-identifier hs-var">CmdHashObject</span></a></span><span> </span><span class="annot"><span class="annottext">(ObjectType -&gt; HashObject m -&gt; String -&gt; Cmd m)
+-&gt; Parser ObjectType -&gt; Parser (HashObject m -&gt; String -&gt; Cmd m)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Parser (ObjectType -&gt; ObjectType)
+forall a. Parser (a -&gt; a)
+</span><span class="hs-identifier hs-var">OA.helper</span></span><span> </span><span class="annot"><span class="annottext">Parser (ObjectType -&gt; ObjectType)
+-&gt; Parser ObjectType -&gt; Parser ObjectType
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">Parser ObjectType
+</span><a href="HMGit.Commands.Plumbing.HashObject.Cmd.html#hashObjectType"><span class="hs-identifier hs-var">hashObjectType</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Parser (HashObject m -&gt; String -&gt; Cmd m)
+-&gt; Parser (HashObject m) -&gt; Parser (String -&gt; Cmd m)
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">Parser (HashObject m)
+forall (m :: * -&gt; *).
+(MonadCatch m, MonadIO m) =&gt;
+Parser (HashObject m)
+</span><a href="HMGit.Commands.Plumbing.HashObject.Cmd.html#hashObjectMode"><span class="hs-identifier hs-var">hashObjectMode</span></a></span><span> </span><span class="annot"><span class="annottext">Parser (String -&gt; Cmd m) -&gt; Parser String -&gt; Parser (Cmd m)
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">Parser String
+</span><a href="HMGit.Commands.Plumbing.HashObject.Cmd.html#hashObjectFilePath"><span class="hs-identifier hs-var">hashObjectFilePath</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-48"></span><span>    </span><span class="annot"><span class="annottext">(InfoMod (Cmd m) -&gt; ParserInfo (Cmd m))
+-&gt; InfoMod (Cmd m) -&gt; ParserInfo (Cmd m)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; InfoMod (Cmd m)
+forall a. String -&gt; InfoMod a
+</span><span class="hs-identifier hs-var">OA.progDesc</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Compute object ID and optionally creates a blob from a file&quot;</span></span><span>
+</span><span id="line-49"></span></pre></body></html>

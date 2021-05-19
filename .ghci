@@ -2,10 +2,14 @@ import qualified Path as P
 import qualified Path.IO as P
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
+import qualified Data.ByteString.Lazy.UTF8 as BLU
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy.Char8 as BLC
+import qualified Data.Binary.Put as BP
+import qualified Data.Binary.Get as BG
 
 :m +Path
+:m +Data.String
 :m +Control.Monad
 :m +Control.Monad.Extra
 :m +Control.Monad.Loops

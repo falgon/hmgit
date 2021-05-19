@@ -1,0 +1,472 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">HMGit.Commands.Porcelain.Add.Core</span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-2"></span><span>    </span><span class="annot"><a href="HMGit.Commands.Porcelain.Add.Core.html#Add"><span class="hs-identifier">Add</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-3"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Commands.Porcelain.Add.Core.html#addDefault"><span class="hs-identifier">addDefault</span></a></span><span>
+</span><span id="line-4"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Commands.Porcelain.Add.Core.html#addDryRun"><span class="hs-identifier">addDryRun</span></a></span><span>
+</span><span id="line-5"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-6"></span><span>
+</span><span id="line-7"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="HMGit.Internal.Core.html"><span class="hs-identifier">HMGit.Internal.Core</span></a></span><span>             </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Parser.Index.html#IndexEntry"><span class="hs-identifier">IndexEntry</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-8"></span><span>                                                  </span><span class="annot"><a href="HMGit.Internal.Core.html#ObjectInfo"><span class="hs-identifier">ObjectInfo</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-9"></span><span>                                                  </span><span class="annot"><a href="HMGit.Internal.Parser.Object.html#ObjectType"><span class="hs-identifier">ObjectType</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Core.html#fromContents"><span class="hs-identifier">fromContents</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-10"></span><span>                                                  </span><span class="annot"><a href="HMGit.Internal.Core.html#loadIndex"><span class="hs-identifier">loadIndex</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Core.html#storeIndex"><span class="hs-identifier">storeIndex</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-11"></span><span>                                                  </span><span class="annot"><a href="HMGit.Internal.Core.html#storeObject"><span class="hs-identifier">storeObject</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-12"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="HMGit.Internal.Core.Runner.html"><span class="hs-identifier">HMGit.Internal.Core.Runner</span></a></span><span>      </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Core.Runner.API.html#HMGitT"><span class="hs-identifier">HMGitT</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Core.Runner.API.html#hmGitRoot"><span class="hs-identifier">hmGitRoot</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-13"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="HMGit.Internal.Parser.Pathspecs.html"><span class="hs-identifier">HMGit.Internal.Parser.Pathspecs</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Parser.Pathspecs.html#lsMatches"><span class="hs-identifier">lsMatches</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span>
+</span><span id="line-15"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Exception.Safe</span></span><span>          </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadCatch</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">MonadThrow</span></span><span class="hs-special">)</span><span>
+</span><span id="line-16"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Monad</span></span><span>                   </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">forM</span></span><span class="hs-special">)</span><span>
+</span><span id="line-17"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Monad.IO.Class</span></span><span>          </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadIO</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString</span></span><span>                 </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">B</span></span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString.Lazy</span></span><span>            </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">BL</span></span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Functor</span></span><span>                    </span><span class="hs-special">(</span><span class="annot"><span class="hs-operator">(&lt;&amp;&gt;)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.List</span></span><span>                       </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">sortBy</span></span><span class="hs-special">)</span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Ratio</span></span><span>                      </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">numerator</span></span><span class="hs-special">)</span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Set</span></span><span>                        </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">S</span></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Path</span></span><span>                            </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">P</span></span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Path.IO</span></span><span>                         </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">P</span></span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">System.Posix.Files</span></span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Text.Printf</span></span><span>                     </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">printf</span></span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span>
+</span><span id="line-29"></span><span class="hs-keyword">newtype</span><span> </span><span id="Add"><span class="annot"><a href="HMGit.Commands.Porcelain.Add.Core.html#Add"><span class="hs-identifier hs-var">Add</span></a></span></span><span> </span><span id="local-6989586621679153912"><span class="annot"><a href="#local-6989586621679153912"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Add"><span class="annot"><a href="HMGit.Commands.Porcelain.Add.Core.html#Add"><span class="hs-identifier hs-var">Add</span></a></span></span><span> </span><span class="hs-special">{</span><span> </span><span id="add"><span class="annot"><span class="annottext">Add m -&gt; [FilePath] -&gt; HMGitT m ()
+</span><a href="HMGit.Commands.Porcelain.Add.Core.html#add"><span class="hs-identifier hs-var hs-var">add</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="HMGit.Internal.Core.Runner.API.html#HMGitT"><span class="hs-identifier hs-type">HMGitT</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679153912"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="hs-special">}</span><span>
+</span><span id="line-30"></span><span>
+</span><span id="line-31"></span><span class="hs-keyword">type</span><span> </span><span id="BlobGenerator"><span class="annot"><a href="HMGit.Commands.Porcelain.Add.Core.html#BlobGenerator"><span class="hs-identifier hs-var">BlobGenerator</span></a></span></span><span> </span><span id="local-6989586621679153867"><span class="annot"><a href="#local-6989586621679153867"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">BL.ByteString</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="HMGit.Internal.Core.Runner.API.html#HMGitT"><span class="hs-identifier hs-type">HMGitT</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679153867"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">B.ByteString</span></span><span>
+</span><span id="line-32"></span><span>
+</span><span id="line-33"></span><span id="local-6989586621679153904"><span class="annot"><a href="HMGit.Commands.Porcelain.Add.Core.html#existEntries"><span class="hs-identifier hs-type">existEntries</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadThrow</span></span><span> </span><span class="annot"><a href="#local-6989586621679153904"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679153904"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-34"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S.Set</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">P.Path</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">P.Abs</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">P.File</span></span><span class="hs-special">)</span><span>
+</span><span id="line-35"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="HMGit.Internal.Core.Runner.API.html#HMGitT"><span class="hs-identifier hs-type">HMGitT</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679153904"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="HMGit.Internal.Parser.Index.html#IndexEntry"><span class="hs-identifier hs-type">IndexEntry</span></a></span><span class="hs-special">]</span></span><span>
+</span><span id="line-36"></span><span id="existEntries"><span class="annot"><span class="annottext">existEntries :: Set (Path Abs File) -&gt; HMGitT m [IndexEntry]
+</span><a href="HMGit.Commands.Porcelain.Add.Core.html#existEntries"><span class="hs-identifier hs-var hs-var">existEntries</span></a></span></span><span> </span><span id="local-6989586621679153865"><span class="annot"><span class="annottext">Set (Path Abs File)
+</span><a href="#local-6989586621679153865"><span class="hs-identifier hs-var">paths</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-37"></span><span>    </span><span id="local-6989586621679153864"><span class="annot"><span class="annottext">Path Abs Dir
+</span><a href="#local-6989586621679153864"><span class="hs-identifier hs-var">root</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">HMGitT m (Path Abs Dir)
+forall (m :: * -&gt; *). Monad m =&gt; HMGitT m (Path Abs Dir)
+</span><a href="HMGit.Internal.Core.Runner.API.html#hmGitRoot"><span class="hs-identifier hs-var">hmGitRoot</span></a></span><span>
+</span><span id="line-38"></span><span>    </span><span id="local-6989586621679153863"><span class="annot"><span class="annottext">[Path Rel File]
+</span><a href="#local-6989586621679153863"><span class="hs-identifier hs-var">paths'</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">(Path Abs File -&gt; ReaderT HMGitConfig m (Path Rel File))
+-&gt; [Path Abs File] -&gt; ReaderT HMGitConfig m [Path Rel File]
+forall (t :: * -&gt; *) (m :: * -&gt; *) a b.
+(Traversable t, Monad m) =&gt;
+(a -&gt; m b) -&gt; t a -&gt; m (t b)
+</span><span class="hs-identifier hs-var">mapM</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Path Abs Dir
+-&gt; Path Abs File -&gt; ReaderT HMGitConfig m (Path Rel File)
+forall (m :: * -&gt; *) b t.
+MonadThrow m =&gt;
+Path b Dir -&gt; Path b t -&gt; m (Path Rel t)
+</span><span class="hs-identifier hs-var">P.stripProperPrefix</span></span><span> </span><span class="annot"><span class="annottext">Path Abs Dir
+</span><a href="#local-6989586621679153864"><span class="hs-identifier hs-var">root</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">([Path Abs File] -&gt; ReaderT HMGitConfig m [Path Rel File])
+-&gt; [Path Abs File] -&gt; ReaderT HMGitConfig m [Path Rel File]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Set (Path Abs File) -&gt; [Path Abs File]
+forall a. Set a -&gt; [a]
+</span><span class="hs-identifier hs-var">S.toList</span></span><span> </span><span class="annot"><span class="annottext">Set (Path Abs File)
+</span><a href="#local-6989586621679153865"><span class="hs-identifier hs-var">paths</span></a></span><span>
+</span><span id="line-39"></span><span>    </span><span class="annot"><span class="annottext">HMGitT m [IndexEntry]
+forall (m :: * -&gt; *).
+(MonadIO m, MonadThrow m) =&gt;
+HMGitT m [IndexEntry]
+</span><a href="HMGit.Internal.Core.html#loadIndex"><span class="hs-identifier hs-var">loadIndex</span></a></span><span> </span><span class="annot"><span class="annottext">HMGitT m [IndexEntry]
+-&gt; ([IndexEntry] -&gt; [IndexEntry]) -&gt; HMGitT m [IndexEntry]
+forall (f :: * -&gt; *) a b. Functor f =&gt; f a -&gt; (a -&gt; b) -&gt; f b
+</span><span class="hs-operator hs-var">&lt;&amp;&gt;</span></span><span> </span><span class="annot"><span class="annottext">(IndexEntry -&gt; Bool) -&gt; [IndexEntry] -&gt; [IndexEntry]
+forall a. (a -&gt; Bool) -&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="annot"><span class="annottext">(Bool -&gt; Bool) -&gt; (IndexEntry -&gt; Bool) -&gt; IndexEntry -&gt; Bool
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(Path Rel File -&gt; [Path Rel File] -&gt; Bool)
+-&gt; [Path Rel File] -&gt; Path Rel File -&gt; Bool
+forall a b c. (a -&gt; b -&gt; c) -&gt; b -&gt; a -&gt; c
+</span><span class="hs-identifier hs-var">flip</span></span><span> </span><span class="annot"><span class="annottext">Path Rel File -&gt; [Path Rel File] -&gt; Bool
+forall (t :: * -&gt; *) a. (Foldable t, Eq a) =&gt; a -&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">elem</span></span><span> </span><span class="annot"><span class="annottext">[Path Rel File]
+</span><a href="#local-6989586621679153863"><span class="hs-identifier hs-var">paths'</span></a></span><span> </span><span class="annot"><span class="annottext">(Path Rel File -&gt; Bool)
+-&gt; (IndexEntry -&gt; Path Rel File) -&gt; IndexEntry -&gt; Bool
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">IndexEntry -&gt; Path Rel File
+</span><a href="HMGit.Internal.Parser.Index.html#iePath"><span class="hs-identifier hs-var hs-var">iePath</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-40"></span><span>
+</span><span id="line-41"></span><span id="local-6989586621679153901"><span class="annot"><a href="HMGit.Commands.Porcelain.Add.Core.html#additionalEntries"><span class="hs-identifier hs-type">additionalEntries</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadCatch</span></span><span> </span><span class="annot"><a href="#local-6989586621679153901"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679153901"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-42"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="HMGit.Commands.Porcelain.Add.Core.html#BlobGenerator"><span class="hs-identifier hs-type">BlobGenerator</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679153901"><span class="hs-identifier hs-type">m</span></a></span><span>
+</span><span id="line-43"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S.Set</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">P.Path</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">P.Abs</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">P.File</span></span><span class="hs-special">)</span><span>
+</span><span id="line-44"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="HMGit.Internal.Core.Runner.API.html#HMGitT"><span class="hs-identifier hs-type">HMGitT</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679153901"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="HMGit.Internal.Parser.Index.html#IndexEntry"><span class="hs-identifier hs-type">IndexEntry</span></a></span><span class="hs-special">]</span></span><span>
+</span><span id="line-45"></span><span id="additionalEntries"><span class="annot"><span class="annottext">additionalEntries :: BlobGenerator m -&gt; Set (Path Abs File) -&gt; HMGitT m [IndexEntry]
+</span><a href="HMGit.Commands.Porcelain.Add.Core.html#additionalEntries"><span class="hs-identifier hs-var hs-var">additionalEntries</span></a></span></span><span> </span><span id="local-6989586621679153853"><span class="annot"><span class="annottext">BlobGenerator m
+</span><a href="#local-6989586621679153853"><span class="hs-identifier hs-var">blobGen</span></a></span></span><span> </span><span id="local-6989586621679153852"><span class="annot"><span class="annottext">Set (Path Abs File)
+</span><a href="#local-6989586621679153852"><span class="hs-identifier hs-var">paths</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Path Abs File]
+-&gt; (Path Abs File -&gt; ReaderT HMGitConfig m IndexEntry)
+-&gt; HMGitT m [IndexEntry]
+forall (t :: * -&gt; *) (m :: * -&gt; *) a b.
+(Traversable t, Monad m) =&gt;
+t a -&gt; (a -&gt; m b) -&gt; m (t b)
+</span><span class="hs-identifier hs-var">forM</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Set (Path Abs File) -&gt; [Path Abs File]
+forall a. Set a -&gt; [a]
+</span><span class="hs-identifier hs-var">S.toList</span></span><span> </span><span class="annot"><span class="annottext">Set (Path Abs File)
+</span><a href="#local-6989586621679153852"><span class="hs-identifier hs-var">paths</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((Path Abs File -&gt; ReaderT HMGitConfig m IndexEntry)
+ -&gt; HMGitT m [IndexEntry])
+-&gt; (Path Abs File -&gt; ReaderT HMGitConfig m IndexEntry)
+-&gt; HMGitT m [IndexEntry]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679153851"><span class="annot"><span class="annottext">Path Abs File
+</span><a href="#local-6989586621679153851"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-46"></span><span>    </span><span id="local-6989586621679153850"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679153850"><span class="hs-identifier hs-var">sha1</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IO ByteString -&gt; ReaderT HMGitConfig m ByteString
+forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FilePath -&gt; IO ByteString
+</span><span class="hs-identifier hs-var">BL.readFile</span></span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; IO ByteString) -&gt; FilePath -&gt; IO ByteString
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Path Abs File -&gt; FilePath
+forall b t. Path b t -&gt; FilePath
+</span><span class="hs-identifier hs-var">P.toFilePath</span></span><span> </span><span class="annot"><span class="annottext">Path Abs File
+</span><a href="#local-6989586621679153851"><span class="hs-identifier hs-var">p</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-47"></span><span>        </span><span class="annot"><span class="annottext">ReaderT HMGitConfig m ByteString
+-&gt; BlobGenerator m -&gt; ReaderT HMGitConfig m ByteString
+forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="annot"><span class="annottext">BlobGenerator m
+</span><a href="#local-6989586621679153853"><span class="hs-identifier hs-var">blobGen</span></a></span><span>
+</span><span id="line-48"></span><span>        </span><span class="annot"><span class="annottext">ReaderT HMGitConfig m ByteString
+-&gt; (ByteString -&gt; ByteString) -&gt; ReaderT HMGitConfig m ByteString
+forall (f :: * -&gt; *) a b. Functor f =&gt; f a -&gt; (a -&gt; b) -&gt; f b
+</span><span class="hs-operator hs-var">&lt;&amp;&gt;</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; ByteString
+</span><span class="hs-identifier hs-var">BL.fromStrict</span></span><span>
+</span><span id="line-49"></span><span>    </span><span id="local-6989586621679153845"><span class="annot"><span class="annottext">FileStatus
+</span><a href="#local-6989586621679153845"><span class="hs-identifier hs-var">stat</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IO FileStatus -&gt; ReaderT HMGitConfig m FileStatus
+forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">(IO FileStatus -&gt; ReaderT HMGitConfig m FileStatus)
+-&gt; IO FileStatus -&gt; ReaderT HMGitConfig m FileStatus
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; IO FileStatus
+</span><span class="hs-identifier hs-var">getFileStatus</span></span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; IO FileStatus) -&gt; FilePath -&gt; IO FileStatus
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Path Abs File -&gt; FilePath
+forall b t. Path b t -&gt; FilePath
+</span><span class="hs-identifier hs-var">P.toFilePath</span></span><span> </span><span class="annot"><span class="annottext">Path Abs File
+</span><a href="#local-6989586621679153851"><span class="hs-identifier hs-var">p</span></a></span><span>
+</span><span id="line-50"></span><span>    </span><span id="local-6989586621679153843"><span class="annot"><span class="annottext">Path Abs Dir
+</span><a href="#local-6989586621679153843"><span class="hs-identifier hs-var">root</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">HMGitT m (Path Abs Dir)
+forall (m :: * -&gt; *). Monad m =&gt; HMGitT m (Path Abs Dir)
+</span><a href="HMGit.Internal.Core.Runner.API.html#hmGitRoot"><span class="hs-identifier hs-var">hmGitRoot</span></a></span><span>
+</span><span id="line-51"></span><span>    </span><span id="local-6989586621679153842"><span class="annot"><span class="annottext">Path Rel File
+</span><a href="#local-6989586621679153842"><span class="hs-identifier hs-var">p'</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Path Abs Dir
+-&gt; Path Abs File -&gt; ReaderT HMGitConfig m (Path Rel File)
+forall (m :: * -&gt; *) b t.
+MonadThrow m =&gt;
+Path b Dir -&gt; Path b t -&gt; m (Path Rel t)
+</span><span class="hs-identifier hs-var">P.stripProperPrefix</span></span><span> </span><span class="annot"><span class="annottext">Path Abs Dir
+</span><a href="#local-6989586621679153843"><span class="hs-identifier hs-var">root</span></a></span><span> </span><span class="annot"><span class="annottext">Path Abs File
+</span><a href="#local-6989586621679153851"><span class="hs-identifier hs-var">p</span></a></span><span>
+</span><span id="line-52"></span><span>    </span><span class="annot"><span class="annottext">IndexEntry -&gt; ReaderT HMGitConfig m IndexEntry
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">(IndexEntry -&gt; ReaderT HMGitConfig m IndexEntry)
+-&gt; IndexEntry -&gt; ReaderT HMGitConfig m IndexEntry
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Word32
+-&gt; Word32
+-&gt; Word32
+-&gt; Word32
+-&gt; Word32
+-&gt; Word32
+-&gt; Word32
+-&gt; Word32
+-&gt; Word32
+-&gt; Word32
+-&gt; ByteString
+-&gt; Word16
+-&gt; Path Rel File
+-&gt; IndexEntry
+</span><a href="HMGit.Internal.Parser.Index.html#IndexEntry"><span class="hs-identifier hs-var">IndexEntry</span></a></span><span>
+</span><span id="line-53"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; Word32
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; Word32) -&gt; Int -&gt; Word32
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Rational -&gt; Int
+forall a. Enum a =&gt; a -&gt; Int
+</span><span class="hs-identifier hs-var">fromEnum</span></span><span> </span><span class="annot"><span class="annottext">(Rational -&gt; Int) -&gt; Rational -&gt; Int
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">EpochTime -&gt; Rational
+forall a. Real a =&gt; a -&gt; Rational
+</span><span class="hs-identifier hs-var">toRational</span></span><span> </span><span class="annot"><span class="annottext">(EpochTime -&gt; Rational) -&gt; EpochTime -&gt; Rational
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FileStatus -&gt; EpochTime
+</span><span class="hs-identifier hs-var">statusChangeTime</span></span><span> </span><span class="annot"><span class="annottext">FileStatus
+</span><a href="#local-6989586621679153845"><span class="hs-identifier hs-var">stat</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-54"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Integer -&gt; Word32
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">(Integer -&gt; Word32) -&gt; Integer -&gt; Word32
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Rational -&gt; Integer
+forall a. Ratio a -&gt; a
+</span><span class="hs-identifier hs-var">numerator</span></span><span> </span><span class="annot"><span class="annottext">(Rational -&gt; Integer) -&gt; Rational -&gt; Integer
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">POSIXTime -&gt; Rational
+forall a. Real a =&gt; a -&gt; Rational
+</span><span class="hs-identifier hs-var">toRational</span></span><span> </span><span class="annot"><span class="annottext">(POSIXTime -&gt; Rational) -&gt; POSIXTime -&gt; Rational
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FileStatus -&gt; POSIXTime
+</span><span class="hs-identifier hs-var">statusChangeTimeHiRes</span></span><span> </span><span class="annot"><span class="annottext">FileStatus
+</span><a href="#local-6989586621679153845"><span class="hs-identifier hs-var">stat</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-55"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; Word32
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; Word32) -&gt; Int -&gt; Word32
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Rational -&gt; Int
+forall a. Enum a =&gt; a -&gt; Int
+</span><span class="hs-identifier hs-var">fromEnum</span></span><span> </span><span class="annot"><span class="annottext">(Rational -&gt; Int) -&gt; Rational -&gt; Int
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">EpochTime -&gt; Rational
+forall a. Real a =&gt; a -&gt; Rational
+</span><span class="hs-identifier hs-var">toRational</span></span><span> </span><span class="annot"><span class="annottext">(EpochTime -&gt; Rational) -&gt; EpochTime -&gt; Rational
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FileStatus -&gt; EpochTime
+</span><span class="hs-identifier hs-var">modificationTime</span></span><span> </span><span class="annot"><span class="annottext">FileStatus
+</span><a href="#local-6989586621679153845"><span class="hs-identifier hs-var">stat</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-56"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Integer -&gt; Word32
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">(Integer -&gt; Word32) -&gt; Integer -&gt; Word32
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Rational -&gt; Integer
+forall a. Ratio a -&gt; a
+</span><span class="hs-identifier hs-var">numerator</span></span><span> </span><span class="annot"><span class="annottext">(Rational -&gt; Integer) -&gt; Rational -&gt; Integer
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">POSIXTime -&gt; Rational
+forall a. Real a =&gt; a -&gt; Rational
+</span><span class="hs-identifier hs-var">toRational</span></span><span> </span><span class="annot"><span class="annottext">(POSIXTime -&gt; Rational) -&gt; POSIXTime -&gt; Rational
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FileStatus -&gt; POSIXTime
+</span><span class="hs-identifier hs-var">modificationTimeHiRes</span></span><span> </span><span class="annot"><span class="annottext">FileStatus
+</span><a href="#local-6989586621679153845"><span class="hs-identifier hs-var">stat</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-57"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">DeviceID -&gt; Word32
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">(DeviceID -&gt; Word32) -&gt; DeviceID -&gt; Word32
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FileStatus -&gt; DeviceID
+</span><span class="hs-identifier hs-var">deviceID</span></span><span> </span><span class="annot"><span class="annottext">FileStatus
+</span><a href="#local-6989586621679153845"><span class="hs-identifier hs-var">stat</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-58"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FileID -&gt; Word32
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">(FileID -&gt; Word32) -&gt; FileID -&gt; Word32
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FileStatus -&gt; FileID
+</span><span class="hs-identifier hs-var">fileID</span></span><span> </span><span class="annot"><span class="annottext">FileStatus
+</span><a href="#local-6989586621679153845"><span class="hs-identifier hs-var">stat</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-59"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FileStatus -&gt; Word32
+forall p. Num p =&gt; FileStatus -&gt; p
+</span><a href="#local-6989586621679153833"><span class="hs-identifier hs-var">fileModeRegular</span></a></span><span> </span><span class="annot"><span class="annottext">FileStatus
+</span><a href="#local-6989586621679153845"><span class="hs-identifier hs-var">stat</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-60"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">UserID -&gt; Word32
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">(UserID -&gt; Word32) -&gt; UserID -&gt; Word32
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FileStatus -&gt; UserID
+</span><span class="hs-identifier hs-var">fileOwner</span></span><span> </span><span class="annot"><span class="annottext">FileStatus
+</span><a href="#local-6989586621679153845"><span class="hs-identifier hs-var">stat</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-61"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">GroupID -&gt; Word32
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">(GroupID -&gt; Word32) -&gt; GroupID -&gt; Word32
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FileStatus -&gt; GroupID
+</span><span class="hs-identifier hs-var">fileGroup</span></span><span> </span><span class="annot"><span class="annottext">FileStatus
+</span><a href="#local-6989586621679153845"><span class="hs-identifier hs-var">stat</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-62"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FileOffset -&gt; Word32
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">(FileOffset -&gt; Word32) -&gt; FileOffset -&gt; Word32
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FileStatus -&gt; FileOffset
+</span><span class="hs-identifier hs-var">fileSize</span></span><span> </span><span class="annot"><span class="annottext">FileStatus
+</span><a href="#local-6989586621679153845"><span class="hs-identifier hs-var">stat</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-63"></span><span>        </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679153850"><span class="hs-identifier hs-var">sha1</span></a></span><span>
+</span><span id="line-64"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; Word16
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; Word16) -&gt; Int -&gt; Word16
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; Int
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Int
+</span><span class="hs-identifier hs-var">length</span></span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; Int) -&gt; FilePath -&gt; Int
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Path Abs File -&gt; FilePath
+forall b t. Path b t -&gt; FilePath
+</span><span class="hs-identifier hs-var">P.toFilePath</span></span><span> </span><span class="annot"><span class="annottext">Path Abs File
+</span><a href="#local-6989586621679153851"><span class="hs-identifier hs-var">p</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-65"></span><span>        </span><span class="annot"><span class="annottext">Path Rel File
+</span><a href="#local-6989586621679153842"><span class="hs-identifier hs-var">p'</span></a></span><span>
+</span><span id="line-66"></span><span>    </span><span class="hs-keyword">where</span><span>
+</span><span id="line-67"></span><span>        </span><span id="local-6989586621679153833"><span class="annot"><span class="annottext">fileModeRegular :: FileStatus -&gt; p
+</span><a href="#local-6989586621679153833"><span class="hs-identifier hs-var hs-var">fileModeRegular</span></a></span></span><span> </span><span id="local-6989586621679153828"><span class="annot"><span class="annottext">FileStatus
+</span><a href="#local-6989586621679153828"><span class="hs-identifier hs-var">stat</span></a></span></span><span>
+</span><span id="line-68"></span><span>            </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">FileStatus -&gt; FileMode
+</span><span class="hs-identifier hs-var">fileMode</span></span><span> </span><span class="annot"><span class="annottext">FileStatus
+</span><a href="#local-6989586621679153828"><span class="hs-identifier hs-var">stat</span></a></span><span> </span><span class="annot"><span class="annottext">FileMode -&gt; FileMode -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">FileMode
+</span><span class="hs-number">0o100664</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">p
+</span><span class="hs-number">0o100644</span></span><span>
+</span><span id="line-69"></span><span>            </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">FileMode -&gt; p
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">(FileMode -&gt; p) -&gt; FileMode -&gt; p
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FileStatus -&gt; FileMode
+</span><span class="hs-identifier hs-var">fileMode</span></span><span> </span><span class="annot"><span class="annottext">FileStatus
+</span><a href="#local-6989586621679153828"><span class="hs-identifier hs-var">stat</span></a></span><span>
+</span><span id="line-70"></span><span>
+</span><span id="line-71"></span><span id="local-6989586621679153826"><span class="annot"><a href="HMGit.Commands.Porcelain.Add.Core.html#addDefault"><span class="hs-identifier hs-type">addDefault</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679153826"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadCatch</span></span><span> </span><span class="annot"><a href="#local-6989586621679153826"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="HMGit.Commands.Porcelain.Add.Core.html#Add"><span class="hs-identifier hs-type">Add</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679153826"><span class="hs-identifier hs-type">m</span></a></span></span><span>
+</span><span id="line-72"></span><span id="addDefault"><span class="annot"><span class="annottext">addDefault :: Add m
+</span><a href="HMGit.Commands.Porcelain.Add.Core.html#addDefault"><span class="hs-identifier hs-var hs-var">addDefault</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">([FilePath] -&gt; HMGitT m ()) -&gt; Add m
+forall (m :: * -&gt; *). ([FilePath] -&gt; HMGitT m ()) -&gt; Add m
+</span><a href="HMGit.Commands.Porcelain.Add.Core.html#Add"><span class="hs-identifier hs-var">Add</span></a></span><span> </span><span class="annot"><span class="annottext">(([FilePath] -&gt; HMGitT m ()) -&gt; Add m)
+-&gt; ([FilePath] -&gt; HMGitT m ()) -&gt; Add m
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679153825"><span class="annot"><span class="annottext">[FilePath]
+</span><a href="#local-6989586621679153825"><span class="hs-identifier hs-var">pats</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-73"></span><span>    </span><span id="local-6989586621679153824"><span class="annot"><span class="annottext">Set (Path Abs File)
+</span><a href="#local-6989586621679153824"><span class="hs-identifier hs-var">paths</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">ReaderT HMGitConfig m (Path Abs Dir)
+forall (m :: * -&gt; *). MonadIO m =&gt; m (Path Abs Dir)
+</span><span class="hs-identifier hs-var">P.getCurrentDir</span></span><span> </span><span class="annot"><span class="annottext">ReaderT HMGitConfig m (Path Abs Dir)
+-&gt; (Path Abs Dir -&gt; ReaderT HMGitConfig m (Set (Path Abs File)))
+-&gt; ReaderT HMGitConfig m (Set (Path Abs File))
+forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="annot"><span class="annottext">(Path Abs Dir
+ -&gt; [FilePath] -&gt; ReaderT HMGitConfig m (Set (Path Abs File)))
+-&gt; [FilePath]
+-&gt; Path Abs Dir
+-&gt; ReaderT HMGitConfig m (Set (Path Abs File))
+forall a b c. (a -&gt; b -&gt; c) -&gt; b -&gt; a -&gt; c
+</span><span class="hs-identifier hs-var">flip</span></span><span> </span><span class="annot"><span class="annottext">Path Abs Dir
+-&gt; [FilePath] -&gt; ReaderT HMGitConfig m (Set (Path Abs File))
+forall (m :: * -&gt; *).
+(MonadCatch m, MonadIO m) =&gt;
+Path Abs Dir -&gt; [FilePath] -&gt; HMGitT m (Set (Path Abs File))
+</span><a href="HMGit.Internal.Parser.Pathspecs.html#lsMatches"><span class="hs-identifier hs-var">lsMatches</span></a></span><span> </span><span class="annot"><span class="annottext">[FilePath]
+</span><a href="#local-6989586621679153825"><span class="hs-identifier hs-var">pats</span></a></span><span>
+</span><span id="line-74"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[IndexEntry] -&gt; [IndexEntry] -&gt; [IndexEntry]
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">(&lt;&gt;)</span></span><span> </span><span class="annot"><span class="annottext">([IndexEntry] -&gt; [IndexEntry] -&gt; [IndexEntry])
+-&gt; ReaderT HMGitConfig m [IndexEntry]
+-&gt; ReaderT HMGitConfig m ([IndexEntry] -&gt; [IndexEntry])
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Set (Path Abs File) -&gt; ReaderT HMGitConfig m [IndexEntry]
+forall (m :: * -&gt; *).
+(MonadThrow m, MonadIO m) =&gt;
+Set (Path Abs File) -&gt; HMGitT m [IndexEntry]
+</span><a href="HMGit.Commands.Porcelain.Add.Core.html#existEntries"><span class="hs-identifier hs-var">existEntries</span></a></span><span> </span><span class="annot"><span class="annottext">Set (Path Abs File)
+</span><a href="#local-6989586621679153824"><span class="hs-identifier hs-var">paths</span></a></span><span> </span><span class="annot"><span class="annottext">ReaderT HMGitConfig m ([IndexEntry] -&gt; [IndexEntry])
+-&gt; ReaderT HMGitConfig m [IndexEntry]
+-&gt; ReaderT HMGitConfig m [IndexEntry]
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">BlobGenerator m
+-&gt; Set (Path Abs File) -&gt; ReaderT HMGitConfig m [IndexEntry]
+forall (m :: * -&gt; *).
+(MonadCatch m, MonadIO m) =&gt;
+BlobGenerator m -&gt; Set (Path Abs File) -&gt; HMGitT m [IndexEntry]
+</span><a href="HMGit.Commands.Porcelain.Add.Core.html#additionalEntries"><span class="hs-identifier hs-var">additionalEntries</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ObjectType -&gt; BlobGenerator m
+forall (m :: * -&gt; *).
+(MonadIO m, MonadCatch m) =&gt;
+ObjectType -&gt; ByteString -&gt; HMGitT m ByteString
+</span><a href="HMGit.Internal.Core.html#storeObject"><span class="hs-identifier hs-var">storeObject</span></a></span><span> </span><span class="annot"><span class="annottext">ObjectType
+</span><a href="HMGit.Internal.Parser.Object.html#Blob"><span class="hs-identifier hs-var">Blob</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Set (Path Abs File)
+</span><a href="#local-6989586621679153824"><span class="hs-identifier hs-var">paths</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-75"></span><span>        </span><span class="annot"><span class="annottext">ReaderT HMGitConfig m [IndexEntry]
+-&gt; ([IndexEntry] -&gt; HMGitT m ()) -&gt; HMGitT m ()
+forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="annot"><span class="annottext">[IndexEntry] -&gt; HMGitT m ()
+forall (m :: * -&gt; *) (t :: * -&gt; *).
+(MonadIO m, Foldable t) =&gt;
+t IndexEntry -&gt; HMGitT m ()
+</span><a href="HMGit.Internal.Core.html#storeIndex"><span class="hs-identifier hs-var">storeIndex</span></a></span><span> </span><span class="annot"><span class="annottext">([IndexEntry] -&gt; HMGitT m ())
+-&gt; ([IndexEntry] -&gt; [IndexEntry]) -&gt; [IndexEntry] -&gt; HMGitT m ()
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(IndexEntry -&gt; IndexEntry -&gt; Ordering)
+-&gt; [IndexEntry] -&gt; [IndexEntry]
+forall a. (a -&gt; a -&gt; Ordering) -&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">sortBy</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679153820"><span class="annot"><span class="annottext">IndexEntry
+</span><a href="#local-6989586621679153820"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679153819"><span class="annot"><span class="annottext">IndexEntry
+</span><a href="#local-6989586621679153819"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Path Rel File -&gt; Path Rel File -&gt; Ordering
+forall a. Ord a =&gt; a -&gt; a -&gt; Ordering
+</span><span class="hs-identifier hs-var">compare</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">IndexEntry -&gt; Path Rel File
+</span><a href="HMGit.Internal.Parser.Index.html#iePath"><span class="hs-identifier hs-var hs-var">iePath</span></a></span><span> </span><span class="annot"><span class="annottext">IndexEntry
+</span><a href="#local-6989586621679153820"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">IndexEntry -&gt; Path Rel File
+</span><a href="HMGit.Internal.Parser.Index.html#iePath"><span class="hs-identifier hs-var hs-var">iePath</span></a></span><span> </span><span class="annot"><span class="annottext">IndexEntry
+</span><a href="#local-6989586621679153819"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-76"></span><span>
+</span><span id="line-77"></span><span id="local-6989586621679153817"><span class="annot"><a href="HMGit.Commands.Porcelain.Add.Core.html#addDryRun"><span class="hs-identifier hs-type">addDryRun</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadCatch</span></span><span> </span><span class="annot"><a href="#local-6989586621679153817"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679153817"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="HMGit.Commands.Porcelain.Add.Core.html#Add"><span class="hs-identifier hs-type">Add</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679153817"><span class="hs-identifier hs-type">m</span></a></span></span><span>
+</span><span id="line-78"></span><span id="addDryRun"><span class="annot"><span class="annottext">addDryRun :: Add m
+</span><a href="HMGit.Commands.Porcelain.Add.Core.html#addDryRun"><span class="hs-identifier hs-var hs-var">addDryRun</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">([FilePath] -&gt; HMGitT m ()) -&gt; Add m
+forall (m :: * -&gt; *). ([FilePath] -&gt; HMGitT m ()) -&gt; Add m
+</span><a href="HMGit.Commands.Porcelain.Add.Core.html#Add"><span class="hs-identifier hs-var">Add</span></a></span><span> </span><span class="annot"><span class="annottext">(([FilePath] -&gt; HMGitT m ()) -&gt; Add m)
+-&gt; ([FilePath] -&gt; HMGitT m ()) -&gt; Add m
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679153816"><span class="annot"><span class="annottext">[FilePath]
+</span><a href="#local-6989586621679153816"><span class="hs-identifier hs-var">pats</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ReaderT HMGitConfig m (Path Abs Dir)
+forall (m :: * -&gt; *). MonadIO m =&gt; m (Path Abs Dir)
+</span><span class="hs-identifier hs-var">P.getCurrentDir</span></span><span>
+</span><span id="line-79"></span><span>    </span><span class="annot"><span class="annottext">ReaderT HMGitConfig m (Path Abs Dir)
+-&gt; (Path Abs Dir -&gt; ReaderT HMGitConfig m (Set (Path Abs File)))
+-&gt; ReaderT HMGitConfig m (Set (Path Abs File))
+forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="annot"><span class="annottext">(Path Abs Dir
+ -&gt; [FilePath] -&gt; ReaderT HMGitConfig m (Set (Path Abs File)))
+-&gt; [FilePath]
+-&gt; Path Abs Dir
+-&gt; ReaderT HMGitConfig m (Set (Path Abs File))
+forall a b c. (a -&gt; b -&gt; c) -&gt; b -&gt; a -&gt; c
+</span><span class="hs-identifier hs-var">flip</span></span><span> </span><span class="annot"><span class="annottext">Path Abs Dir
+-&gt; [FilePath] -&gt; ReaderT HMGitConfig m (Set (Path Abs File))
+forall (m :: * -&gt; *).
+(MonadCatch m, MonadIO m) =&gt;
+Path Abs Dir -&gt; [FilePath] -&gt; HMGitT m (Set (Path Abs File))
+</span><a href="HMGit.Internal.Parser.Pathspecs.html#lsMatches"><span class="hs-identifier hs-var">lsMatches</span></a></span><span> </span><span class="annot"><span class="annottext">[FilePath]
+</span><a href="#local-6989586621679153816"><span class="hs-identifier hs-var">pats</span></a></span><span>
+</span><span id="line-80"></span><span>    </span><span class="annot"><span class="annottext">ReaderT HMGitConfig m (Set (Path Abs File))
+-&gt; (Set (Path Abs File) -&gt; ReaderT HMGitConfig m [IndexEntry])
+-&gt; ReaderT HMGitConfig m [IndexEntry]
+forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="annot"><span class="annottext">BlobGenerator m
+-&gt; Set (Path Abs File) -&gt; ReaderT HMGitConfig m [IndexEntry]
+forall (m :: * -&gt; *).
+(MonadCatch m, MonadIO m) =&gt;
+BlobGenerator m -&gt; Set (Path Abs File) -&gt; HMGitT m [IndexEntry]
+</span><a href="HMGit.Commands.Porcelain.Add.Core.html#additionalEntries"><span class="hs-identifier hs-var">additionalEntries</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(ObjectInfo -&gt; ByteString)
+-&gt; ReaderT HMGitConfig m ObjectInfo
+-&gt; ReaderT HMGitConfig m ByteString
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">ObjectInfo -&gt; ByteString
+</span><a href="HMGit.Internal.Core.html#objectId"><span class="hs-identifier hs-var hs-var">objectId</span></a></span><span> </span><span class="annot"><span class="annottext">(ReaderT HMGitConfig m ObjectInfo
+ -&gt; ReaderT HMGitConfig m ByteString)
+-&gt; (ByteString -&gt; ReaderT HMGitConfig m ObjectInfo)
+-&gt; BlobGenerator m
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ObjectType -&gt; ByteString -&gt; ReaderT HMGitConfig m ObjectInfo
+forall (m :: * -&gt; *).
+MonadCatch m =&gt;
+ObjectType -&gt; ByteString -&gt; HMGitT m ObjectInfo
+</span><a href="HMGit.Internal.Core.html#fromContents"><span class="hs-identifier hs-var">fromContents</span></a></span><span> </span><span class="annot"><span class="annottext">ObjectType
+</span><a href="HMGit.Internal.Parser.Object.html#Blob"><span class="hs-identifier hs-var">Blob</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-81"></span><span>    </span><span class="annot"><span class="annottext">ReaderT HMGitConfig m [IndexEntry]
+-&gt; ([IndexEntry] -&gt; HMGitT m ()) -&gt; HMGitT m ()
+forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="annot"><span class="annottext">(IndexEntry -&gt; HMGitT m ()) -&gt; [IndexEntry] -&gt; HMGitT m ()
+forall (t :: * -&gt; *) (m :: * -&gt; *) a b.
+(Foldable t, Monad m) =&gt;
+(a -&gt; m b) -&gt; t a -&gt; m ()
+</span><span class="hs-identifier hs-var">mapM_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">IO () -&gt; HMGitT m ()
+forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">(IO () -&gt; HMGitT m ())
+-&gt; (IndexEntry -&gt; IO ()) -&gt; IndexEntry -&gt; HMGitT m ()
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; IO ()
+</span><span class="hs-identifier hs-var">putStrLn</span></span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; IO ())
+-&gt; (IndexEntry -&gt; FilePath) -&gt; IndexEntry -&gt; IO ()
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; FilePath -&gt; FilePath
+forall r. PrintfType r =&gt; FilePath -&gt; r
+</span><span class="hs-identifier hs-var">printf</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span class="hs-string">&quot;add '%s'&quot;</span></span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; FilePath)
+-&gt; (IndexEntry -&gt; FilePath) -&gt; IndexEntry -&gt; FilePath
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Path Rel File -&gt; FilePath
+forall b t. Path b t -&gt; FilePath
+</span><span class="hs-identifier hs-var">P.toFilePath</span></span><span> </span><span class="annot"><span class="annottext">(Path Rel File -&gt; FilePath)
+-&gt; (IndexEntry -&gt; Path Rel File) -&gt; IndexEntry -&gt; FilePath
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">IndexEntry -&gt; Path Rel File
+</span><a href="HMGit.Internal.Parser.Index.html#iePath"><span class="hs-identifier hs-var hs-var">iePath</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-82"></span></pre></body></html>

@@ -1,0 +1,45 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE CPP, TemplateHaskell #-}</span><span>
+</span><span id="line-2"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">HMGit.Development.TH</span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-3"></span><span>    </span><span class="annot"><a href="HMGit.Development.TH.html#relativeProjRoot"><span class="hs-identifier">relativeProjRoot</span></a></span><span>
+</span><span id="line-4"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-5"></span><span>
+</span><span id="line-6"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Monad</span></span><span>              </span><span class="hs-special">(</span><span class="annot"><span class="hs-operator">(&gt;=&gt;)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-7"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.FileEmbed</span></span><span>             </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">makeRelativeToProject</span></span><span class="hs-special">)</span><span>
+</span><span id="line-8"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.String</span></span><span>                </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">fromString</span></span><span class="hs-special">)</span><span>
+</span><span id="line-9"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Language.Haskell.TH.Syntax</span></span><span class="hs-cpp">
+
+#ifndef MIN_VERSION_template_haskell
+</span><span class="hs-cpp">#define MIN_VERSION_template_haskell(x,y,z) 0
+</span><span class="hs-cpp">#endif
+</span><span>
+</span><span id="line-15"></span><span class="annot"><a href="HMGit.Development.TH.html#strToExp"><span class="hs-identifier hs-type">strToExp</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Q</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Exp</span></span><span class="hs-cpp">
+#if MIN_VERSION_template_haskell(2, 5, 0)
+</span><span id="strToExp"><span class="annot"><span class="annottext">strToExp :: String -&gt; Q Exp
+</span><a href="HMGit.Development.TH.html#strToExp"><span class="hs-identifier hs-var hs-var">strToExp</span></a></span></span><span> </span><span id="local-6989586621679151420"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679151420"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Q Exp
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; Q Exp) -&gt; Exp -&gt; Q Exp
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Name -&gt; Exp
+</span><span class="hs-identifier hs-var">VarE</span></span><span> </span><span class="hs-special">'</span><span class="hs-identifier">fromString</span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Exp -&gt; Exp
+</span><span class="hs-operator hs-var">`AppE`</span></span><span> </span><span class="annot"><span class="annottext">Lit -&gt; Exp
+</span><span class="hs-identifier hs-var">LitE</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; Lit
+</span><span class="hs-identifier hs-var">StringL</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679151420"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span class="hs-cpp">
+#else
+</span><span class="hs-identifier">strToExp</span><span> </span><span class="hs-identifier">s</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-20"></span><span>    </span><span class="hs-identifier">helper</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-special">[|</span><span> </span><span class="hs-identifier">fromString</span><span> </span><span class="hs-special">|]</span><span>
+</span><span id="line-21"></span><span>    </span><span class="hs-identifier">return</span><span> </span><span class="hs-operator">$!</span><span> </span><span class="hs-identifier">AppE</span><span> </span><span class="hs-identifier">helper</span><span> </span><span class="hs-operator">$!</span><span> </span><span class="hs-identifier">LitE</span><span> </span><span class="hs-operator">$!</span><span> </span><span class="hs-identifier">StringL</span><span> </span><span class="hs-identifier">s</span><span class="hs-cpp">
+#endif
+</span><span>
+</span><span id="line-24"></span><span class="annot"><a href="HMGit.Development.TH.html#relativeProjRoot"><span class="hs-identifier hs-type">relativeProjRoot</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Q</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Exp</span></span><span>
+</span><span id="line-25"></span><span id="relativeProjRoot"><span class="annot"><span class="annottext">relativeProjRoot :: String -&gt; Q Exp
+</span><a href="HMGit.Development.TH.html#relativeProjRoot"><span class="hs-identifier hs-var hs-var">relativeProjRoot</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Q String
+</span><span class="hs-identifier hs-var">makeRelativeToProject</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; Q String) -&gt; (String -&gt; Q Exp) -&gt; String -&gt; Q Exp
+forall (m :: * -&gt; *) a b c.
+Monad m =&gt;
+(a -&gt; m b) -&gt; (b -&gt; m c) -&gt; a -&gt; m c
+</span><span class="hs-operator hs-var">&gt;=&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Q Exp
+</span><a href="HMGit.Development.TH.html#strToExp"><span class="hs-identifier hs-var">strToExp</span></a></span><span>
+</span><span id="line-26"></span><span>
+</span><span id="line-27"></span></pre></body></html>

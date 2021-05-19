@@ -1,0 +1,329 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE ExplicitNamespaces, Rank2Types, TypeOperators #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# OPTIONS_GHC -Wno-deprecations #-}</span><span>
+</span><span id="line-3"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">HMGit.Internal.Exceptions</span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-4"></span><span>    </span><span class="annot"><a href="HMGit.Internal.Exceptions.html#invalidArgument"><span class="hs-identifier">invalidArgument</span></a></span><span>
+</span><span id="line-5"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Exceptions.html#noSuchThing"><span class="hs-identifier">noSuchThing</span></a></span><span>
+</span><span id="line-6"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Exceptions.html#BugException"><span class="hs-identifier">BugException</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-7"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Exceptions.html#MonadThrowable"><span class="hs-identifier">MonadThrowable</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-8"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Exceptions.html#truncOtherThanBugs"><span class="hs-identifier">truncOtherThanBugs</span></a></span><span>
+</span><span id="line-9"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-10"></span><span>
+</span><span id="line-11"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Arrow</span></span><span>                </span><span class="hs-special">(</span><span class="annot"><span class="hs-operator">(|||)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-12"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Exception.Safe</span></span><span>       </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Exception</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Handler</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-13"></span><span>                                               </span><span class="annot"><span class="hs-identifier">MonadCatch</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">MonadThrow</span></span><span class="hs-special">,</span><span>
+</span><span id="line-14"></span><span>                                               </span><span class="annot"><span class="hs-identifier">SomeException</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">catches</span></span><span class="hs-special">,</span><span>
+</span><span id="line-15"></span><span>                                               </span><span class="annot"><span class="hs-identifier">throw</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">throwString</span></span><span class="hs-special">)</span><span>
+</span><span id="line-16"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Monad</span></span><span>                </span><span class="hs-special">(</span><span class="annot"><span class="hs-operator">(&gt;=&gt;)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-17"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Monad.Error</span></span><span>          </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ErrorT</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">runErrorT</span></span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Monad.Trans.Except</span></span><span>   </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ExceptT</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">runExceptT</span></span><span class="hs-special">)</span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Monad.Trans.Identity</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">IdentityT</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Monad.Trans.List</span></span><span>     </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ListT</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Monad.Trans.Maybe</span></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MaybeT</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Natural</span></span><span>              </span><span class="hs-special">(</span><span class="hs-keyword">type</span><span> </span><span class="annot"><span class="hs-operator">(~&gt;)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Functor.Identity</span></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Identity</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">GHC.IO.Exception</span></span><span>             </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">IOErrorType</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-25"></span><span>                                               </span><span class="annot"><span class="hs-identifier">IOException</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span>
+</span><span id="line-27"></span><span class="annot"><a href="HMGit.Internal.Exceptions.html#ioEx"><span class="hs-identifier hs-type">ioEx</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IOErrorType</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IOException</span></span><span>
+</span><span id="line-28"></span><span id="ioEx"><span class="annot"><span class="annottext">ioEx :: IOErrorType -&gt; String -&gt; IOException
+</span><a href="HMGit.Internal.Exceptions.html#ioEx"><span class="hs-identifier hs-var hs-var">ioEx</span></a></span></span><span> </span><span id="local-6989586621679151512"><span class="annot"><span class="annottext">IOErrorType
+</span><a href="#local-6989586621679151512"><span class="hs-identifier hs-var">errorType</span></a></span></span><span> </span><span id="local-6989586621679151511"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679151511"><span class="hs-identifier hs-var">description</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">IOError :: Maybe Handle
+-&gt; IOErrorType
+-&gt; String
+-&gt; String
+-&gt; Maybe CInt
+-&gt; Maybe String
+-&gt; IOException
+</span><span class="hs-identifier hs-type">IOError</span></span><span> </span><span class="hs-special">{</span><span>
+</span><span id="line-29"></span><span>    </span><span class="annot"><span class="annottext">ioe_handle :: Maybe Handle
+</span><span class="hs-identifier hs-var">ioe_handle</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Handle
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-30"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ioe_type :: IOErrorType
+</span><span class="hs-identifier hs-var">ioe_type</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">IOErrorType
+</span><a href="#local-6989586621679151512"><span class="hs-identifier hs-var">errorType</span></a></span><span>
+</span><span id="line-31"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ioe_location :: String
+</span><span class="hs-identifier hs-var">ioe_location</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-32"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ioe_description :: String
+</span><span class="hs-identifier hs-var">ioe_description</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679151511"><span class="hs-identifier hs-var">description</span></a></span><span>
+</span><span id="line-33"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ioe_errno :: Maybe CInt
+</span><span class="hs-identifier hs-var">ioe_errno</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe CInt
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-34"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ioe_filename :: Maybe String
+</span><span class="hs-identifier hs-var">ioe_filename</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe String
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-36"></span><span>
+</span><span id="line-37"></span><span class="annot"><a href="HMGit.Internal.Exceptions.html#invalidArgument"><span class="hs-identifier hs-type">invalidArgument</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IOException</span></span><span>
+</span><span id="line-38"></span><span id="invalidArgument"><span class="annot"><span class="annottext">invalidArgument :: String -&gt; IOException
+</span><a href="HMGit.Internal.Exceptions.html#invalidArgument"><span class="hs-identifier hs-var hs-var">invalidArgument</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">IOErrorType -&gt; String -&gt; IOException
+</span><a href="HMGit.Internal.Exceptions.html#ioEx"><span class="hs-identifier hs-var">ioEx</span></a></span><span> </span><span class="annot"><span class="annottext">IOErrorType
+</span><span class="hs-identifier hs-var">InvalidArgument</span></span><span>
+</span><span id="line-39"></span><span>
+</span><span id="line-40"></span><span class="annot"><a href="HMGit.Internal.Exceptions.html#noSuchThing"><span class="hs-identifier hs-type">noSuchThing</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IOException</span></span><span>
+</span><span id="line-41"></span><span id="noSuchThing"><span class="annot"><span class="annottext">noSuchThing :: String -&gt; IOException
+</span><a href="HMGit.Internal.Exceptions.html#noSuchThing"><span class="hs-identifier hs-var hs-var">noSuchThing</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">IOErrorType -&gt; String -&gt; IOException
+</span><a href="HMGit.Internal.Exceptions.html#ioEx"><span class="hs-identifier hs-var">ioEx</span></a></span><span> </span><span class="annot"><span class="annottext">IOErrorType
+</span><span class="hs-identifier hs-var">NoSuchThing</span></span><span>
+</span><span id="line-42"></span><span>
+</span><span id="line-43"></span><span class="hs-keyword">newtype</span><span> </span><span id="BugException"><span class="annot"><a href="HMGit.Internal.Exceptions.html#BugException"><span class="hs-identifier hs-var">BugException</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="BugException"><span class="annot"><a href="HMGit.Internal.Exceptions.html#BugException"><span class="hs-identifier hs-var">BugException</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-44"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span id="local-6989586621679151495"><span id="local-6989586621679151497"><span id="local-6989586621679151499"><span class="annot"><span class="annottext">Int -&gt; BugException -&gt; ShowS
+[BugException] -&gt; ShowS
+BugException -&gt; String
+(Int -&gt; BugException -&gt; ShowS)
+-&gt; (BugException -&gt; String)
+-&gt; ([BugException] -&gt; ShowS)
+-&gt; Show BugException
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+showList :: [BugException] -&gt; ShowS
+$cshowList :: [BugException] -&gt; ShowS
+show :: BugException -&gt; String
+$cshow :: BugException -&gt; String
+showsPrec :: Int -&gt; BugException -&gt; ShowS
+$cshowsPrec :: Int -&gt; BugException -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span>
+</span><span id="line-45"></span><span>
+</span><span id="line-46"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679151486"><span id="local-6989586621679151488"><span id="local-6989586621679151490"><span class="annot"><span class="hs-identifier hs-type">Exception</span></span><span> </span><span class="annot"><a href="HMGit.Internal.Exceptions.html#BugException"><span class="hs-identifier hs-type">BugException</span></a></span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-47"></span><span>
+</span><span id="line-48"></span><span class="hs-keyword">class</span><span> </span><span id="MonadThrowable"><span class="annot"><a href="HMGit.Internal.Exceptions.html#MonadThrowable"><span class="hs-identifier hs-var">MonadThrowable</span></a></span></span><span> </span><span id="local-6989586621679151613"><span class="annot"><a href="#local-6989586621679151613"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-49"></span><span>    </span><span id="local-6989586621679151617"><span id="local-6989586621679151619"><span id="fromMonad"><span class="annot"><a href="HMGit.Internal.Exceptions.html#fromMonad"><span class="hs-identifier hs-type">fromMonad</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadThrow</span></span><span> </span><span class="annot"><a href="#local-6989586621679151619"><span class="hs-identifier hs-type">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Exception</span></span><span> </span><span class="annot"><a href="#local-6989586621679151617"><span class="hs-identifier hs-type">e</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="#local-6989586621679151617"><span class="hs-identifier hs-type">e</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679151613"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679151619"><span class="hs-identifier hs-type">n</span></a></span></span></span><span>
+</span><span id="line-50"></span><span>
+</span><span id="line-51"></span><span id="local-6989586621679151483"><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Exception</span></span><span> </span><span class="annot"><a href="#local-6989586621679151483"><span class="hs-identifier hs-type">e</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="HMGit.Internal.Exceptions.html#MonadThrowable"><span class="hs-identifier hs-type">MonadThrowable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><a href="#local-6989586621679151483"><span class="hs-identifier hs-type">e</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-52"></span><span>    </span><span id="local-6989586621679151480"><span class="annot"><span class="annottext">fromMonad :: Maybe e -&gt; Either e ~&gt; n
+</span><a href="#local-6989586621679151480"><span class="hs-identifier hs-var hs-var hs-var hs-var">fromMonad</span></a></span></span><span> </span><span class="annot"><span class="annottext">Maybe e
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>  </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">e -&gt; n x
+forall (m :: * -&gt; *) e a. (MonadThrow m, Exception e) =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throw</span></span><span> </span><span class="annot"><span class="annottext">(e -&gt; n x) -&gt; (x -&gt; n x) -&gt; Either e x -&gt; n x
+forall (a :: * -&gt; * -&gt; *) b d c.
+ArrowChoice a =&gt;
+a b d -&gt; a c d -&gt; a (Either b c) d
+</span><span class="hs-operator hs-var">|||</span></span><span> </span><span class="annot"><span class="annottext">x -&gt; n x
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span>
+</span><span id="line-53"></span><span>    </span><span class="annot"><a href="HMGit.Internal.Exceptions.html#fromMonad"><span class="hs-identifier hs-var">fromMonad</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679151479"><span class="annot"><span class="annottext">e
+</span><a href="#local-6989586621679151479"><span class="hs-identifier hs-var">e</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">n x -&gt; e -&gt; n x
+forall a b. a -&gt; b -&gt; a
+</span><span class="hs-identifier hs-var">const</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">e -&gt; n x
+forall (m :: * -&gt; *) e a. (MonadThrow m, Exception e) =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throw</span></span><span> </span><span class="annot"><span class="annottext">e
+</span><a href="#local-6989586621679151479"><span class="hs-identifier hs-var">e</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(e -&gt; n x) -&gt; (x -&gt; n x) -&gt; Either e x -&gt; n x
+forall (a :: * -&gt; * -&gt; *) b d c.
+ArrowChoice a =&gt;
+a b d -&gt; a c d -&gt; a (Either b c) d
+</span><span class="hs-operator hs-var">|||</span></span><span> </span><span class="annot"><span class="annottext">x -&gt; n x
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span></span><span>
+</span><span id="line-54"></span><span>
+</span><span id="line-55"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="HMGit.Internal.Exceptions.html#MonadThrowable"><span class="hs-identifier hs-type">MonadThrowable</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-56"></span><span>    </span><span id="local-6989586621679151476"><span class="annot"><span class="annottext">fromMonad :: Maybe e -&gt; Maybe ~&gt; n
+</span><a href="#local-6989586621679151476"><span class="hs-identifier hs-var hs-var hs-var hs-var">fromMonad</span></a></span></span><span> </span><span class="annot"><span class="annottext">Maybe e
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>  </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; n x
+forall (m :: * -&gt; *) a.
+(MonadThrow m, HasCallStack) =&gt;
+String -&gt; m a
+</span><span class="hs-identifier hs-var">throwString</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Nothing&quot;</span></span><span> </span><span class="annot"><span class="annottext">n x -&gt; (x -&gt; n x) -&gt; Maybe x -&gt; n x
+forall b a. b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
+</span><span class="hs-operator hs-var">`maybe`</span></span><span> </span><span class="annot"><span class="annottext">x -&gt; n x
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span>
+</span><span id="line-57"></span><span>    </span><span class="annot"><a href="HMGit.Internal.Exceptions.html#fromMonad"><span class="hs-identifier hs-var">fromMonad</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679151474"><span class="annot"><span class="annottext">e
+</span><a href="#local-6989586621679151474"><span class="hs-identifier hs-var">e</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">e -&gt; n x
+forall (m :: * -&gt; *) e a. (MonadThrow m, Exception e) =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throw</span></span><span> </span><span class="annot"><span class="annottext">e
+</span><a href="#local-6989586621679151474"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="annot"><span class="annottext">n x -&gt; (x -&gt; n x) -&gt; Maybe x -&gt; n x
+forall b a. b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
+</span><span class="hs-operator hs-var">`maybe`</span></span><span> </span><span class="annot"><span class="annottext">x -&gt; n x
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span>
+</span><span id="line-58"></span><span>
+</span><span id="line-59"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="HMGit.Internal.Exceptions.html#MonadThrowable"><span class="hs-identifier hs-type">MonadThrowable</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Identity</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-60"></span><span>    </span><span id="local-6989586621679151472"><span class="annot"><span class="annottext">fromMonad :: Maybe e -&gt; Identity ~&gt; n
+</span><a href="#local-6989586621679151472"><span class="hs-identifier hs-var hs-var hs-var hs-var">fromMonad</span></a></span></span><span> </span><span class="annot"><span class="annottext">Maybe e
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">x -&gt; n x
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">(x -&gt; n x) -&gt; (Identity x -&gt; x) -&gt; Identity x -&gt; n x
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Identity x -&gt; x
+forall a. Identity a -&gt; a
+</span><span class="hs-identifier hs-var hs-var">runIdentity</span></span><span>
+</span><span id="line-61"></span><span>
+</span><span id="line-62"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="HMGit.Internal.Exceptions.html#MonadThrowable"><span class="hs-identifier hs-type">MonadThrowable</span></a></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-63"></span><span>    </span><span id="local-6989586621679151468"><span class="annot"><span class="annottext">fromMonad :: Maybe e -&gt; [] ~&gt; n
+</span><a href="#local-6989586621679151468"><span class="hs-identifier hs-var hs-var hs-var hs-var">fromMonad</span></a></span></span><span> </span><span class="annot"><span class="annottext">Maybe e
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>  </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; n x
+forall (m :: * -&gt; *) a.
+(MonadThrow m, HasCallStack) =&gt;
+String -&gt; m a
+</span><span class="hs-identifier hs-var">throwString</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;empty&quot;</span></span><span>
+</span><span id="line-64"></span><span>    </span><span class="annot"><a href="HMGit.Internal.Exceptions.html#fromMonad"><span class="hs-identifier hs-var">fromMonad</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679151467"><span class="annot"><span class="annottext">e
+</span><a href="#local-6989586621679151467"><span class="hs-identifier hs-var">e</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">e -&gt; n x
+forall (m :: * -&gt; *) e a. (MonadThrow m, Exception e) =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throw</span></span><span> </span><span class="annot"><span class="annottext">e
+</span><a href="#local-6989586621679151467"><span class="hs-identifier hs-var">e</span></a></span><span>
+</span><span id="line-65"></span><span>    </span><span class="annot"><a href="HMGit.Internal.Exceptions.html#fromMonad"><span class="hs-identifier hs-var">fromMonad</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe e
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679151466"><span class="annot"><span class="annottext">x
+</span><a href="#local-6989586621679151466"><span class="hs-identifier hs-var">x</span></a></span></span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span class="annot"><span class="annottext">[x]
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span>     </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">x -&gt; n x
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">x
+</span><a href="#local-6989586621679151466"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-66"></span><span>
+</span><span id="line-67"></span><span id="local-6989586621679151464"><span id="local-6989586621679151465"><span class="hs-keyword">instance</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Exception</span></span><span> </span><span class="annot"><a href="#local-6989586621679151465"><span class="hs-identifier hs-type">e</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Exceptions.html#MonadThrowable"><span class="hs-identifier hs-type">MonadThrowable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679151464"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="HMGit.Internal.Exceptions.html#MonadThrowable"><span class="hs-identifier hs-type">MonadThrowable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ExceptT</span></span><span> </span><span class="annot"><a href="#local-6989586621679151465"><span class="hs-identifier hs-type">e</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679151464"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-68"></span><span>    </span><span id="local-6989586621679151462"><span class="annot"><span class="annottext">fromMonad :: Maybe e -&gt; ExceptT e m ~&gt; n
+</span><a href="#local-6989586621679151462"><span class="hs-identifier hs-var hs-var hs-var hs-var">fromMonad</span></a></span></span><span> </span><span id="local-6989586621679151461"><span class="annot"><span class="annottext">Maybe e
+</span><a href="#local-6989586621679151461"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe e -&gt; m ~&gt; n
+forall (m :: * -&gt; *) (n :: * -&gt; *) e.
+(MonadThrowable m, MonadThrow n, Exception e) =&gt;
+Maybe e -&gt; m ~&gt; n
+</span><a href="HMGit.Internal.Exceptions.html#fromMonad"><span class="hs-identifier hs-var">fromMonad</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe e
+</span><a href="#local-6989586621679151461"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="annot"><span class="annottext">(m (Either e x) -&gt; n (Either e x))
+-&gt; (ExceptT e m x -&gt; m (Either e x))
+-&gt; ExceptT e m x
+-&gt; n (Either e x)
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ExceptT e m x -&gt; m (Either e x)
+forall e (m :: * -&gt; *) a. ExceptT e m a -&gt; m (Either e a)
+</span><span class="hs-identifier hs-var">runExceptT</span></span><span> </span><span class="annot"><span class="annottext">(ExceptT e m x -&gt; n (Either e x))
+-&gt; (Either e x -&gt; n x) -&gt; ExceptT e m x -&gt; n x
+forall (m :: * -&gt; *) a b c.
+Monad m =&gt;
+(a -&gt; m b) -&gt; (b -&gt; m c) -&gt; a -&gt; m c
+</span><span class="hs-operator hs-var">&gt;=&gt;</span></span><span> </span><span class="annot"><span class="annottext">Maybe e -&gt; Either e ~&gt; n
+forall (m :: * -&gt; *) (n :: * -&gt; *) e.
+(MonadThrowable m, MonadThrow n, Exception e) =&gt;
+Maybe e -&gt; m ~&gt; n
+</span><a href="HMGit.Internal.Exceptions.html#fromMonad"><span class="hs-identifier hs-var">fromMonad</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe e
+</span><a href="#local-6989586621679151461"><span class="hs-identifier hs-var">e</span></a></span></span></span><span>
+</span><span id="line-69"></span><span>
+</span><span id="line-70"></span><span id="local-6989586621679151460"><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="HMGit.Internal.Exceptions.html#MonadThrowable"><span class="hs-identifier hs-type">MonadThrowable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679151460"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="HMGit.Internal.Exceptions.html#MonadThrowable"><span class="hs-identifier hs-type">MonadThrowable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MaybeT</span></span><span> </span><span class="annot"><a href="#local-6989586621679151460"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-71"></span><span>    </span><span id="local-6989586621679151458"><span class="annot"><span class="annottext">fromMonad :: Maybe e -&gt; MaybeT m ~&gt; n
+</span><a href="#local-6989586621679151458"><span class="hs-identifier hs-var hs-var hs-var hs-var">fromMonad</span></a></span></span><span> </span><span id="local-6989586621679151457"><span class="annot"><span class="annottext">Maybe e
+</span><a href="#local-6989586621679151457"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe e -&gt; m ~&gt; n
+forall (m :: * -&gt; *) (n :: * -&gt; *) e.
+(MonadThrowable m, MonadThrow n, Exception e) =&gt;
+Maybe e -&gt; m ~&gt; n
+</span><a href="HMGit.Internal.Exceptions.html#fromMonad"><span class="hs-identifier hs-var">fromMonad</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe e
+</span><a href="#local-6989586621679151457"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="annot"><span class="annottext">(m (Maybe x) -&gt; n (Maybe x))
+-&gt; (MaybeT m x -&gt; m (Maybe x)) -&gt; MaybeT m x -&gt; n (Maybe x)
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">MaybeT m x -&gt; m (Maybe x)
+forall (m :: * -&gt; *) a. MaybeT m a -&gt; m (Maybe a)
+</span><span class="hs-identifier hs-var hs-var">runMaybeT</span></span><span> </span><span class="annot"><span class="annottext">(MaybeT m x -&gt; n (Maybe x))
+-&gt; (Maybe x -&gt; n x) -&gt; MaybeT m x -&gt; n x
+forall (m :: * -&gt; *) a b c.
+Monad m =&gt;
+(a -&gt; m b) -&gt; (b -&gt; m c) -&gt; a -&gt; m c
+</span><span class="hs-operator hs-var">&gt;=&gt;</span></span><span> </span><span class="annot"><span class="annottext">Maybe e -&gt; Maybe ~&gt; n
+forall (m :: * -&gt; *) (n :: * -&gt; *) e.
+(MonadThrowable m, MonadThrow n, Exception e) =&gt;
+Maybe e -&gt; m ~&gt; n
+</span><a href="HMGit.Internal.Exceptions.html#fromMonad"><span class="hs-identifier hs-var">fromMonad</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe e
+</span><a href="#local-6989586621679151457"><span class="hs-identifier hs-var">e</span></a></span></span><span>
+</span><span id="line-72"></span><span>
+</span><span id="line-73"></span><span id="local-6989586621679151455"><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="HMGit.Internal.Exceptions.html#MonadThrowable"><span class="hs-identifier hs-type">MonadThrowable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679151455"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="HMGit.Internal.Exceptions.html#MonadThrowable"><span class="hs-identifier hs-type">MonadThrowable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">IdentityT</span></span><span> </span><span class="annot"><a href="#local-6989586621679151455"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-74"></span><span>    </span><span id="local-6989586621679151453"><span class="annot"><span class="annottext">fromMonad :: Maybe e -&gt; IdentityT m ~&gt; n
+</span><a href="#local-6989586621679151453"><span class="hs-identifier hs-var hs-var hs-var hs-var">fromMonad</span></a></span></span><span> </span><span id="local-6989586621679151452"><span class="annot"><span class="annottext">Maybe e
+</span><a href="#local-6989586621679151452"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe e -&gt; m ~&gt; n
+forall (m :: * -&gt; *) (n :: * -&gt; *) e.
+(MonadThrowable m, MonadThrow n, Exception e) =&gt;
+Maybe e -&gt; m ~&gt; n
+</span><a href="HMGit.Internal.Exceptions.html#fromMonad"><span class="hs-identifier hs-var">fromMonad</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe e
+</span><a href="#local-6989586621679151452"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="annot"><span class="annottext">(m x -&gt; n x) -&gt; (IdentityT m x -&gt; m x) -&gt; IdentityT m x -&gt; n x
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">IdentityT m x -&gt; m x
+forall k (f :: k -&gt; *) (a :: k). IdentityT f a -&gt; f a
+</span><span class="hs-identifier hs-var hs-var">runIdentityT</span></span></span><span>
+</span><span id="line-75"></span><span>
+</span><span id="line-76"></span><span id="local-6989586621679151450"><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="HMGit.Internal.Exceptions.html#MonadThrowable"><span class="hs-identifier hs-type">MonadThrowable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679151450"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="HMGit.Internal.Exceptions.html#MonadThrowable"><span class="hs-identifier hs-type">MonadThrowable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ListT</span></span><span> </span><span class="annot"><a href="#local-6989586621679151450"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-77"></span><span>    </span><span id="local-6989586621679151448"><span class="annot"><span class="annottext">fromMonad :: Maybe e -&gt; ListT m ~&gt; n
+</span><a href="#local-6989586621679151448"><span class="hs-identifier hs-var hs-var hs-var hs-var">fromMonad</span></a></span></span><span> </span><span id="local-6989586621679151447"><span class="annot"><span class="annottext">Maybe e
+</span><a href="#local-6989586621679151447"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe e -&gt; m ~&gt; n
+forall (m :: * -&gt; *) (n :: * -&gt; *) e.
+(MonadThrowable m, MonadThrow n, Exception e) =&gt;
+Maybe e -&gt; m ~&gt; n
+</span><a href="HMGit.Internal.Exceptions.html#fromMonad"><span class="hs-identifier hs-var">fromMonad</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe e
+</span><a href="#local-6989586621679151447"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="annot"><span class="annottext">(m [x] -&gt; n [x]) -&gt; (ListT m x -&gt; m [x]) -&gt; ListT m x -&gt; n [x]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ListT m x -&gt; m [x]
+forall (m :: * -&gt; *) a. ListT m a -&gt; m [a]
+</span><span class="hs-identifier hs-var hs-var">runListT</span></span><span> </span><span class="annot"><span class="annottext">(ListT m x -&gt; n [x]) -&gt; ([x] -&gt; n x) -&gt; ListT m x -&gt; n x
+forall (m :: * -&gt; *) a b c.
+Monad m =&gt;
+(a -&gt; m b) -&gt; (b -&gt; m c) -&gt; a -&gt; m c
+</span><span class="hs-operator hs-var">&gt;=&gt;</span></span><span> </span><span class="annot"><span class="annottext">Maybe e -&gt; [] ~&gt; n
+forall (m :: * -&gt; *) (n :: * -&gt; *) e.
+(MonadThrowable m, MonadThrow n, Exception e) =&gt;
+Maybe e -&gt; m ~&gt; n
+</span><a href="HMGit.Internal.Exceptions.html#fromMonad"><span class="hs-identifier hs-var">fromMonad</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe e
+</span><a href="#local-6989586621679151447"><span class="hs-identifier hs-var">e</span></a></span></span><span>
+</span><span id="line-78"></span><span>
+</span><span id="line-79"></span><span id="local-6989586621679151444"><span id="local-6989586621679151445"><span class="hs-keyword">instance</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Exception</span></span><span> </span><span class="annot"><a href="#local-6989586621679151445"><span class="hs-identifier hs-type">e</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Exceptions.html#MonadThrowable"><span class="hs-identifier hs-type">MonadThrowable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679151444"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="HMGit.Internal.Exceptions.html#MonadThrowable"><span class="hs-identifier hs-type">MonadThrowable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ErrorT</span></span><span> </span><span class="annot"><a href="#local-6989586621679151445"><span class="hs-identifier hs-type">e</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679151444"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-80"></span><span>    </span><span id="local-6989586621679151442"><span class="annot"><span class="annottext">fromMonad :: Maybe e -&gt; ErrorT e m ~&gt; n
+</span><a href="#local-6989586621679151442"><span class="hs-identifier hs-var hs-var hs-var hs-var">fromMonad</span></a></span></span><span> </span><span id="local-6989586621679151441"><span class="annot"><span class="annottext">Maybe e
+</span><a href="#local-6989586621679151441"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe e -&gt; m ~&gt; n
+forall (m :: * -&gt; *) (n :: * -&gt; *) e.
+(MonadThrowable m, MonadThrow n, Exception e) =&gt;
+Maybe e -&gt; m ~&gt; n
+</span><a href="HMGit.Internal.Exceptions.html#fromMonad"><span class="hs-identifier hs-var">fromMonad</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe e
+</span><a href="#local-6989586621679151441"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="annot"><span class="annottext">(m (Either e x) -&gt; n (Either e x))
+-&gt; (ErrorT e m x -&gt; m (Either e x))
+-&gt; ErrorT e m x
+-&gt; n (Either e x)
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ErrorT e m x -&gt; m (Either e x)
+forall e (m :: * -&gt; *) a. ErrorT e m a -&gt; m (Either e a)
+</span><span class="hs-identifier hs-var hs-var">runErrorT</span></span><span> </span><span class="annot"><span class="annottext">(ErrorT e m x -&gt; n (Either e x))
+-&gt; (Either e x -&gt; n x) -&gt; ErrorT e m x -&gt; n x
+forall (m :: * -&gt; *) a b c.
+Monad m =&gt;
+(a -&gt; m b) -&gt; (b -&gt; m c) -&gt; a -&gt; m c
+</span><span class="hs-operator hs-var">&gt;=&gt;</span></span><span> </span><span class="annot"><span class="annottext">Maybe e -&gt; Either e ~&gt; n
+forall (m :: * -&gt; *) (n :: * -&gt; *) e.
+(MonadThrowable m, MonadThrow n, Exception e) =&gt;
+Maybe e -&gt; m ~&gt; n
+</span><a href="HMGit.Internal.Exceptions.html#fromMonad"><span class="hs-identifier hs-var">fromMonad</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe e
+</span><a href="#local-6989586621679151441"><span class="hs-identifier hs-var">e</span></a></span></span></span><span>
+</span><span id="line-81"></span><span>
+</span><span id="line-82"></span><span id="local-6989586621679151440"><span class="annot"><a href="HMGit.Internal.Exceptions.html#truncOtherThanBugs"><span class="hs-identifier hs-type">truncOtherThanBugs</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadCatch</span></span><span> </span><span class="annot"><a href="#local-6989586621679151440"><span class="hs-identifier hs-type">m</span></a></span><span>
+</span><span id="line-83"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679151440"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-84"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679151440"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span><span>
+</span><span id="line-85"></span><span id="truncOtherThanBugs"><span class="annot"><span class="annottext">truncOtherThanBugs :: m () -&gt; m ()
+</span><a href="HMGit.Internal.Exceptions.html#truncOtherThanBugs"><span class="hs-identifier hs-var hs-var">truncOtherThanBugs</span></a></span></span><span> </span><span id="local-6989586621679151439"><span class="annot"><span class="annottext">m ()
+</span><a href="#local-6989586621679151439"><span class="hs-identifier hs-var">m</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">m ()
+</span><a href="#local-6989586621679151439"><span class="hs-identifier hs-var">m</span></a></span><span>
+</span><span id="line-86"></span><span>    </span><span class="annot"><span class="annottext">m () -&gt; [Handler m ()] -&gt; m ()
+forall (m :: * -&gt; *) a.
+(MonadCatch m, MonadThrow m) =&gt;
+m a -&gt; [Handler m a] -&gt; m a
+</span><span class="hs-operator hs-var">`catches`</span></span><span>
+</span><span id="line-87"></span><span>        </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">(BugException -&gt; m ()) -&gt; Handler m ()
+forall (m :: * -&gt; *) a e. Exception e =&gt; (e -&gt; m a) -&gt; Handler m a
+</span><span class="hs-identifier hs-var">Handler</span></span><span> </span><span class="annot"><span class="annottext">((BugException -&gt; m ()) -&gt; Handler m ())
+-&gt; (BugException -&gt; m ()) -&gt; Handler m ()
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679151437"><span class="annot"><span class="annottext">e :: BugException
+</span><a href="#local-6989586621679151437"><span class="hs-identifier hs-var">e</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Exceptions.html#BugException"><span class="hs-identifier hs-type">BugException</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">BugException -&gt; m ()
+forall (m :: * -&gt; *) e a. (MonadThrow m, Exception e) =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">throw</span></span><span> </span><span class="annot"><span class="annottext">BugException
+</span><a href="#local-6989586621679151437"><span class="hs-identifier hs-var">e</span></a></span><span>
+</span><span id="line-88"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(SomeException -&gt; m ()) -&gt; Handler m ()
+forall (m :: * -&gt; *) a e. Exception e =&gt; (e -&gt; m a) -&gt; Handler m a
+</span><span class="hs-identifier hs-var">Handler</span></span><span> </span><span class="annot"><span class="annottext">((SomeException -&gt; m ()) -&gt; Handler m ())
+-&gt; (SomeException -&gt; m ()) -&gt; Handler m ()
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">SomeException</span></span><span> </span><span class="annot"><span class="annottext">e
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">() -&gt; m ()
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-89"></span><span>        </span><span class="hs-special">]</span><span>
+</span><span id="line-90"></span></pre></body></html>

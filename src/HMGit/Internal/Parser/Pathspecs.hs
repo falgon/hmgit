@@ -44,9 +44,9 @@ pathspec cDir fpath pat = pathspec' `catchAny`
                     ?*> makeRelativeEx (P.toFilePath cDir) (P.toFilePath fpath)
 
 pathspecs :: (MonadCatch m, MonadIO m, Alternative m)
-    => P.Path P.Abs P.Dir -- the specified base directory
-    -> P.SomeBase P.File -- target file path
-    -> [String] -- pathspecs
+    => P.Path P.Abs P.Dir -- ^ the specified base directory
+    -> P.SomeBase P.File -- ^ the target file path
+    -> [String] -- ^ pathspecs
     -> HMGitT m FilePath
 pathspecs cDir (P.Abs fpath) [] = pathspec cDir fpath []
 pathspecs cDir (P.Rel fpath) [] = hmGitRoot
@@ -59,8 +59,8 @@ pathspecs cDir (P.Rel fpath) pat = (pathspec
         >>= flip foldChoiceM pat
 
 lsMatch :: (MonadCatch m, MonadIO m)
-    => P.Path P.Abs P.Dir -- the specified base directory
-    -> String -- pathspec
+    => P.Path P.Abs P.Dir -- ^ the specified base directory
+    -> String -- ^ pathspec
     -> HMGitT m (S.Set (P.Path P.Abs P.File))
 lsMatch _ [] = pure S.empty
 lsMatch cDir pat = do
@@ -91,7 +91,7 @@ lsMatch cDir pat = do
           ]
 
 lsMatches :: (MonadCatch m, MonadIO m)
-    => P.Path P.Abs P.Dir -- the specified base directory
-    -> [String] -- pathspecs
+    => P.Path P.Abs P.Dir -- ^ the specified base directory
+    -> [String] -- ^ pathspecs
     -> HMGitT m (S.Set (P.Path P.Abs P.File))
 lsMatches cDir = foldMapM (lsMatch cDir)
