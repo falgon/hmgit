@@ -1,9 +1,9 @@
 name:                hmgit
-version:             0.1.0.0
+version:             1.0.0.0
 github:              "falgon/hmgit"
 license:             BSD3
 author:              "Roki"
-maintainer:          "example@example.com"
+maintainer:          "falgon53@yahoo.co.jp"
 copyright:           "2021 Roki"
 
 extra-source-files:
@@ -44,7 +44,8 @@ dependencies:
 - Diff
 - pretty
 - unix
-- time
+- file-embed
+- template-haskell
 
 library:
   source-dirs: src
@@ -88,5 +89,3 @@ tests:
     - hspec
     - hspec-core
     - hspec-contrib
-    - file-embed
-    - template-haskell

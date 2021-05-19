@@ -1,21 +1,25 @@
+{-# LANGUAGE TemplateHaskell #-}
 module HMGit.Internal.Parser.Pathspecs (
     pathspecs
   , lsMatches
 ) where
 
-import           HMGit.Internal.Core                  (HMGitT, hmGitRoot)
+import           HMGit.Internal.Core                  (HMGitT)
+import           HMGit.Internal.Core.Runner.API       (hmGitDBPath, hmGitRoot)
 import           HMGit.Internal.Exceptions            (MonadThrowable (..))
 import qualified HMGit.Internal.Parser.Pathspecs.Glob as G
-import           HMGit.Internal.Utils                 (foldChoiceM,
+import           HMGit.Internal.Utils                 (foldChoiceM, foldMapM,
                                                        makeRelativeEx, (?*>))
 
 import           Control.Applicative                  (Alternative (..))
 import           Control.Exception.Safe               (MonadCatch, catchAny,
                                                        throwString)
-import           Control.Monad.Extra                  (concatMapM, ifM)
+import           Control.Monad.Extra                  (filterM, ifM, orM)
 import           Control.Monad.IO.Class               (MonadIO (..))
 import           Data.Functor                         ((<&>))
+import qualified Data.Set                             as S
 import           Data.Void                            (Void)
+import           Path                                 (Dir, Rel)
 import qualified Path                                 as P
 import qualified Path.IO                              as P
 import           Text.Printf                          (printf)
@@ -57,26 +61,37 @@ pathspecs cDir (P.Rel fpath) pat = (pathspec
 lsMatch :: (MonadCatch m, MonadIO m)
     => P.Path P.Abs P.Dir -- the specified base directory
     -> String -- pathspec
-    -> HMGitT m [P.Path P.Rel P.File]
-lsMatch _ [] = pure []
+    -> HMGitT m (S.Set (P.Path P.Abs P.File))
+lsMatch _ [] = pure S.empty
 lsMatch cDir pat = do
     root <- hmGitRoot
     x <- P.resolveDir cDir pat -- The path can be resolved regardless of the directory or file
     ir <- G.transpile $ init $ P.toFilePath x
     if G.isLiteral ir then let mFile = P.parseAbsFile (init $ P.toFilePath x) in
         ifM (maybe (pure False) P.doesFileExist mFile)
-            (fromMonad (Nothing :: Maybe Void) mFile >>= P.stripProperPrefix root <&> (:[])) $
+            (fromMonad (Nothing :: Maybe Void) mFile <&> S.singleton) $
             ifM (P.doesDirExist x)
-                (P.listDirRecur x >>= mapM (P.stripProperPrefix root) . snd)
-                (pure [])
+                (P.listDirRecur x >>= excludeDB . snd <&> S.fromList)
+                (pure S.empty)
     else
         P.listDirRecur root
-            >>= mapM (P.stripProperPrefix root)
-                . filter (flip G.match ir . P.toFilePath) . snd
-        -- excludeDB = filterM (fmap not . ((P.isProperPrefixOf <$> hmGitDBPath) <*>) . pure)
+            >>= excludeDB . snd
+            <&> S.fromList . filter (flip G.match ir . P.toFilePath)
+    where
+        excludeDB = filterM $ \f -> not <$> orM [
+            P.isProperPrefixOf
+                <$> hmGitDBPath
+                <*> pure f
+          , P.isProperPrefixOf
+                <$> (hmGitRoot <&> (P.</> $(P.mkRelDir ".stack-work"))) -- HACK
+                <*> pure f
+          , P.isProperPrefixOf
+                <$> (hmGitRoot <&> (P.</> $(P.mkRelDir "test/external"))) -- HACK
+                <*> pure f
+          ]
 
 lsMatches :: (MonadCatch m, MonadIO m)
     => P.Path P.Abs P.Dir -- the specified base directory
     -> [String] -- pathspecs
-    -> HMGitT m [P.Path P.Rel P.File]
-lsMatches cDir = concatMapM (lsMatch cDir)
+    -> HMGitT m (S.Set (P.Path P.Abs P.File))
+lsMatches cDir = foldMapM (lsMatch cDir)

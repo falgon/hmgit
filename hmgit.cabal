@@ -4,15 +4,15 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d9b2e6701fc5efd3ca7bf9a8dc504eecaf970b3dfcd385ebd6dc3a6877748a52
+-- hash: 93652f55a169d5e04147c6a36a2bc1130845b0fef55a3efd6dbda7c462ff2d8c
 
 name:           hmgit
-version:        0.1.0.0
+version:        1.0.0.0
 description:    Please see the README on GitHub at <https://github.com/githubuser/hmgit#readme>
 homepage:       https://github.com/falgon/hmgit#readme
 bug-reports:    https://github.com/falgon/hmgit/issues
 author:         Roki
-maintainer:     example@example.com
+maintainer:     falgon53@yahoo.co.jp
 copyright:      2021 Roki
 license:        BSD3
 license-file:   LICENSE
@@ -50,6 +50,8 @@ library
       HMGit.Commands.Porcelain.Status
       HMGit.Commands.Porcelain.Status.Cmd
       HMGit.Commands.Porcelain.Status.Core
+      HMGit.Development
+      HMGit.Development.TH
       HMGit.Internal.Core
       HMGit.Internal.Core.Runner
       HMGit.Internal.Core.Runner.API
@@ -77,6 +79,7 @@ library
     , cryptohash
     , directory
     , extra
+    , file-embed
     , filepath
     , megaparsec
     , monad-loops
@@ -88,7 +91,7 @@ library
     , pretty
     , regex-posix
     , safe-exceptions
-    , time
+    , template-haskell
     , transformers
     , unix
     , utf8-string
@@ -110,6 +113,7 @@ executable hmgit
     , cryptohash
     , directory
     , extra
+    , file-embed
     , filepath
     , hmgit
     , megaparsec
@@ -122,7 +126,7 @@ executable hmgit
     , pretty
     , regex-posix
     , safe-exceptions
-    , time
+    , template-haskell
     , transformers
     , unix
     , utf8-string
@@ -136,7 +140,6 @@ test-suite hmgit-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Test.Utils
       Paths_hmgit
   hs-source-dirs:
       test
@@ -169,7 +172,6 @@ test-suite hmgit-test
     , regex-posix
     , safe-exceptions
     , template-haskell
-    , time
     , transformers
     , unix
     , utf8-string

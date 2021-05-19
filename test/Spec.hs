@@ -1,10 +1,9 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Main where
 
-import           Test.Utils                      (relativeProjRoot)
-
 import           HMGit                           (HMGitConfig (..), HMGitT,
                                                   runHMGit)
+import           HMGit.Development.TH            (relativeProjRoot)
 import           HMGit.Internal.Parser.Pathspecs (lsMatches, pathspecs)
 
 import           Control.Applicative             (Alternative)
@@ -13,6 +12,8 @@ import           Control.Monad.IO.Class          (MonadIO (..))
 import           Control.Monad.Trans             (lift)
 import           Data.Either                     (isLeft)
 import           Data.Functor                    (($>))
+import           Data.Functor                    ((<&>))
+import qualified Data.Set                        as S
 import           Path                            (Abs, Dir, File, Rel)
 import qualified Path                            as P
 import qualified Path.IO                         as P
@@ -103,38 +104,39 @@ testLsMatches = do
         $ lsMatches' ["../../../*.txt"]
     t7 <- lsMatches' ["hello.txt"]
     t8 <- lsMatches' [P.toFilePath $ P.parent hmGitPath P.</> $(P.mkRelFile "hello.txt")]
-    -- t9 <- tryAny $ lsMatches' [P.toFilePath hmGitPath]
+    t9 <- lsMatches' [P.toFilePath hmGitPath]
     pure $ TestLabel "lsMatches" $ TestList [
-        "*.txt" ~: t1 ~?= [ $(P.mkRelFile "hello.txt") ]
-      , "*.hs" ~: t2 ~?= [
+        "*.txt" ~: t1 ~?= S.singleton $(P.mkRelFile "hello.txt")
+      , "*.hs" ~: t2 ~?= S.fromList [
             $(P.mkRelFile "foo/bar/hoge/piyo/cot.hs")
           , $(P.mkRelFile "foo/bar/hoge/piyo/cat1.hs")
           , $(P.mkRelFile "foo/bar/hoge/piyo/cat.hs")
           , $(P.mkRelFile "foo/bar/var/hello.hs")
           ]
-      , "*.txt *.hs" ~: t3 ~?= [
+      , "*.txt *.hs" ~: t3 ~?= S.fromList [
             $(P.mkRelFile "hello.txt")
           , $(P.mkRelFile "foo/bar/hoge/piyo/cot.hs")
           , $(P.mkRelFile "foo/bar/hoge/piyo/cat1.hs")
           , $(P.mkRelFile "foo/bar/hoge/piyo/cat.hs")
           , $(P.mkRelFile "foo/bar/var/hello.hs")
           ]
-      , "*.hs" ~: t4 ~?= [
+      , "*.hs" ~: t4 ~?= S.fromList [
             $(P.mkRelFile "foo/bar/hoge/piyo/cot.hs")
           , $(P.mkRelFile "foo/bar/hoge/piyo/cat1.hs")
           , $(P.mkRelFile "foo/bar/hoge/piyo/cat.hs")
           ]
-      , "<no pathspecs>" ~: t5 ~?= mempty
-      , "../../../*.txt" ~: t6 ~?= [ $(P.mkRelFile "hello.txt") ]
-      , "hello.txt" ~: t7 ~?= [ $(P.mkRelFile "hello.txt") ]
-      , P.toFilePath (P.parent hmGitPath P.</> $(P.mkRelFile "hello.txt")) ~: t8 ~?= [
-            $(P.mkRelFile "hello.txt")
-          ]
-      --, P.toFilePath hmGitPath ~: isLeft t9 ~?= True
+      , "<no pathspecs>" ~: t5 ~?= S.empty
+      , "../../../*.txt" ~: t6 ~?= S.singleton $(P.mkRelFile "hello.txt")
+      , "hello.txt" ~: t7 ~?= S.singleton $(P.mkRelFile "hello.txt")
+      , P.toFilePath (P.parent hmGitPath P.</> $(P.mkRelFile "hello.txt")) ~: t8 ~?=
+            S.singleton $(P.mkRelFile "hello.txt")
+      , P.toFilePath hmGitPath ~: S.null t9 ~?= True
       ]
     where
         lsMatches' xs = P.getCurrentDir
             >>= flip lsMatches xs
+            >>= mapM (P.stripProperPrefix $ P.parent hmGitPath) . S.toList
+            <&> S.fromList
 
 testMain :: (MonadIO m, MonadMask m, Alternative m) => HMGitT m Test
 testMain = do

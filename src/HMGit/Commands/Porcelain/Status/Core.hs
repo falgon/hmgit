@@ -51,7 +51,7 @@ statusDefault = Status (cfg >=> runReaderT statusShow')
             <*> P.getCurrentDir
         statusShow' = zipWithM_ statusShow
             [ statusChanged, statusNew, statusDeleted ]
-            [ "Changes not staged for commit:\n", "New files:\n", "Deleted files:\n" ]
+            [ "Changes files:\n", "New files:\n", "Deleted files:\n" ]
 
 statusShort :: (MonadCatch m, MonadIO m, Alternative m) => Status m
 statusShort = Status $ \pats -> do

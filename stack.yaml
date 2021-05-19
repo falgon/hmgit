@@ -65,3 +65,12 @@ extra-deps:
 #
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor
+
+build:
+  haddock: false
+  haddock-arguments:
+    haddock-args:
+      - --odir=docs
+  open-haddocks: false
+  haddock-internal: false
+  haddock-hyperlink-source: true

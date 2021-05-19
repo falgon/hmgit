@@ -1,5 +1,5 @@
 {-# LANGUAGE CPP, TemplateHaskell #-}
-module Test.Utils (
+module HMGit.Development.TH (
     relativeProjRoot
 ) where
 
@@ -23,3 +23,4 @@ strToExp s = do
 
 relativeProjRoot :: FilePath -> Q Exp
 relativeProjRoot = makeRelativeToProject >=> strToExp
+

@@ -9,7 +9,7 @@ import           HMGit.Internal.Core             (IndexEntry (..),
                                                   ObjectType (..), fromContents,
                                                   loadIndex, storeIndex,
                                                   storeObject)
-import           HMGit.Internal.Core.Runner      (HMGitT)
+import           HMGit.Internal.Core.Runner      (HMGitT, hmGitRoot)
 import           HMGit.Internal.Parser.Pathspecs (lsMatches)
 
 import           Control.Exception.Safe          (MonadCatch, MonadThrow)
@@ -20,6 +20,7 @@ import qualified Data.ByteString.Lazy            as BL
 import           Data.Functor                    ((<&>))
 import           Data.List                       (sortBy)
 import           Data.Ratio                      (numerator)
+import qualified Data.Set                        as S
 import qualified Path                            as P
 import qualified Path.IO                         as P
 import           System.Posix.Files
@@ -30,20 +31,24 @@ newtype Add m = Add { add :: [FilePath] -> HMGitT m () }
 type BlobGenerator m = BL.ByteString -> HMGitT m B.ByteString
 
 existEntries :: (MonadThrow m, MonadIO m)
-    => [P.Path P.Rel P.File]
+    => S.Set (P.Path P.Abs P.File)
     -> HMGitT m [IndexEntry]
-existEntries paths = loadIndex
-    <&> filter (not . flip elem paths . iePath)
+existEntries paths = do
+    root <- hmGitRoot
+    paths' <- mapM (P.stripProperPrefix root) $ S.toList paths
+    loadIndex <&> filter (not . flip elem paths' . iePath)
 
 additionalEntries :: (MonadCatch m, MonadIO m)
     => BlobGenerator m
-    -> [P.Path P.Rel P.File]
+    -> S.Set (P.Path P.Abs P.File)
     -> HMGitT m [IndexEntry]
-additionalEntries blobGen paths = forM paths $ \p -> do
+additionalEntries blobGen paths = forM (S.toList paths) $ \p -> do
     sha1 <- liftIO (BL.readFile $ P.toFilePath p)
         >>= blobGen
         <&> BL.fromStrict
     stat <- liftIO $ getFileStatus $ P.toFilePath p
+    root <- hmGitRoot
+    p' <- P.stripProperPrefix root p
     pure $ IndexEntry
         (fromIntegral $ fromEnum $ toRational $ statusChangeTime stat)
         (fromIntegral $ numerator $ toRational $ statusChangeTimeHiRes stat)
@@ -57,7 +62,7 @@ additionalEntries blobGen paths = forM paths $ \p -> do
         (fromIntegral $ fileSize stat)
         sha1
         (fromIntegral $ length $ P.toFilePath p)
-        p
+        p'
     where
         fileModeRegular stat
             | fileMode stat == 0o100664 = 0o100644

@@ -1,0 +1,17 @@
+import qualified Path as P
+import qualified Path.IO as P
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy as BL
+import qualified Data.ByteString.Char8 as BC
+import qualified Data.ByteString.Lazy.Char8 as BLC
+
+:m +Path
+:m +Control.Monad
+:m +Control.Monad.Extra
+:m +Control.Monad.Loops
+:m +Control.Monad.IO.Class
+:m +Data.Functor
+:set -XOverloadedStrings -XTemplateHaskell
+:seti editor vim
+
+:set prompt "HMGit (Gijutsu syoten 11)> "
