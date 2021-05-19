@@ -71,7 +71,9 @@ lsMatch cDir pat = do
                 (pure [])
     else
         P.listDirRecur root
-            >>= mapM (P.stripProperPrefix root) . filter (flip G.match ir . P.toFilePath) . snd
+            >>= mapM (P.stripProperPrefix root)
+                . filter (flip G.match ir . P.toFilePath) . snd
+        -- excludeDB = filterM (fmap not . ((P.isProperPrefixOf <$> hmGitDBPath) <*>) . pure)
 
 lsMatches :: (MonadCatch m, MonadIO m)
     => P.Path P.Abs P.Dir -- the specified base directory

@@ -64,7 +64,9 @@ optsToHMGitT (Opts dbName cmd) = (,)
         fromCmd (CmdHashObject objType runner fpath) = pure $ hashObject runner objType fpath
         fromCmd (CmdLsFiles runner pathspecs) = pure $ lsFiles runner pathspecs
         fromCmd (CmdStatus runner pathspecs) = pure $ status runner pathspecs
-        fromCmd (CmdDiff runner paths) = pure $ diff runner paths
+        fromCmd (CmdDiff runner paths noPrefix srcP dstP)
+            | noPrefix = pure $ diff runner (showDiff mempty mempty) paths
+            | otherwise = pure $ diff runner (showDiff srcP dstP) paths
         fromCmd (CmdAdd runner pathspecs) = pure $ add runner pathspecs
         fromCmd _ = throw $ BugException "never reach here"
 

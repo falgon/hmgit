@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 module HMGit.Commands.Porcelain.Diff.Core (
     Diff (..)
+  , showDiff
   , diffShow
 ) where
 
@@ -29,21 +30,25 @@ import qualified Path                            as P
 import qualified Path.IO                         as P
 import qualified Text.PrettyPrint                as PP
 
-newtype Diff m = Diff { diff :: [FilePath] -> HMGitT m () }
-
-showDiff :: FilePath -- file name
+type ShowDiff = FilePath -- file name
     -> String -- first contents
     -> String -- second contents
     -> String
-showDiff fname lhs rhs = PP.render
+
+newtype Diff m = Diff { diff :: ShowDiff -> [FilePath] -> HMGitT m () }
+
+showDiff :: String -- source prefix
+    -> String -- destination prefix
+    -> ShowDiff
+showDiff srcP dstP fname lhs rhs = PP.render
     $ prettyContextDiff
-        (PP.text fname)
-        (PP.text fname)
+        (PP.text $ srcP <> fname)
+        (PP.text $ dstP <> fname)
         PP.text
         (getContextDiff 1 (lines lhs) (lines rhs))
 
 diffShow :: (MonadIO m, MonadCatch m, MonadPlus m) => Diff m
-diffShow = Diff $ \pats -> do
+diffShow = Diff $ \showDiff' pats -> do
     cDir <- P.getCurrentDir
     root <- hmGitRoot
     changed <- getStatus <&> S.toList . statusChanged
@@ -55,8 +60,8 @@ diffShow = Diff $ \pats -> do
                 (Blob, contents) -> let contents' = BLU.toString contents in do
                     working <- liftIO $ readFile $ P.toFilePath (root P.</> p)
                     liftIO
-                        $ putStrLn
-                        $ showDiff (P.toFilePath p) contents' working
+                        $ putStr
+                        $ showDiff' (P.toFilePath p) contents' working
                 _ -> lift
                     $ throw
                     $ BugException "The object loaded by diff is expected to be a blob"

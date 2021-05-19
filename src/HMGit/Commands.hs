@@ -17,4 +17,4 @@ data Cmd m = CmdInit (String -> Init m) RepositoryName
     | CmdHashObject ObjectType (HashObject m) FilePath
     | CmdLsFiles (LsFiles m) [FilePath]
     | CmdStatus (Status m) [FilePath]
-    | CmdDiff (Diff m) [FilePath]
+    | CmdDiff (Diff m) [FilePath] Bool String String

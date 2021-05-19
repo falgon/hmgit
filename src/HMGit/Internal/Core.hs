@@ -173,7 +173,7 @@ data HMGitStatus = HMGitStatus {
 latestBlobHashes :: (MonadIO m, MonadCatch m)
     => HMGitT m (ML.Map (P.Path P.Rel P.File) String)
 latestBlobHashes = hmGitRoot
-    >>= P.walkDirAccumRel (Just dirPred) accum
+    >>= P.walkDirAccumRel (Just dirPred) dirAccum
     <&> ML.fromList
     where
         dirPred d _ _
@@ -188,7 +188,7 @@ latestBlobHashes = hmGitRoot
               ]
             | otherwise = pure $ P.WalkExclude []
 
-        accum d _ files = zip (map (d P.</>) files)
+        dirAccum d _ files = zip (map (d P.</>) files)
             <$> mapM
                 (\f -> (hmGitRoot <&> (P.</> (d P.</> f)))
                     >>= liftIO . BL.readFile . P.toFilePath

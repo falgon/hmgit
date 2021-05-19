@@ -103,6 +103,7 @@ testLsMatches = do
         $ lsMatches' ["../../../*.txt"]
     t7 <- lsMatches' ["hello.txt"]
     t8 <- lsMatches' [P.toFilePath $ P.parent hmGitPath P.</> $(P.mkRelFile "hello.txt")]
+    -- t9 <- tryAny $ lsMatches' [P.toFilePath hmGitPath]
     pure $ TestLabel "lsMatches" $ TestList [
         "*.txt" ~: t1 ~?= [ $(P.mkRelFile "hello.txt") ]
       , "*.hs" ~: t2 ~?= [
@@ -129,6 +130,7 @@ testLsMatches = do
       , P.toFilePath (P.parent hmGitPath P.</> $(P.mkRelFile "hello.txt")) ~: t8 ~?= [
             $(P.mkRelFile "hello.txt")
           ]
+      --, P.toFilePath hmGitPath ~: isLeft t9 ~?= True
       ]
     where
         lsMatches' xs = P.getCurrentDir
