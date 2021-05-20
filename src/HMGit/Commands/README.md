@@ -1,4 +1,4 @@
-# the Plumbing and Porcelain commands
+# The Plumbing and Porcelain commands
 
 These are modules of the Plumbing and Porcelain command.
 Commands are splited according to the very first git documentation page (References 1).
@@ -12,6 +12,7 @@ Commands are splited according to the very first git documentation page (Referen
 ## Porcelain
 
 - add
+- commit
 - diff
 - init
 - status

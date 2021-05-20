@@ -1,5 +1,6 @@
 module HMGit.Commands.Porcelain.Add.Core (
     Add (..)
+  , AddCfg (..)
   , addDefault
   , addDryRun
 ) where
@@ -26,7 +27,11 @@ import qualified Path.IO                         as P
 import           System.Posix.Files
 import           Text.Printf                     (printf)
 
-newtype Add m = Add { add :: [FilePath] -> HMGitT m () }
+newtype Add m = Add { add :: AddCfg -> HMGitT m () }
+
+newtype AddCfg = AddCfg {
+    addPathspecs :: [FilePath]
+  }
 
 type BlobGenerator m = BL.ByteString -> HMGitT m B.ByteString
 
@@ -69,13 +74,13 @@ additionalEntries blobGen paths = forM (S.toList paths) $ \p -> do
             | otherwise = fromIntegral $ fileMode stat
 
 addDefault :: (MonadIO m, MonadCatch m) => Add m
-addDefault = Add $ \pats -> do
-    paths <- P.getCurrentDir >>= flip lsMatches pats
+addDefault = Add $ \addCfg -> do
+    paths <- P.getCurrentDir >>= flip lsMatches (addPathspecs addCfg)
     ((<>) <$> existEntries paths <*> additionalEntries (storeObject Blob) paths)
         >>= storeIndex . sortBy (\x y -> compare (iePath x) (iePath y))
 
 addDryRun :: (MonadCatch m, MonadIO m) => Add m
-addDryRun = Add $ \pats -> P.getCurrentDir
-    >>= flip lsMatches pats
+addDryRun = Add $ \addCfg -> P.getCurrentDir
+    >>= flip lsMatches (addPathspecs addCfg)
     >>= additionalEntries (fmap objectId . fromContents Blob)
     >>= mapM_ (liftIO . putStrLn . printf "add '%s'" . P.toFilePath . iePath)

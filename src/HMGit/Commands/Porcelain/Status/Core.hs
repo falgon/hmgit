@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase, TupleSections #-}
 module HMGit.Commands.Porcelain.Status.Core (
     Status (..)
+  , StatusCfg (..)
   , statusDefault
   , statusShort
 ) where
@@ -22,7 +23,11 @@ import qualified Path                            as P
 import qualified Path.IO                         as P
 import           Text.Printf                     (printf)
 
-newtype Status m = Status { status :: [FilePath] -> HMGitT m () }
+newtype Status m = Status { status :: StatusCfg -> HMGitT m () }
+
+newtype StatusCfg = StatusCfg {
+    statusPathspecs :: [String]
+  }
 
 type StatusSelector = HMGitStatus -> S.Set (P.Path P.Rel P.File)
 
@@ -44,7 +49,7 @@ statusShow sctor title = do
                 *> mapM_ (liftIO . printer) fs
 
 statusDefault :: (MonadIO m, MonadCatch m, Alternative m) => Status m
-statusDefault = Status (cfg >=> runReaderT statusShow')
+statusDefault = Status (cfg . statusPathspecs >=> runReaderT statusShow')
     where
         cfg pats = (, pats, , liftIO . putStrLn . printf "\t%s")
             <$> getStatus
@@ -54,7 +59,7 @@ statusDefault = Status (cfg >=> runReaderT statusShow')
             [ "Changes files:\n", "New files:\n", "Deleted files:\n" ]
 
 statusShort :: (MonadCatch m, MonadIO m, Alternative m) => Status m
-statusShort = Status $ \pats -> do
+statusShort = Status $ \statusCfg -> do
     cDir <- P.getCurrentDir
     st <- getStatus
     zipWithM_ (\x -> runReaderT (statusShow x ""))
@@ -62,7 +67,7 @@ statusShort = Status $ \pats -> do
         , statusNew
         , statusDeleted
         ]
-        [ (st, pats, cDir, putStrLn . printf " M %s")
-        , (st, pats, cDir, putStrLn . printf "?? %s")
-        , (st, pats, cDir, putStrLn . printf " D %s")
+        [ (st, statusPathspecs statusCfg, cDir, putStrLn . printf " M %s")
+        , (st, statusPathspecs statusCfg, cDir, putStrLn . printf "?? %s")
+        , (st, statusPathspecs statusCfg, cDir, putStrLn . printf " D %s")
         ]

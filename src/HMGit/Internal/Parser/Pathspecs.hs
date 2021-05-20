@@ -1,11 +1,25 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-|
+Module      : HMGit.Internal.Parse.Pathspecs
+Description : A parser and its listing function for (subset of) pathspec.
+License     : BSD3
+Maintainer  : falgon53@yahoo.co.jp
+Stability   : experimental
+Portability : POSIX
+
+Matching patterns against file paths akin to
+the pathspec gitglossary(7) function.
+
+* __NOTE__: Currently does not support magic signatures
+* See also: <https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiddefpathspecapathspec>
+-}
 module HMGit.Internal.Parser.Pathspecs (
     pathspecs
   , lsMatches
 ) where
 
-import           HMGit.Internal.Core                  (HMGitT)
-import           HMGit.Internal.Core.Runner.API       (hmGitDBPath, hmGitRoot)
+import           HMGit.Internal.Core.Runner.API       (HMGitT, hmGitDBPath,
+                                                       hmGitRoot)
 import           HMGit.Internal.Exceptions            (MonadThrowable (..))
 import qualified HMGit.Internal.Parser.Pathspecs.Glob as G
 import           HMGit.Internal.Utils                 (foldChoiceM, foldMapM,
@@ -43,9 +57,14 @@ pathspec cDir fpath pat = pathspec' `catchAny`
                 G.match (P.toFilePath fpath) ir
                     ?*> makeRelativeEx (P.toFilePath cDir) (P.toFilePath fpath)
 
+-- | Determines if the path given with @cDir@ as the base point matches
+-- the pattern, and if so, returns a @FilePath@ of relative paths
+-- (including @../@ etc.) from @cDir@ (@P.Path@ is not supported @../@,
+-- so we must return as a string).
+-- If they do not match, some exception will be thrown.
 pathspecs :: (MonadCatch m, MonadIO m, Alternative m)
-    => P.Path P.Abs P.Dir -- ^ the specified base directory
-    -> P.SomeBase P.File -- ^ the target file path
+    => P.Path P.Abs P.Dir -- ^ The specified base directory
+    -> P.SomeBase P.File -- ^ The target file path
     -> [String] -- ^ pathspecs
     -> HMGitT m FilePath
 pathspecs cDir (P.Abs fpath) [] = pathspec cDir fpath []
@@ -58,8 +77,10 @@ pathspecs cDir (P.Rel fpath) pat = (pathspec
     <*> ((P.</> fpath) <$> hmGitRoot))
         >>= flip foldChoiceM pat
 
+-- | Returns a set of absolute paths starting from @cDir@ and
+-- a list of files that match @pat@.
 lsMatch :: (MonadCatch m, MonadIO m)
-    => P.Path P.Abs P.Dir -- ^ the specified base directory
+    => P.Path P.Abs P.Dir -- ^ The specified base directory
     -> String -- ^ pathspec
     -> HMGitT m (S.Set (P.Path P.Abs P.File))
 lsMatch _ [] = pure S.empty

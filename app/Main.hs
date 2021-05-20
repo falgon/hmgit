@@ -8,6 +8,7 @@ import           HMGit.Commands.Plumbing.CatFile
 import           HMGit.Commands.Plumbing.HashObject
 import           HMGit.Commands.Plumbing.LsFiles
 import           HMGit.Commands.Porcelain.Add
+import           HMGit.Commands.Porcelain.Commit
 import           HMGit.Commands.Porcelain.Diff
 import           HMGit.Commands.Porcelain.Init
 import           HMGit.Commands.Porcelain.Status
@@ -43,6 +44,7 @@ programOptions = Opts
       , initCmd
       , lsFilesCmd
       , statusCmd
+      , commitCmd
       ])
 
 optsParser :: (MonadCatch m, MonadIO m, MonadPlus m) => OA.ParserInfo (Opts m)
@@ -62,12 +64,11 @@ optsToHMGitT (Opts dbName cmd) = (,)
     where
         fromCmd (CmdCatFile runner object) = pure $ catFile runner object
         fromCmd (CmdHashObject objType runner fpath) = pure $ hashObject runner objType fpath
-        fromCmd (CmdLsFiles runner pathspecs) = pure $ lsFiles runner pathspecs
-        fromCmd (CmdStatus runner pathspecs) = pure $ status runner pathspecs
-        fromCmd (CmdDiff runner paths noPrefix srcP dstP)
-            | noPrefix = pure $ diff runner (showDiff mempty mempty) paths
-            | otherwise = pure $ diff runner (showDiff srcP dstP) paths
-        fromCmd (CmdAdd runner pathspecs) = pure $ add runner pathspecs
+        fromCmd (CmdLsFiles runner lsFilesCfg) = pure $ lsFiles runner lsFilesCfg
+        fromCmd (CmdStatus runner statusCfg) = pure $ status runner statusCfg
+        fromCmd (CmdDiff runner diffCfg) = pure $ diff runner diffCfg
+        fromCmd (CmdAdd runner addCfg) = pure $ add runner addCfg
+        fromCmd (CmdCommit runner commitCfg) = pure $ commit runner commitCfg
         fromCmd _ = throw $ BugException "never reach here"
 
 main :: IO ()

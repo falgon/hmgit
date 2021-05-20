@@ -3,7 +3,8 @@ module HMGit.Commands.Plumbing.LsFiles.Cmd (
 ) where
 
 import           HMGit.Commands                       (Cmd (..))
-import           HMGit.Commands.Plumbing.LsFiles.Core (LsFiles, lsFilesDetail,
+import           HMGit.Commands.Plumbing.LsFiles.Core (LsFiles, LsFilesCfg (..),
+                                                       lsFilesDetail,
                                                        lsFilesShow)
 
 import           Control.Exception.Safe               (MonadCatch)
@@ -29,5 +30,8 @@ fileNames = OA.many $ OA.argument OA.str $ mconcat [
 
 lsFilesCmd :: (MonadCatch m, MonadIO m, OA.Alternative m) => OA.Mod OA.CommandFields (Cmd m)
 lsFilesCmd = OA.command "ls-files"
-    $ OA.info (CmdLsFiles <$> (OA.helper <*> lsFilesMode) <*> fileNames)
+    $ OA.info (CmdLsFiles
+        <$> (OA.helper <*> lsFilesMode)
+        <*> (LsFilesCfg
+            <$> fileNames))
     $ OA.progDesc "Show information about files in the index and the working tree"

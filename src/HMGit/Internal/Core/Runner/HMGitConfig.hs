@@ -36,11 +36,14 @@ getHMGitPath dbName = do
     currentDir <- P.getCurrentDir
     dbName' <- P.parseRelDir dbName
     ($ currentDir) . fix $ \f cwd ->
-        ifM (not <$> P.doesDirExist cwd) (throw $ noSuchThing errMsg) $
-            let expectedHMGitDirPath = cwd P.</> dbName' in
+        ifM (not <$> P.doesDirExist cwd)
+            (throw $ noSuchThing errMsg $ P.toFilePath cwd)
+          $ let expectedHMGitDirPath = cwd P.</> dbName' in
                 ifM (isHMGitDir expectedHMGitDirPath)
                     (P.canonicalizePath expectedHMGitDirPath)
-                  $ if P.parent cwd == cwd then throw $ noSuchThing errMsg else f (P.parent cwd)
+                  $ if P.parent cwd == cwd
+                    then throw $ noSuchThing errMsg $ P.toFilePath cwd
+                    else f (P.parent cwd)
     where
         errMsg = printf "not a git repository (or any of the parent directories): %s" dbName
 

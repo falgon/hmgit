@@ -5,130 +5,119 @@
 </span><span id="line-5"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Commands.Plumbing.HashObject.Core.html#hashObject"><span class="hs-identifier">hashObject</span></a></span><span>
 </span><span id="line-6"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
 </span><span id="line-7"></span><span>
-</span><span id="line-8"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="HMGit.Internal.Core.html"><span class="hs-identifier">HMGit.Internal.Core</span></a></span><span>       </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Core.Runner.API.html#HMGitT"><span class="hs-identifier">HMGitT</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Core.html#ObjectInfo"><span class="hs-identifier">ObjectInfo</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
-</span><span id="line-9"></span><span>                                            </span><span class="annot"><a href="HMGit.Internal.Core.html#fromContents"><span class="hs-identifier">fromContents</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Core.html#storeObject"><span class="hs-identifier">storeObject</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-10"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="HMGit.Internal.Parser.html"><span class="hs-identifier">HMGit.Internal.Parser</span></a></span><span>     </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Parser.Object.html#ObjectType"><span class="hs-identifier">ObjectType</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
-</span><span id="line-11"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="HMGit.Internal.Utils.html"><span class="hs-identifier">HMGit.Internal.Utils</span></a></span><span>      </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Utils.html#formatHexByteString%27"><span class="hs-identifier">formatHexByteString'</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-12"></span><span>
-</span><span id="line-13"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Exception.Safe</span></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadCatch</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">throw</span></span><span class="hs-special">)</span><span>
-</span><span id="line-14"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Monad.IO.Class</span></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadIO</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
-</span><span id="line-15"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString.Lazy</span></span><span>      </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">BL</span></span><span>
-</span><span id="line-16"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString.Lazy.UTF8</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">BLU</span></span><span>
-</span><span id="line-17"></span><span>
-</span><span id="line-18"></span><span class="hs-keyword">newtype</span><span> </span><span id="HashObject"><span class="annot"><a href="HMGit.Commands.Plumbing.HashObject.Core.html#HashObject"><span class="hs-identifier hs-var">HashObject</span></a></span></span><span> </span><span id="local-6989586621679154263"><span class="annot"><a href="#local-6989586621679154263"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="HashObject"><span class="annot"><a href="HMGit.Commands.Plumbing.HashObject.Core.html#HashObject"><span class="hs-identifier hs-var">HashObject</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Parser.Object.html#ObjectType"><span class="hs-identifier hs-type">ObjectType</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">BL.ByteString</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="HMGit.Internal.Core.Runner.API.html#HMGitT"><span class="hs-identifier hs-type">HMGitT</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679154263"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-8"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="HMGit.Internal.Core.html"><span class="hs-identifier">HMGit.Internal.Core</span></a></span><span>        </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Core.html#ObjectInfo"><span class="hs-identifier">ObjectInfo</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Core.html#fromContents"><span class="hs-identifier">fromContents</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-9"></span><span>                                             </span><span class="annot"><a href="HMGit.Internal.Core.html#storeObject"><span class="hs-identifier">storeObject</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-10"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="HMGit.Internal.Core.Runner.html"><span class="hs-identifier">HMGit.Internal.Core.Runner</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Core.Runner.API.html#HMGitT"><span class="hs-identifier">HMGitT</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-11"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="HMGit.Internal.Parser.html"><span class="hs-identifier">HMGit.Internal.Parser</span></a></span><span>      </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Parser.Object.html#ObjectType"><span class="hs-identifier">ObjectType</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-12"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="HMGit.Internal.Utils.html"><span class="hs-identifier">HMGit.Internal.Utils</span></a></span><span>       </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Utils.html#hexStr"><span class="hs-identifier">hexStr</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-13"></span><span>
+</span><span id="line-14"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Exception.Safe</span></span><span>     </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadCatch</span></span><span class="hs-special">)</span><span>
+</span><span id="line-15"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Monad</span></span><span>              </span><span class="hs-special">(</span><span class="annot"><span class="hs-operator">(&gt;=&gt;)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-16"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Monad.IO.Class</span></span><span>     </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadIO</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-17"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString.Lazy</span></span><span>       </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">BL</span></span><span>
+</span><span id="line-18"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString.Lazy.UTF8</span></span><span>  </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">BLU</span></span><span>
 </span><span id="line-19"></span><span>
-</span><span id="line-20"></span><span id="local-6989586621679154222"><span class="annot"><a href="HMGit.Commands.Plumbing.HashObject.Core.html#hashObjectShow"><span class="hs-identifier hs-type">hashObjectShow</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadCatch</span></span><span> </span><span class="annot"><a href="#local-6989586621679154222"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679154222"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="HMGit.Commands.Plumbing.HashObject.Core.html#HashObject"><span class="hs-identifier hs-type">HashObject</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679154222"><span class="hs-identifier hs-type">m</span></a></span></span><span>
-</span><span id="line-21"></span><span id="hashObjectShow"><span class="annot"><span class="annottext">hashObjectShow :: HashObject m
+</span><span id="line-20"></span><span class="hs-keyword">newtype</span><span> </span><span id="HashObject"><span class="annot"><a href="HMGit.Commands.Plumbing.HashObject.Core.html#HashObject"><span class="hs-identifier hs-var">HashObject</span></a></span></span><span> </span><span id="local-6989586621679159653"><span class="annot"><a href="#local-6989586621679159653"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="HashObject"><span class="annot"><a href="HMGit.Commands.Plumbing.HashObject.Core.html#HashObject"><span class="hs-identifier hs-var">HashObject</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Parser.Object.html#ObjectType"><span class="hs-identifier hs-type">ObjectType</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">BL.ByteString</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="HMGit.Internal.Core.Runner.API.html#HMGitT"><span class="hs-identifier hs-type">HMGitT</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679159653"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span>
+</span><span id="line-22"></span><span id="local-6989586621679159614"><span class="annot"><a href="HMGit.Commands.Plumbing.HashObject.Core.html#hashObjectShow"><span class="hs-identifier hs-type">hashObjectShow</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadCatch</span></span><span> </span><span class="annot"><a href="#local-6989586621679159614"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679159614"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-23"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="HMGit.Commands.Plumbing.HashObject.Core.html#HashObject"><span class="hs-identifier hs-type">HashObject</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679159614"><span class="hs-identifier hs-type">m</span></a></span></span><span>
+</span><span id="line-24"></span><span id="hashObjectShow"><span class="annot"><span class="annottext">hashObjectShow :: HashObject m
 </span><a href="HMGit.Commands.Plumbing.HashObject.Core.html#hashObjectShow"><span class="hs-identifier hs-var hs-var">hashObjectShow</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(ObjectType -&gt; ByteString -&gt; HMGitT m ()) -&gt; HashObject m
 forall (m :: * -&gt; *).
 (ObjectType -&gt; ByteString -&gt; HMGitT m ()) -&gt; HashObject m
 </span><a href="HMGit.Commands.Plumbing.HashObject.Core.html#HashObject"><span class="hs-identifier hs-var">HashObject</span></a></span><span> </span><span class="annot"><span class="annottext">((ObjectType -&gt; ByteString -&gt; HMGitT m ()) -&gt; HashObject m)
 -&gt; (ObjectType -&gt; ByteString -&gt; HMGitT m ()) -&gt; HashObject m
 forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679154221"><span class="annot"><span class="annottext">ObjectType
-</span><a href="#local-6989586621679154221"><span class="hs-identifier hs-var">objType</span></a></span></span><span> </span><span id="local-6989586621679154220"><span class="annot"><span class="annottext">ByteString
-</span><a href="#local-6989586621679154220"><span class="hs-identifier hs-var">contents</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
-</span><span id="line-22"></span><span>    </span><span class="annot"><span class="annottext">ObjectType -&gt; ByteString -&gt; HMGitT m ObjectInfo
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679159613"><span class="annot"><span class="annottext">ObjectType
+</span><a href="#local-6989586621679159613"><span class="hs-identifier hs-var">objType</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-25"></span><span>    </span><span class="annot"><span class="annottext">ObjectType -&gt; ByteString -&gt; HMGitT m ObjectInfo
 forall (m :: * -&gt; *).
 MonadCatch m =&gt;
 ObjectType -&gt; ByteString -&gt; HMGitT m ObjectInfo
 </span><a href="HMGit.Internal.Core.html#fromContents"><span class="hs-identifier hs-var">fromContents</span></a></span><span> </span><span class="annot"><span class="annottext">ObjectType
-</span><a href="#local-6989586621679154221"><span class="hs-identifier hs-var">objType</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString
-</span><a href="#local-6989586621679154220"><span class="hs-identifier hs-var">contents</span></a></span><span>
-</span><span id="line-23"></span><span>        </span><span class="annot"><span class="annottext">HMGitT m ObjectInfo -&gt; (ObjectInfo -&gt; HMGitT m ()) -&gt; HMGitT m ()
-forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
-</span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="annot"><span class="annottext">(SomeException -&gt; HMGitT m ())
--&gt; (String -&gt; HMGitT m ())
--&gt; Either SomeException String
--&gt; HMGitT m ()
-forall a c b. (a -&gt; c) -&gt; (b -&gt; c) -&gt; Either a b -&gt; c
-</span><span class="hs-identifier hs-var">either</span></span><span> </span><span class="annot"><span class="annottext">SomeException -&gt; HMGitT m ()
-forall (m :: * -&gt; *) e a. (MonadThrow m, Exception e) =&gt; e -&gt; m a
-</span><span class="hs-identifier hs-var">throw</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">IO () -&gt; HMGitT m ()
+</span><a href="#local-6989586621679159613"><span class="hs-identifier hs-var">objType</span></a></span><span>
+</span><span id="line-26"></span><span>        </span><span class="annot"><span class="annottext">(ByteString -&gt; HMGitT m ObjectInfo)
+-&gt; (ObjectInfo -&gt; HMGitT m ()) -&gt; ByteString -&gt; HMGitT m ()
+forall (m :: * -&gt; *) a b c.
+Monad m =&gt;
+(a -&gt; m b) -&gt; (b -&gt; m c) -&gt; a -&gt; m c
+</span><span class="hs-operator hs-var">&gt;=&gt;</span></span><span> </span><span class="annot"><span class="annottext">IO () -&gt; HMGitT m ()
 forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
 </span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">(IO () -&gt; HMGitT m ())
--&gt; (String -&gt; IO ()) -&gt; String -&gt; HMGitT m ()
+-&gt; (ObjectInfo -&gt; IO ()) -&gt; ObjectInfo -&gt; HMGitT m ()
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; IO ()
-</span><span class="hs-identifier hs-var">putStrLn</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Either SomeException String -&gt; HMGitT m ())
--&gt; (ObjectInfo -&gt; Either SomeException String)
--&gt; ObjectInfo
--&gt; HMGitT m ()
+</span><span class="hs-identifier hs-var">putStrLn</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; IO ()) -&gt; (ObjectInfo -&gt; String) -&gt; ObjectInfo -&gt; IO ()
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
-</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; Either SomeException String
-forall (m :: * -&gt; *). MonadThrow m =&gt; ByteString -&gt; m String
-</span><a href="HMGit.Internal.Utils.html#formatHexByteString%27"><span class="hs-identifier hs-var">formatHexByteString'</span></a></span><span> </span><span class="annot"><span class="annottext">(ByteString -&gt; Either SomeException String)
--&gt; (ObjectInfo -&gt; ByteString)
--&gt; ObjectInfo
--&gt; Either SomeException String
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; String
+forall mono.
+(MonoFoldable mono, PrintfArg (Element mono)) =&gt;
+mono -&gt; String
+</span><a href="HMGit.Internal.Utils.html#hexStr"><span class="hs-identifier hs-var">hexStr</span></a></span><span> </span><span class="annot"><span class="annottext">(ByteString -&gt; String)
+-&gt; (ObjectInfo -&gt; ByteString) -&gt; ObjectInfo -&gt; String
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ObjectInfo -&gt; ByteString
 </span><a href="HMGit.Internal.Core.html#objectId"><span class="hs-identifier hs-var hs-var">objectId</span></a></span><span>
-</span><span id="line-24"></span><span>
-</span><span id="line-25"></span><span id="local-6989586621679154214"><span class="annot"><a href="HMGit.Commands.Plumbing.HashObject.Core.html#hashObjectWrite"><span class="hs-identifier hs-type">hashObjectWrite</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadCatch</span></span><span> </span><span class="annot"><a href="#local-6989586621679154214"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679154214"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="HMGit.Commands.Plumbing.HashObject.Core.html#HashObject"><span class="hs-identifier hs-type">HashObject</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679154214"><span class="hs-identifier hs-type">m</span></a></span></span><span>
-</span><span id="line-26"></span><span id="hashObjectWrite"><span class="annot"><span class="annottext">hashObjectWrite :: HashObject m
+</span><span id="line-27"></span><span>
+</span><span id="line-28"></span><span id="local-6989586621679159608"><span class="annot"><a href="HMGit.Commands.Plumbing.HashObject.Core.html#hashObjectWrite"><span class="hs-identifier hs-type">hashObjectWrite</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadCatch</span></span><span> </span><span class="annot"><a href="#local-6989586621679159608"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679159608"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="HMGit.Commands.Plumbing.HashObject.Core.html#HashObject"><span class="hs-identifier hs-type">HashObject</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679159608"><span class="hs-identifier hs-type">m</span></a></span></span><span>
+</span><span id="line-30"></span><span id="hashObjectWrite"><span class="annot"><span class="annottext">hashObjectWrite :: HashObject m
 </span><a href="HMGit.Commands.Plumbing.HashObject.Core.html#hashObjectWrite"><span class="hs-identifier hs-var hs-var">hashObjectWrite</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(ObjectType -&gt; ByteString -&gt; HMGitT m ()) -&gt; HashObject m
 forall (m :: * -&gt; *).
 (ObjectType -&gt; ByteString -&gt; HMGitT m ()) -&gt; HashObject m
 </span><a href="HMGit.Commands.Plumbing.HashObject.Core.html#HashObject"><span class="hs-identifier hs-var">HashObject</span></a></span><span> </span><span class="annot"><span class="annottext">((ObjectType -&gt; ByteString -&gt; HMGitT m ()) -&gt; HashObject m)
 -&gt; (ObjectType -&gt; ByteString -&gt; HMGitT m ()) -&gt; HashObject m
 forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679154213"><span class="annot"><span class="annottext">ObjectType
-</span><a href="#local-6989586621679154213"><span class="hs-identifier hs-var">objType</span></a></span></span><span> </span><span id="local-6989586621679154212"><span class="annot"><span class="annottext">ByteString
-</span><a href="#local-6989586621679154212"><span class="hs-identifier hs-var">contents</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
-</span><span id="line-27"></span><span>    </span><span class="annot"><span class="annottext">ObjectType -&gt; ByteString -&gt; HMGitT m ByteString
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679159607"><span class="annot"><span class="annottext">ObjectType
+</span><a href="#local-6989586621679159607"><span class="hs-identifier hs-var">objType</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-31"></span><span>    </span><span class="annot"><span class="annottext">ObjectType -&gt; ByteString -&gt; HMGitT m ByteString
 forall (m :: * -&gt; *).
 (MonadIO m, MonadCatch m) =&gt;
 ObjectType -&gt; ByteString -&gt; HMGitT m ByteString
 </span><a href="HMGit.Internal.Core.html#storeObject"><span class="hs-identifier hs-var">storeObject</span></a></span><span> </span><span class="annot"><span class="annottext">ObjectType
-</span><a href="#local-6989586621679154213"><span class="hs-identifier hs-var">objType</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString
-</span><a href="#local-6989586621679154212"><span class="hs-identifier hs-var">contents</span></a></span><span>
-</span><span id="line-28"></span><span>        </span><span class="annot"><span class="annottext">HMGitT m ByteString -&gt; (ByteString -&gt; HMGitT m ()) -&gt; HMGitT m ()
-forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
-</span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="annot"><span class="annottext">(SomeException -&gt; HMGitT m ())
--&gt; (String -&gt; HMGitT m ())
--&gt; Either SomeException String
--&gt; HMGitT m ()
-forall a c b. (a -&gt; c) -&gt; (b -&gt; c) -&gt; Either a b -&gt; c
-</span><span class="hs-identifier hs-var">either</span></span><span> </span><span class="annot"><span class="annottext">SomeException -&gt; HMGitT m ()
-forall (m :: * -&gt; *) e a. (MonadThrow m, Exception e) =&gt; e -&gt; m a
-</span><span class="hs-identifier hs-var">throw</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">IO () -&gt; HMGitT m ()
+</span><a href="#local-6989586621679159607"><span class="hs-identifier hs-var">objType</span></a></span><span>
+</span><span id="line-32"></span><span>        </span><span class="annot"><span class="annottext">(ByteString -&gt; HMGitT m ByteString)
+-&gt; (ByteString -&gt; HMGitT m ()) -&gt; ByteString -&gt; HMGitT m ()
+forall (m :: * -&gt; *) a b c.
+Monad m =&gt;
+(a -&gt; m b) -&gt; (b -&gt; m c) -&gt; a -&gt; m c
+</span><span class="hs-operator hs-var">&gt;=&gt;</span></span><span> </span><span class="annot"><span class="annottext">IO () -&gt; HMGitT m ()
 forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
 </span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">(IO () -&gt; HMGitT m ())
--&gt; (String -&gt; IO ()) -&gt; String -&gt; HMGitT m ()
+-&gt; (ByteString -&gt; IO ()) -&gt; ByteString -&gt; HMGitT m ()
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; IO ()
-</span><span class="hs-identifier hs-var">putStrLn</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Either SomeException String -&gt; HMGitT m ())
--&gt; (ByteString -&gt; Either SomeException String)
--&gt; ByteString
--&gt; HMGitT m ()
+</span><span class="hs-identifier hs-var">putStrLn</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; IO ()) -&gt; (ByteString -&gt; String) -&gt; ByteString -&gt; IO ()
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
-</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; Either SomeException String
-forall (m :: * -&gt; *). MonadThrow m =&gt; ByteString -&gt; m String
-</span><a href="HMGit.Internal.Utils.html#formatHexByteString%27"><span class="hs-identifier hs-var">formatHexByteString'</span></a></span><span>
-</span><span id="line-29"></span><span>
-</span><span id="line-30"></span><span id="local-6989586621679154211"><span class="annot"><a href="HMGit.Commands.Plumbing.HashObject.Core.html#hashObject"><span class="hs-identifier hs-type">hashObject</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadCatch</span></span><span> </span><span class="annot"><a href="#local-6989586621679154211"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679154211"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-31"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="HMGit.Commands.Plumbing.HashObject.Core.html#HashObject"><span class="hs-identifier hs-type">HashObject</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679154211"><span class="hs-identifier hs-type">m</span></a></span><span>
-</span><span id="line-32"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Object.html#ObjectType"><span class="hs-identifier hs-type">ObjectType</span></a></span><span>
-</span><span id="line-33"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span>
-</span><span id="line-34"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="HMGit.Internal.Core.Runner.API.html#HMGitT"><span class="hs-identifier hs-type">HMGitT</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679154211"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span><span>
-</span><span id="line-35"></span><span id="hashObject"><span class="annot"><span class="annottext">hashObject :: HashObject m -&gt; ObjectType -&gt; String -&gt; HMGitT m ()
-</span><a href="HMGit.Commands.Plumbing.HashObject.Core.html#hashObject"><span class="hs-identifier hs-var hs-var">hashObject</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Commands.Plumbing.HashObject.Core.html#HashObject"><span class="hs-identifier hs-type">HashObject</span></a></span><span> </span><span id="local-6989586621679154209"><span class="annot"><span class="annottext">ObjectType -&gt; ByteString -&gt; HMGitT m ()
-</span><a href="#local-6989586621679154209"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679154208"><span class="annot"><span class="annottext">ObjectType
-</span><a href="#local-6989586621679154208"><span class="hs-identifier hs-var">objType</span></a></span></span><span> </span><span id="local-6989586621679154207"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621679154207"><span class="hs-identifier hs-var">fpath</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">IO String -&gt; ReaderT HMGitConfig m String
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; String
+forall mono.
+(MonoFoldable mono, PrintfArg (Element mono)) =&gt;
+mono -&gt; String
+</span><a href="HMGit.Internal.Utils.html#hexStr"><span class="hs-identifier hs-var">hexStr</span></a></span><span>
+</span><span id="line-33"></span><span>
+</span><span id="line-34"></span><span id="local-6989586621679159606"><span class="annot"><a href="HMGit.Commands.Plumbing.HashObject.Core.html#hashObject"><span class="hs-identifier hs-type">hashObject</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadCatch</span></span><span> </span><span class="annot"><a href="#local-6989586621679159606"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679159606"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-35"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="HMGit.Commands.Plumbing.HashObject.Core.html#HashObject"><span class="hs-identifier hs-type">HashObject</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679159606"><span class="hs-identifier hs-type">m</span></a></span><span>
+</span><span id="line-36"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Object.html#ObjectType"><span class="hs-identifier hs-type">ObjectType</span></a></span><span>
+</span><span id="line-37"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span>
+</span><span id="line-38"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="HMGit.Internal.Core.Runner.API.html#HMGitT"><span class="hs-identifier hs-type">HMGitT</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679159606"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span><span>
+</span><span id="line-39"></span><span id="hashObject"><span class="annot"><span class="annottext">hashObject :: HashObject m -&gt; ObjectType -&gt; String -&gt; HMGitT m ()
+</span><a href="HMGit.Commands.Plumbing.HashObject.Core.html#hashObject"><span class="hs-identifier hs-var hs-var">hashObject</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Commands.Plumbing.HashObject.Core.html#HashObject"><span class="hs-identifier hs-type">HashObject</span></a></span><span> </span><span id="local-6989586621679159604"><span class="annot"><span class="annottext">ObjectType -&gt; ByteString -&gt; HMGitT m ()
+</span><a href="#local-6989586621679159604"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679159603"><span class="annot"><span class="annottext">ObjectType
+</span><a href="#local-6989586621679159603"><span class="hs-identifier hs-var">objType</span></a></span></span><span> </span><span id="local-6989586621679159602"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679159602"><span class="hs-identifier hs-var">fpath</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-40"></span><span>    </span><span class="annot"><span class="annottext">IO String -&gt; ReaderT HMGitConfig m String
 forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
 </span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; IO String
 </span><span class="hs-identifier hs-var">readFile</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621679154207"><span class="hs-identifier hs-var">fpath</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-36"></span><span>    </span><span class="annot"><span class="annottext">ReaderT HMGitConfig m String
+</span><a href="#local-6989586621679159602"><span class="hs-identifier hs-var">fpath</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-41"></span><span>        </span><span class="annot"><span class="annottext">ReaderT HMGitConfig m String
 -&gt; (String -&gt; HMGitT m ()) -&gt; HMGitT m ()
 forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
 </span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="annot"><span class="annottext">ObjectType -&gt; ByteString -&gt; HMGitT m ()
-</span><a href="#local-6989586621679154209"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">ObjectType
-</span><a href="#local-6989586621679154208"><span class="hs-identifier hs-var">objType</span></a></span><span> </span><span class="annot"><span class="annottext">(ByteString -&gt; HMGitT m ())
+</span><a href="#local-6989586621679159604"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">ObjectType
+</span><a href="#local-6989586621679159603"><span class="hs-identifier hs-var">objType</span></a></span><span> </span><span class="annot"><span class="annottext">(ByteString -&gt; HMGitT m ())
 -&gt; (String -&gt; ByteString) -&gt; String -&gt; HMGitT m ()
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ByteString
 </span><span class="hs-identifier hs-var">BLU.fromString</span></span><span>
-</span><span id="line-37"></span></pre></body></html>
+</span><span id="line-42"></span></pre></body></html>

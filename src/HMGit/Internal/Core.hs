@@ -2,11 +2,7 @@
              TupleSections #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
 module HMGit.Internal.Core (
-    HMGitT
-  , hmGitRoot
-  , getCurrentDirFromHMGit
-  , runHMGit
-  , ObjectType (..)
+    ObjectType (..)
   , ObjectInfo (..)
   , IndexEntry (..)
   , fromContents
@@ -27,7 +23,7 @@ import           HMGit.Internal.Parser      (IndexEntry (..), ObjectType (..),
                                              indexParser, objectParser,
                                              putIndex, runByteStringParser,
                                              treeParser)
-import           HMGit.Internal.Utils       (formatHexByteString', strictOne)
+import           HMGit.Internal.Utils       (hexStr, strictOne)
 
 import           Codec.Compression.Zlib     (compress, decompress)
 import           Control.Exception.Safe     (MonadCatch, MonadThrow, catch,
@@ -42,12 +38,11 @@ import qualified Data.ByteString            as B
 import qualified Data.ByteString.Lazy       as BL
 import qualified Data.ByteString.UTF8       as BU
 import           Data.Functor               (($>), (<&>))
-import Data.String (IsString (..))
 import           Data.List                  (isPrefixOf)
 import qualified Data.Map.Lazy              as ML
 import qualified Data.Set                   as S
-import           Data.Tuple.Extra           (dupe, first, firstM, second,
-                                             secondM)
+import           Data.String                (IsString (..))
+import           Data.Tuple.Extra           (dupe, first, firstM, second)
 import           Path                       (Dir, File, Rel)
 import qualified Path                       as P
 import qualified Path.IO                    as P
@@ -97,12 +92,10 @@ fromContents :: MonadCatch m
     => ObjectType
     -> BL.ByteString
     -> HMGitT m ObjectInfo
-fromContents objType contents = do
-    hexObjId <- formatHexByteString' objId
-    hashToObjectPath hexObjId
-        >>= either
-            (const $ throw $ BugException "fromContents: hashToObjectPath must give the Abs file")
-            (pure . ObjectInfo objId (compress objFormat))
+fromContents objType contents = hashToObjectPath (hexStr objId)
+    >>= either
+        (const $ throw $ BugException "fromContents: hashToObjectPath must give the Abs file")
+        (pure . ObjectInfo objId (compress objFormat))
     where
         objFormat = objectFormat objType contents
         objId = hashlazy objFormat
@@ -130,8 +123,9 @@ loadObject sha1 = do
             $ lift
             $ throw
             $ noSuchThing
-            $ printf "objects %s not found or multiple object (%d) with prefix %s"
-                sha1 (length sha1) sha1
+                (printf "objects %s not found or multiple object (%d) with prefix %s"
+                    sha1 (length sha1) sha1)
+                (P.toFilePath dir <> "/" <> fname)
 
         findTargetObject dir fname = P.listDirRel dir
             >>= strictOne . filter (isPrefixOf fname . P.toFilePath) . snd
@@ -144,7 +138,7 @@ loadTree body = hmGitTreeLim
     >>= flip (`runByteStringParser` $(P.mkRelFile "index")) body
      . treeParser
 
-storeTree :: (MonadIO m, MonadCatch m) => HMGitT m B.ByteString -- buggy
+storeTree :: (MonadIO m, MonadCatch m) => HMGitT m B.ByteString
 storeTree = loadIndex
     >>= storeObject Tree . foldMap (BP.runPut . putter)
     where
@@ -166,13 +160,6 @@ storeIndex es = hmGitIndexPath
     where
         digest = hashlazy $ BL.fromStrict idxData
         idxData = BL.toStrict $ BP.runPut $ putIndex es
-
-data HMGitStatus = HMGitStatus {
-    statusChanged :: S.Set (P.Path P.Rel P.File)
-  , statusNew     :: S.Set (P.Path P.Rel P.File)
-  , statusDeleted :: S.Set (P.Path P.Rel P.File)
-  }
-  deriving Show
 
 -- ^ Currently `latestBlobHashes` does not support gitignore and submodule,
 -- so we are embedding content to ignore directly in the code.
@@ -200,7 +187,7 @@ latestBlobHashes = hmGitRoot
                 (\f -> (hmGitRoot <&> (P.</> (d P.</> f)))
                     >>= liftIO . BL.readFile . P.toFilePath
                     >>= fromContents Blob
-                    >>= formatHexByteString' . objectId)
+                    <&> hexStr . objectId)
                 files
 
 indexedBlobHashes :: (MonadIO m, MonadCatch m)
@@ -208,12 +195,15 @@ indexedBlobHashes :: (MonadIO m, MonadCatch m)
 indexedBlobHashes = ifM (hmGitIndexPath >>= P.doesFileExist <&> not)
    (pure ML.empty)
  $ loadIndex
-        >>= mapM
-            (secondM (formatHexByteString' . BL.toStrict . ieSha1)
-            . first iePath
-            . dupe
-            )
-        <&> ML.fromList
+    <&> ML.fromList
+        . map (second (hexStr . BL.toStrict . ieSha1) . first iePath . dupe)
+
+data HMGitStatus = HMGitStatus {
+    statusChanged :: S.Set (P.Path P.Rel P.File)
+  , statusNew     :: S.Set (P.Path P.Rel P.File)
+  , statusDeleted :: S.Set (P.Path P.Rel P.File)
+  }
+  deriving Show
 
 getStatus :: (MonadIO m, MonadCatch m) => HMGitT m HMGitStatus
 getStatus = do

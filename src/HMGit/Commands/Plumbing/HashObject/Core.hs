@@ -5,32 +5,37 @@ module HMGit.Commands.Plumbing.HashObject.Core (
   , hashObject
 ) where
 
-import           HMGit.Internal.Core       (HMGitT, ObjectInfo (..),
-                                            fromContents, storeObject)
-import           HMGit.Internal.Parser     (ObjectType (..))
-import           HMGit.Internal.Utils      (formatHexByteString')
+import           HMGit.Internal.Core        (ObjectInfo (..), fromContents,
+                                             storeObject)
+import           HMGit.Internal.Core.Runner (HMGitT)
+import           HMGit.Internal.Parser      (ObjectType (..))
+import           HMGit.Internal.Utils       (hexStr)
 
-import           Control.Exception.Safe    (MonadCatch, throw)
-import           Control.Monad.IO.Class    (MonadIO (..))
-import qualified Data.ByteString.Lazy      as BL
-import qualified Data.ByteString.Lazy.UTF8 as BLU
+import           Control.Exception.Safe     (MonadCatch)
+import           Control.Monad              ((>=>))
+import           Control.Monad.IO.Class     (MonadIO (..))
+import qualified Data.ByteString.Lazy       as BL
+import qualified Data.ByteString.Lazy.UTF8  as BLU
 
 newtype HashObject m = HashObject (ObjectType -> BL.ByteString -> HMGitT m ())
 
-hashObjectShow :: (MonadCatch m, MonadIO m) => HashObject m
-hashObjectShow = HashObject $ \objType contents ->
-    fromContents objType contents
-        >>= either throw (liftIO . putStrLn) . formatHexByteString' . objectId
+hashObjectShow :: (MonadCatch m, MonadIO m)
+    => HashObject m
+hashObjectShow = HashObject $ \objType ->
+    fromContents objType
+        >=> liftIO . putStrLn . hexStr . objectId
 
-hashObjectWrite :: (MonadCatch m, MonadIO m) => HashObject m
-hashObjectWrite = HashObject $ \objType contents ->
-    storeObject objType contents
-        >>= either throw (liftIO . putStrLn) . formatHexByteString'
+hashObjectWrite :: (MonadCatch m, MonadIO m)
+    => HashObject m
+hashObjectWrite = HashObject $ \objType ->
+    storeObject objType
+        >=> liftIO . putStrLn . hexStr
 
 hashObject :: (MonadCatch m, MonadIO m)
     => HashObject m
     -> ObjectType
     -> FilePath
     -> HMGitT m ()
-hashObject (HashObject f) objType fpath = liftIO (readFile fpath)
-    >>= f objType . BLU.fromString
+hashObject (HashObject f) objType fpath =
+    liftIO (readFile fpath)
+        >>= f objType . BLU.fromString

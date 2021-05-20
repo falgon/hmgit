@@ -15,8 +15,8 @@
 </span><span id="line-15"></span><span class="annot"><a href="HMGit.Development.TH.html#strToExp"><span class="hs-identifier hs-type">strToExp</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Q</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Exp</span></span><span class="hs-cpp">
 #if MIN_VERSION_template_haskell(2, 5, 0)
 </span><span id="strToExp"><span class="annot"><span class="annottext">strToExp :: String -&gt; Q Exp
-</span><a href="HMGit.Development.TH.html#strToExp"><span class="hs-identifier hs-var hs-var">strToExp</span></a></span></span><span> </span><span id="local-6989586621679151420"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621679151420"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Q Exp
+</span><a href="HMGit.Development.TH.html#strToExp"><span class="hs-identifier hs-var hs-var">strToExp</span></a></span></span><span> </span><span id="local-6989586621679156641"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679156641"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Exp -&gt; Q Exp
 forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
 </span><span class="hs-identifier hs-var">return</span></span><span> </span><span class="annot"><span class="annottext">(Exp -&gt; Q Exp) -&gt; Exp -&gt; Q Exp
 forall a b. (a -&gt; b) -&gt; a -&gt; b
@@ -25,7 +25,7 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">`AppE`</span></span><span> </span><span class="annot"><span class="annottext">Lit -&gt; Exp
 </span><span class="hs-identifier hs-var">LitE</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; Lit
 </span><span class="hs-identifier hs-var">StringL</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621679151420"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span class="hs-cpp">
+</span><a href="#local-6989586621679156641"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span class="hs-cpp">
 #else
 </span><span class="hs-identifier">strToExp</span><span> </span><span class="hs-identifier">s</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
 </span><span id="line-20"></span><span>    </span><span class="hs-identifier">helper</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-special">[|</span><span> </span><span class="hs-identifier">fromString</span><span> </span><span class="hs-special">|]</span><span>

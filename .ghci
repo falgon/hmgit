@@ -10,6 +10,7 @@ import qualified Data.Binary.Get as BG
 
 :m +Path
 :m +Data.String
+:m +Data.Time
 :m +Control.Monad
 :m +Control.Monad.Extra
 :m +Control.Monad.Loops
@@ -18,4 +19,4 @@ import qualified Data.Binary.Get as BG
 :set -XOverloadedStrings -XTemplateHaskell
 :seti editor vim
 
-:set prompt "HMGit (Gijutsu syoten 11)> "
+:set prompt "HMGit (Gijutsu Shoten 11)> "

@@ -11,8 +11,7 @@ import           Control.Exception.Safe          (MonadMask, bracket, tryAny)
 import           Control.Monad.IO.Class          (MonadIO (..))
 import           Control.Monad.Trans             (lift)
 import           Data.Either                     (isLeft)
-import           Data.Functor                    (($>))
-import           Data.Functor                    ((<&>))
+import           Data.Functor                    (($>), (<&>))
 import qualified Data.Set                        as S
 import           Path                            (Abs, Dir, File, Rel)
 import qualified Path                            as P

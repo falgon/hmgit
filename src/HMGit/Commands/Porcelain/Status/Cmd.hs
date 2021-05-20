@@ -3,7 +3,8 @@ module HMGit.Commands.Porcelain.Status.Cmd (
 ) where
 
 import           HMGit.Commands                       (Cmd (..))
-import           HMGit.Commands.Porcelain.Status.Core (Status, statusDefault,
+import           HMGit.Commands.Porcelain.Status.Core (Status, StatusCfg (..),
+                                                       statusDefault,
                                                        statusShort)
 
 import           Control.Exception.Safe               (MonadCatch)
@@ -33,6 +34,9 @@ pathspecs = OA.many $ OA.argument OA.str $ mconcat [
 
 statusCmd :: (MonadCatch m, MonadIO m, OA.Alternative m) => OA.Mod OA.CommandFields (Cmd m)
 statusCmd = OA.command "status"
-    $ OA.info (CmdStatus <$> (OA.helper <*> statusMode) <*> pathspecs)
+    $ OA.info (CmdStatus
+        <$> (OA.helper <*> statusMode)
+        <*> (StatusCfg
+            <$> pathspecs))
     $ OA.progDesc "Show the working tree status"
 

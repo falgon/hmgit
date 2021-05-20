@@ -6,8 +6,7 @@ module HMGit.Internal.Parser.Object (
 ) where
 
 import           HMGit.Internal.Parser.Core
-import           HMGit.Internal.Utils       (foldChoice, formatHexStrings,
-                                             stateEmpty)
+import           HMGit.Internal.Utils       (foldChoice, hexStr, stateEmpty)
 
 import qualified Codec.Binary.UTF8.String   as S
 import           Control.Monad.Extra        (ifM)
@@ -68,6 +67,6 @@ treeParser limit = runMaybeT treeParser'
                     <* lift pSpace
                 (.) Just . (.) (, succ limitCount) . (cmode,,)
                     <$> MaybeT (P.parseRelFile . S.decode <$> M.manyTill M.anySingle pNull)
-                    <*> MaybeT (formatHexStrings <$> M.count 20 M.anySingle)
+                    <*> MaybeT (pure . hexStr <$> M.count 20 M.anySingle)
 
         pDecimals' = pDecimals :: ByteStringParser Integer

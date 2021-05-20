@@ -5,14 +5,12 @@ module HMGit.Internal.Exceptions (
   , noSuchThing
   , BugException (..)
   , MonadThrowable (..)
-  , truncOtherThanBugs
 ) where
 
 import           Control.Arrow                ((|||))
-import           Control.Exception.Safe       (Exception, Handler (..),
-                                               MonadCatch, MonadThrow,
-                                               SomeException (..), catches,
-                                               throw, throwString)
+import           Control.Exception            (IOException)
+import           Control.Exception.Safe       (Exception, MonadThrow, throw,
+                                               throwString)
 import           Control.Monad                ((>=>))
 import           Control.Monad.Error          (ErrorT, runErrorT)
 import           Control.Monad.Trans.Except   (ExceptT, runExceptT)
@@ -21,24 +19,14 @@ import           Control.Monad.Trans.List     (ListT (..))
 import           Control.Monad.Trans.Maybe    (MaybeT (..))
 import           Control.Natural              (type (~>))
 import           Data.Functor.Identity        (Identity (..))
-import           GHC.IO.Exception             (IOErrorType (..),
-                                               IOException (..))
+import           GHC.IO.Exception             (IOErrorType (..))
+import           System.IO.Error              (doesNotExistErrorType, mkIOError)
 
-ioEx :: IOErrorType -> String -> IOException
-ioEx errorType description = IOError {
-    ioe_handle = Nothing
-  , ioe_type = errorType
-  , ioe_location = mempty
-  , ioe_description = description
-  , ioe_errno = Nothing
-  , ioe_filename = Nothing
-  }
+invalidArgument :: String -> IOError
+invalidArgument desc = mkIOError InvalidArgument desc Nothing Nothing
 
-invalidArgument :: String -> IOException
-invalidArgument = ioEx InvalidArgument
-
-noSuchThing :: String -> IOException
-noSuchThing = ioEx NoSuchThing
+noSuchThing :: String -> FilePath -> IOException
+noSuchThing desc fp = mkIOError doesNotExistErrorType desc Nothing (Just fp)
 
 newtype BugException = BugException String
     deriving Show
@@ -79,11 +67,3 @@ instance MonadThrowable m => MonadThrowable (ListT m) where
 instance (Exception e, MonadThrowable m) => MonadThrowable (ErrorT e m) where
     fromMonad e = fromMonad e . runErrorT >=> fromMonad e
 
-truncOtherThanBugs :: MonadCatch m
-    => m ()
-    -> m ()
-truncOtherThanBugs m = m
-    `catches`
-        [ Handler $ \e@(BugException _) -> throw e
-        , Handler $ \(SomeException _) -> pure ()
-        ]

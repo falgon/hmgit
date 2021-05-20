@@ -3,8 +3,8 @@ module HMGit.Commands.Porcelain.Add.Cmd (
 ) where
 
 import           HMGit.Commands                    (Cmd (..))
-import           HMGit.Commands.Porcelain.Add.Core (Add (..), addDefault,
-                                                    addDryRun)
+import           HMGit.Commands.Porcelain.Add.Core (Add (..), AddCfg (..),
+                                                    addDefault, addDryRun)
 
 import           Control.Exception.Safe            (MonadCatch)
 import           Control.Monad.IO.Class            (MonadIO)
@@ -21,8 +21,8 @@ addMode = asum [
     , pure addDefault
     ]
 
-addPathspecs :: OA.Parser [String]
-addPathspecs = OA.many $ OA.argument OA.str $ mconcat [
+optAddPathspecs :: OA.Parser [String]
+optAddPathspecs = OA.many $ OA.argument OA.str $ mconcat [
     OA.metavar "<pathspec>..."
   , OA.help $ unwords [
         "Files to add content from."
@@ -32,5 +32,5 @@ addPathspecs = OA.many $ OA.argument OA.str $ mconcat [
 
 addCmd :: (MonadCatch m, MonadIO m) => OA.Mod OA.CommandFields (Cmd m)
 addCmd = OA.command "add"
-    $ OA.info (CmdAdd <$> (OA.helper <*> addMode) <*> addPathspecs)
+    $ OA.info (CmdAdd <$> (OA.helper <*> addMode) <*> (AddCfg <$> optAddPathspecs))
     $ OA.progDesc "Add file contents to the index"

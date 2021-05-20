@@ -27,11 +27,13 @@ import qualified Text.Megaparsec           as M
 
 data ParseException = TreeParser String
     | IndexParser String
+    | MasterHashParser String
     deriving (Eq, Ord, Show)
 
 instance M.ShowErrorComponent ParseException where
-    showErrorComponent (TreeParser s)  = "tree object parse error: " <> s
-    showErrorComponent (IndexParser s) = "index parse error: " <> s
+    showErrorComponent (TreeParser s)       = "tree object parse error: " <> s
+    showErrorComponent (IndexParser s)      = "index parse error: " <> s
+    showErrorComponent (MasterHashParser s) = "master hash parse error: " <> s
 
 instance Exception ParseException
 

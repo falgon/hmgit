@@ -46,6 +46,8 @@ dependencies:
 - unix
 - file-embed
 - template-haskell
+- time
+- mono-traversable
 
 library:
   source-dirs: src

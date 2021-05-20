@@ -1,8 +1,10 @@
 {-# LANGUAGE LambdaCase #-}
 module HMGit.Commands.Porcelain.Diff.Core (
-    Diff (..)
+    ShowDiff
+  , Diff (..)
+  , DiffCfg (..)
   , showDiff
-  , diffShow
+  , diffDefault
 ) where
 
 import           HMGit.Internal.Core             (HMGitStatus (..), getStatus,
@@ -30,15 +32,20 @@ import qualified Path                            as P
 import qualified Path.IO                         as P
 import qualified Text.PrettyPrint                as PP
 
-type ShowDiff = FilePath -- file name
-    -> String -- first contents
-    -> String -- second contents
+type ShowDiff = FilePath -- ^ file name
+    -> String -- ^ first contents
+    -> String -- ^ second contents
     -> String
 
-newtype Diff m = Diff { diff :: ShowDiff -> [FilePath] -> HMGitT m () }
+data DiffCfg = DiffCfg {
+    diffShow :: ShowDiff
+  , diffPath :: [FilePath]
+  }
 
-showDiff :: String -- source prefix
-    -> String -- destination prefix
+newtype Diff m = Diff { diff :: DiffCfg -> HMGitT m () }
+
+showDiff :: String -- ^ source prefix
+    -> String -- ^ destination prefix
     -> ShowDiff
 showDiff srcP dstP fname lhs rhs = PP.render
     $ prettyContextDiff
@@ -47,13 +54,13 @@ showDiff srcP dstP fname lhs rhs = PP.render
         PP.text
         (getContextDiff 1 (lines lhs) (lines rhs))
 
-diffShow :: (MonadIO m, MonadCatch m, MonadPlus m) => Diff m
-diffShow = Diff $ \showDiff' pats -> do
+diffDefault :: (MonadIO m, MonadCatch m, MonadPlus m) => Diff m
+diffDefault = Diff $ \diffCfg -> do
     cDir <- P.getCurrentDir
     root <- hmGitRoot
     changed <- getStatus <&> S.toList . statusChanged
     indexed <- indexedBlobHashes
-    forM_ changed $ \p -> whenM ((True <$ pathspecs cDir (P.Rel p) pats) `catchAny` const (pure False)) $
+    forM_ changed $ \p -> whenM ((True <$ pathspecs cDir (P.Rel p) (diffPath diffCfg)) `catchAny` const (pure False)) $
         fromMonad (Nothing :: Maybe Void) (ML.lookup p indexed)
             >>= loadObject
             >>= \case
@@ -61,7 +68,7 @@ diffShow = Diff $ \showDiff' pats -> do
                     working <- liftIO $ readFile $ P.toFilePath (root P.</> p)
                     liftIO
                         $ putStr
-                        $ showDiff' (P.toFilePath p) contents' working
+                        $ diffShow diffCfg (P.toFilePath p) contents' working
                 _ -> lift
                     $ throw
                     $ BugException "The object loaded by diff is expected to be a blob"

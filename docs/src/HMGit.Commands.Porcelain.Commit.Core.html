@@ -1,0 +1,350 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}</span><span>
+</span><span id="line-2"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">HMGit.Commands.Porcelain.Commit.Core</span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-3"></span><span>    </span><span class="annot"><a href="HMGit.Commands.Porcelain.Commit.Core.html#Commit"><span class="hs-identifier">Commit</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-4"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Commands.Porcelain.Commit.Core.html#CommitCfg"><span class="hs-identifier">CommitCfg</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-5"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Commands.Porcelain.Commit.Core.html#commitDefault"><span class="hs-identifier">commitDefault</span></a></span><span>
+</span><span id="line-6"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-7"></span><span>
+</span><span id="line-8"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="HMGit.Internal.Core.html"><span class="hs-identifier">HMGit.Internal.Core</span></a></span><span>            </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Core.html#storeObject"><span class="hs-identifier">storeObject</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Core.html#storeTree"><span class="hs-identifier">storeTree</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-9"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="HMGit.Internal.Core.html"><span class="hs-identifier">HMGit.Internal.Core</span></a></span><span>            </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">OBJ</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Parser.Object.html#ObjectType"><span class="hs-identifier">ObjectType</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-10"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="HMGit.Internal.Core.Runner.html"><span class="hs-identifier">HMGit.Internal.Core.Runner</span></a></span><span>     </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Core.Runner.API.html#HMGitT"><span class="hs-identifier">HMGitT</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-11"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="HMGit.Internal.Core.Runner.API.html"><span class="hs-identifier">HMGit.Internal.Core.Runner.API</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Core.Runner.API.html#hmGitBRName%27"><span class="hs-identifier">hmGitBRName'</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Core.Runner.API.html#hmGitBRPath%27"><span class="hs-identifier">hmGitBRPath'</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-12"></span><span>                                                 </span><span class="annot"><a href="HMGit.Internal.Core.Runner.API.html#hmGitLoadMasterHash"><span class="hs-identifier">hmGitLoadMasterHash</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-13"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="HMGit.Internal.Utils.html"><span class="hs-identifier">HMGit.Internal.Utils</span></a></span><span>           </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Utils.html#hexStr"><span class="hs-identifier">hexStr</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span>
+</span><span id="line-15"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Exception.Safe</span></span><span>         </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadCatch</span></span><span class="hs-special">)</span><span>
+</span><span id="line-16"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Monad.IO.Class</span></span><span>         </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadIO</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-17"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString.Lazy.Char8</span></span><span>     </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">BLC</span></span><span>
+</span><span id="line-18"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString.Lazy.UTF8</span></span><span>      </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">BLU</span></span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.String</span></span><span>                    </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">IsString</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Time.Clock.POSIX</span></span><span>          </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">getPOSIXTime</span></span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Time.LocalTime</span></span><span>            </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">TimeZone</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-22"></span><span>                                                 </span><span class="annot"><span class="hs-identifier">getCurrentTimeZone</span></span><span class="hs-special">)</span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Path</span></span><span>                           </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">P</span></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">System.Environment</span></span><span>             </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">getEnv</span></span><span class="hs-special">)</span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Text.Printf</span></span><span>                    </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">printf</span></span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span>
+</span><span id="line-27"></span><span class="hs-keyword">data</span><span> </span><span id="CommitCfg"><span class="annot"><a href="HMGit.Commands.Porcelain.Commit.Core.html#CommitCfg"><span class="hs-identifier hs-var">CommitCfg</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="CommitCfg"><span class="annot"><a href="HMGit.Commands.Porcelain.Commit.Core.html#CommitCfg"><span class="hs-identifier hs-var">CommitCfg</span></a></span></span><span> </span><span class="hs-special">{</span><span>
+</span><span id="line-28"></span><span>    </span><span id="commitMessage"><span class="annot"><span class="annottext">CommitCfg -&gt; String
+</span><a href="HMGit.Commands.Porcelain.Commit.Core.html#commitMessage"><span class="hs-identifier hs-var hs-var">commitMessage</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-29"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="commitAuthor"><span class="annot"><span class="annottext">CommitCfg -&gt; String
+</span><a href="HMGit.Commands.Porcelain.Commit.Core.html#commitAuthor"><span class="hs-identifier hs-var hs-var">commitAuthor</span></a></span></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-30"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-31"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span id="local-6989586621679159405"><span id="local-6989586621679159407"><span id="local-6989586621679159409"><span class="annot"><span class="annottext">Int -&gt; CommitCfg -&gt; ShowS
+[CommitCfg] -&gt; ShowS
+CommitCfg -&gt; String
+(Int -&gt; CommitCfg -&gt; ShowS)
+-&gt; (CommitCfg -&gt; String)
+-&gt; ([CommitCfg] -&gt; ShowS)
+-&gt; Show CommitCfg
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+showList :: [CommitCfg] -&gt; ShowS
+$cshowList :: [CommitCfg] -&gt; ShowS
+show :: CommitCfg -&gt; String
+$cshow :: CommitCfg -&gt; String
+showsPrec :: Int -&gt; CommitCfg -&gt; ShowS
+$cshowsPrec :: Int -&gt; CommitCfg -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span>
+</span><span id="line-32"></span><span>
+</span><span id="line-33"></span><span class="hs-keyword">newtype</span><span> </span><span id="Commit"><span class="annot"><a href="HMGit.Commands.Porcelain.Commit.Core.html#Commit"><span class="hs-identifier hs-var">Commit</span></a></span></span><span> </span><span id="local-6989586621679159468"><span class="annot"><a href="#local-6989586621679159468"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Commit"><span class="annot"><a href="HMGit.Commands.Porcelain.Commit.Core.html#Commit"><span class="hs-identifier hs-var">Commit</span></a></span></span><span> </span><span class="hs-special">{</span><span> </span><span id="commit"><span class="annot"><span class="annottext">Commit m -&gt; CommitCfg -&gt; HMGitT m ()
+</span><a href="HMGit.Commands.Porcelain.Commit.Core.html#commit"><span class="hs-identifier hs-var hs-var">commit</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="HMGit.Commands.Porcelain.Commit.Core.html#CommitCfg"><span class="hs-identifier hs-type">CommitCfg</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="HMGit.Internal.Core.Runner.API.html#HMGitT"><span class="hs-identifier hs-type">HMGitT</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679159468"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="hs-special">}</span><span>
+</span><span id="line-34"></span><span>
+</span><span id="line-35"></span><span class="annot"><a href="HMGit.Commands.Porcelain.Commit.Core.html#authorTime"><span class="hs-identifier hs-type">authorTime</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679159444"><span class="annot"><a href="#local-6989586621679159444"><span class="hs-identifier hs-type">m</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679159444"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679159444"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-36"></span><span id="authorTime"><span class="annot"><span class="annottext">authorTime :: m String
+</span><a href="HMGit.Commands.Porcelain.Commit.Core.html#authorTime"><span class="hs-identifier hs-var hs-var">authorTime</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-37"></span><span>    </span><span id="local-6989586621679159400"><span class="annot"><span class="annottext">Integer
+</span><a href="#local-6989586621679159400"><span class="hs-identifier hs-var">timestamp</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">POSIXTime -&gt; Integer
+forall a b. (RealFrac a, Integral b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">round</span></span><span> </span><span class="annot"><span class="annottext">(POSIXTime -&gt; Integer) -&gt; m POSIXTime -&gt; m Integer
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">IO POSIXTime -&gt; m POSIXTime
+forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">IO POSIXTime
+</span><span class="hs-identifier hs-var">getPOSIXTime</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679159444"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span>
+</span><span id="line-38"></span><span>    </span><span id="local-6989586621679159396"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679159396"><span class="hs-identifier hs-var">utcOffsetSec</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">*</span></span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">60</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Int -&gt; Int) -&gt; (TimeZone -&gt; Int) -&gt; TimeZone -&gt; Int
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">TimeZone -&gt; Int
+</span><span class="hs-identifier hs-var hs-var">timeZoneMinutes</span></span><span> </span><span class="annot"><span class="annottext">(TimeZone -&gt; Int) -&gt; m TimeZone -&gt; m Int
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">IO TimeZone -&gt; m TimeZone
+forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">IO TimeZone
+</span><span class="hs-identifier hs-var">getCurrentTimeZone</span></span><span>
+</span><span id="line-39"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; m String
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; m String) -&gt; String -&gt; m String
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Integer -&gt; Char -&gt; Int -&gt; Int -&gt; String
+forall r. PrintfType r =&gt; String -&gt; r
+</span><span class="hs-identifier hs-var">printf</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;%d %c%02d%02d&quot;</span></span><span>
+</span><span id="line-40"></span><span>        </span><span class="annot"><span class="annottext">Integer
+</span><a href="#local-6989586621679159400"><span class="hs-identifier hs-var">timestamp</span></a></span><span>
+</span><span id="line-41"></span><span>        </span><span class="hs-special">(</span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679159396"><span class="hs-identifier hs-var">utcOffsetSec</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&gt;</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'+'</span></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'-'</span></span><span class="hs-special">)</span><span>
+</span><span id="line-42"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">abs</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679159396"><span class="hs-identifier hs-var">utcOffsetSec</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`div`</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">3600</span></span><span class="hs-special">)</span><span>
+</span><span id="line-43"></span><span>        </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">abs</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679159396"><span class="hs-identifier hs-var">utcOffsetSec</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`div`</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">60</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`mod`</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">60</span></span><span class="hs-special">)</span><span>
+</span><span id="line-44"></span><span>
+</span><span id="line-45"></span><span id="local-6989586621679159388"><span class="annot"><a href="HMGit.Commands.Porcelain.Commit.Core.html#commitDefault"><span class="hs-identifier hs-type">commitDefault</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679159388"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadCatch</span></span><span> </span><span class="annot"><a href="#local-6989586621679159388"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="HMGit.Commands.Porcelain.Commit.Core.html#Commit"><span class="hs-identifier hs-type">Commit</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679159388"><span class="hs-identifier hs-type">m</span></a></span></span><span>
+</span><span id="line-46"></span><span id="commitDefault"><span class="annot"><span class="annottext">commitDefault :: Commit m
+</span><a href="HMGit.Commands.Porcelain.Commit.Core.html#commitDefault"><span class="hs-identifier hs-var hs-var">commitDefault</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(CommitCfg -&gt; HMGitT m ()) -&gt; Commit m
+forall (m :: * -&gt; *). (CommitCfg -&gt; HMGitT m ()) -&gt; Commit m
+</span><a href="HMGit.Commands.Porcelain.Commit.Core.html#Commit"><span class="hs-identifier hs-var">Commit</span></a></span><span> </span><span class="annot"><span class="annottext">((CommitCfg -&gt; HMGitT m ()) -&gt; Commit m)
+-&gt; (CommitCfg -&gt; HMGitT m ()) -&gt; Commit m
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679159387"><span class="annot"><span class="annottext">CommitCfg
+</span><a href="#local-6989586621679159387"><span class="hs-identifier hs-var">ccfg</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-47"></span><span>    </span><span id="local-6989586621679159386"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679159386"><span class="hs-identifier hs-var">sha1</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[ReaderT HMGitConfig m ByteString]
+-&gt; ReaderT HMGitConfig m [ByteString]
+forall (t :: * -&gt; *) (m :: * -&gt; *) a.
+(Traversable t, Monad m) =&gt;
+t (m a) -&gt; m (t a)
+</span><span class="hs-identifier hs-var">sequence</span></span><span> </span><span class="hs-special">[</span><span>
+</span><span id="line-48"></span><span>        </span><span class="annot"><span class="annottext">String -&gt; ByteString
+forall a. IsString a =&gt; String -&gt; a
+</span><span class="hs-identifier hs-var">fromString</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; ByteString)
+-&gt; (ByteString -&gt; String) -&gt; ByteString -&gt; ByteString
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;tree &quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">ShowS -&gt; (ByteString -&gt; String) -&gt; ByteString -&gt; String
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; String
+forall mono.
+(MonoFoldable mono, PrintfArg (Element mono)) =&gt;
+mono -&gt; String
+</span><a href="HMGit.Internal.Utils.html#hexStr"><span class="hs-identifier hs-var">hexStr</span></a></span><span> </span><span class="annot"><span class="annottext">(ByteString -&gt; ByteString)
+-&gt; ReaderT HMGitConfig m ByteString
+-&gt; ReaderT HMGitConfig m ByteString
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">ReaderT HMGitConfig m ByteString
+forall (m :: * -&gt; *).
+(MonadIO m, MonadCatch m) =&gt;
+HMGitT m ByteString
+</span><a href="HMGit.Internal.Core.html#storeTree"><span class="hs-identifier hs-var">storeTree</span></a></span><span>
+</span><span id="line-49"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; (String -&gt; ByteString) -&gt; Maybe String -&gt; ByteString
+forall b a. b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
+</span><span class="hs-identifier hs-var">maybe</span></span><span> </span><span class="annot"><span class="annottext">ByteString
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; ByteString
+</span><span class="hs-identifier hs-var">BLC.pack</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; ByteString) -&gt; ShowS -&gt; String -&gt; ByteString
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall r. PrintfType r =&gt; String -&gt; r
+</span><span class="hs-identifier hs-var">printf</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;\nparent %s&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Maybe String -&gt; ByteString)
+-&gt; ReaderT HMGitConfig m (Maybe String)
+-&gt; ReaderT HMGitConfig m ByteString
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">ReaderT HMGitConfig m (Maybe String)
+forall (m :: * -&gt; *).
+(MonadIO m, MonadThrow m) =&gt;
+HMGitT m (Maybe String)
+</span><a href="HMGit.Internal.Core.Runner.API.html#hmGitLoadMasterHash"><span class="hs-identifier hs-var">hmGitLoadMasterHash</span></a></span><span>
+</span><span id="line-50"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(String -&gt; ByteString) -&gt; ShowS -&gt; String -&gt; ByteString
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">(.)</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ByteString
+</span><span class="hs-identifier hs-var">BLC.pack</span></span><span> </span><span class="annot"><span class="annottext">(ShowS -&gt; String -&gt; ByteString)
+-&gt; (String -&gt; ShowS) -&gt; String -&gt; String -&gt; ByteString
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; ShowS
+forall r. PrintfType r =&gt; String -&gt; r
+</span><span class="hs-identifier hs-var">printf</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;\nauthor %s %s&quot;</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; String -&gt; ByteString)
+-&gt; ReaderT HMGitConfig m String
+-&gt; ReaderT HMGitConfig m (String -&gt; ByteString)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">CommitCfg -&gt; ReaderT HMGitConfig m String
+forall (m :: * -&gt; *). MonadIO m =&gt; CommitCfg -&gt; m String
+</span><a href="#local-6989586621679159382"><span class="hs-identifier hs-var">cAuthor</span></a></span><span> </span><span class="annot"><span class="annottext">CommitCfg
+</span><a href="#local-6989586621679159387"><span class="hs-identifier hs-var">ccfg</span></a></span><span> </span><span class="annot"><span class="annottext">ReaderT HMGitConfig m (String -&gt; ByteString)
+-&gt; ReaderT HMGitConfig m String -&gt; ReaderT HMGitConfig m ByteString
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">ReaderT HMGitConfig m String
+forall (m :: * -&gt; *). MonadIO m =&gt; m String
+</span><a href="HMGit.Commands.Porcelain.Commit.Core.html#authorTime"><span class="hs-identifier hs-var">authorTime</span></a></span><span>
+</span><span id="line-51"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(String -&gt; ByteString) -&gt; ShowS -&gt; String -&gt; ByteString
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">(.)</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ByteString
+</span><span class="hs-identifier hs-var">BLC.pack</span></span><span> </span><span class="annot"><span class="annottext">(ShowS -&gt; String -&gt; ByteString)
+-&gt; (String -&gt; ShowS) -&gt; String -&gt; String -&gt; ByteString
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; ShowS
+forall r. PrintfType r =&gt; String -&gt; r
+</span><span class="hs-identifier hs-var">printf</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;\ncommitter %s %s\n\n&quot;</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; String -&gt; ByteString)
+-&gt; ReaderT HMGitConfig m String
+-&gt; ReaderT HMGitConfig m (String -&gt; ByteString)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">CommitCfg -&gt; ReaderT HMGitConfig m String
+forall (m :: * -&gt; *). MonadIO m =&gt; CommitCfg -&gt; m String
+</span><a href="#local-6989586621679159382"><span class="hs-identifier hs-var">cAuthor</span></a></span><span> </span><span class="annot"><span class="annottext">CommitCfg
+</span><a href="#local-6989586621679159387"><span class="hs-identifier hs-var">ccfg</span></a></span><span> </span><span class="annot"><span class="annottext">ReaderT HMGitConfig m (String -&gt; ByteString)
+-&gt; ReaderT HMGitConfig m String -&gt; ReaderT HMGitConfig m ByteString
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">ReaderT HMGitConfig m String
+forall (m :: * -&gt; *). MonadIO m =&gt; m String
+</span><a href="HMGit.Commands.Porcelain.Commit.Core.html#authorTime"><span class="hs-identifier hs-var">authorTime</span></a></span><span>
+</span><span id="line-52"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; ReaderT HMGitConfig m ByteString
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">(ByteString -&gt; ReaderT HMGitConfig m ByteString)
+-&gt; ByteString -&gt; ReaderT HMGitConfig m ByteString
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ByteString
+</span><span class="hs-identifier hs-var">BLU.fromString</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; ByteString) -&gt; String -&gt; ByteString
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">CommitCfg -&gt; String
+</span><a href="HMGit.Commands.Porcelain.Commit.Core.html#commitMessage"><span class="hs-identifier hs-var hs-var">commitMessage</span></a></span><span> </span><span class="annot"><span class="annottext">CommitCfg
+</span><a href="#local-6989586621679159387"><span class="hs-identifier hs-var">ccfg</span></a></span><span>
+</span><span id="line-53"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; ReaderT HMGitConfig m ByteString
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><span class="hs-string">&quot;\n&quot;</span></span><span>
+</span><span id="line-54"></span><span>      </span><span class="hs-special">]</span><span>
+</span><span id="line-55"></span><span>        </span><span class="annot"><span class="annottext">ReaderT HMGitConfig m [ByteString]
+-&gt; ([ByteString] -&gt; ReaderT HMGitConfig m ByteString)
+-&gt; ReaderT HMGitConfig m ByteString
+forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="annot"><span class="annottext">ObjectType -&gt; ByteString -&gt; ReaderT HMGitConfig m ByteString
+forall (m :: * -&gt; *).
+(MonadIO m, MonadCatch m) =&gt;
+ObjectType -&gt; ByteString -&gt; HMGitT m ByteString
+</span><a href="HMGit.Internal.Core.html#storeObject"><span class="hs-identifier hs-var">storeObject</span></a></span><span> </span><span class="annot"><span class="annottext">ObjectType
+</span><a href="HMGit.Internal.Parser.Object.html#Commit"><span class="hs-identifier hs-var">OBJ.Commit</span></a></span><span> </span><span class="annot"><span class="annottext">(ByteString -&gt; ReaderT HMGitConfig m ByteString)
+-&gt; ([ByteString] -&gt; ByteString)
+-&gt; [ByteString]
+-&gt; ReaderT HMGitConfig m ByteString
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">[ByteString] -&gt; ByteString
+forall a. Monoid a =&gt; [a] -&gt; a
+</span><span class="hs-identifier hs-var">mconcat</span></span><span>
+</span><span id="line-56"></span><span>    </span><span class="annot"><span class="annottext">HMGitT m (Path Abs File)
+forall (m :: * -&gt; *). MonadIO m =&gt; HMGitT m (Path Abs File)
+</span><a href="HMGit.Internal.Core.Runner.API.html#hmGitBRPath%27"><span class="hs-identifier hs-var">hmGitBRPath'</span></a></span><span>
+</span><span id="line-57"></span><span>        </span><span class="annot"><span class="annottext">HMGitT m (Path Abs File)
+-&gt; (Path Abs File -&gt; HMGitT m ()) -&gt; HMGitT m ()
+forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="annot"><span class="annottext">IO () -&gt; HMGitT m ()
+forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">(IO () -&gt; HMGitT m ())
+-&gt; (Path Abs File -&gt; IO ()) -&gt; Path Abs File -&gt; HMGitT m ()
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; String -&gt; IO ()) -&gt; String -&gt; String -&gt; IO ()
+forall a b c. (a -&gt; b -&gt; c) -&gt; b -&gt; a -&gt; c
+</span><span class="hs-identifier hs-var">flip</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; IO ()
+</span><span class="hs-identifier hs-var">writeFile</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ByteString -&gt; String
+forall mono.
+(MonoFoldable mono, PrintfArg (Element mono)) =&gt;
+mono -&gt; String
+</span><a href="HMGit.Internal.Utils.html#hexStr"><span class="hs-identifier hs-var">hexStr</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679159386"><span class="hs-identifier hs-var">sha1</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;\n&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(String -&gt; IO ())
+-&gt; (Path Abs File -&gt; String) -&gt; Path Abs File -&gt; IO ()
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Path Abs File -&gt; String
+forall b t. Path b t -&gt; String
+</span><span class="hs-identifier hs-var">P.toFilePath</span></span><span>
+</span><span id="line-58"></span><span>        </span><span class="annot"><span class="annottext">HMGitT m ()
+-&gt; ReaderT HMGitConfig m String -&gt; ReaderT HMGitConfig m String
+forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; m b -&gt; m b
+</span><span class="hs-operator hs-var">&gt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; String -&gt; ShowS
+forall r. PrintfType r =&gt; String -&gt; r
+</span><span class="hs-identifier hs-var">printf</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;[%s (commit) %.7s] %s&quot;</span></span><span>
+</span><span id="line-59"></span><span>            </span><span class="annot"><span class="annottext">(String -&gt; String -&gt; ShowS)
+-&gt; ReaderT HMGitConfig m String
+-&gt; ReaderT HMGitConfig m (String -&gt; ShowS)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">ReaderT HMGitConfig m String
+forall (m :: * -&gt; *). MonadIO m =&gt; HMGitT m String
+</span><a href="HMGit.Internal.Core.Runner.API.html#hmGitBRName%27"><span class="hs-identifier hs-var">hmGitBRName'</span></a></span><span>
+</span><span id="line-60"></span><span>            </span><span class="annot"><span class="annottext">ReaderT HMGitConfig m (String -&gt; ShowS)
+-&gt; ReaderT HMGitConfig m String -&gt; ReaderT HMGitConfig m ShowS
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ReaderT HMGitConfig m String
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ByteString -&gt; String
+forall mono.
+(MonoFoldable mono, PrintfArg (Element mono)) =&gt;
+mono -&gt; String
+</span><a href="HMGit.Internal.Utils.html#hexStr"><span class="hs-identifier hs-var">hexStr</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679159386"><span class="hs-identifier hs-var">sha1</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-61"></span><span>            </span><span class="annot"><span class="annottext">ReaderT HMGitConfig m ShowS
+-&gt; ReaderT HMGitConfig m String -&gt; ReaderT HMGitConfig m String
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ReaderT HMGitConfig m String
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">CommitCfg -&gt; String
+</span><a href="HMGit.Commands.Porcelain.Commit.Core.html#commitMessage"><span class="hs-identifier hs-var hs-var">commitMessage</span></a></span><span> </span><span class="annot"><span class="annottext">CommitCfg
+</span><a href="#local-6989586621679159387"><span class="hs-identifier hs-var">ccfg</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-62"></span><span>        </span><span class="annot"><span class="annottext">ReaderT HMGitConfig m String
+-&gt; (String -&gt; HMGitT m ()) -&gt; HMGitT m ()
+forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="annot"><span class="annottext">IO () -&gt; HMGitT m ()
+forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">(IO () -&gt; HMGitT m ())
+-&gt; (String -&gt; IO ()) -&gt; String -&gt; HMGitT m ()
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; IO ()
+</span><span class="hs-identifier hs-var">putStrLn</span></span><span>
+</span><span id="line-63"></span><span>    </span><span class="hs-keyword">where</span><span>
+</span><span id="line-64"></span><span>        </span><span id="local-6989586621679159382"><span class="annot"><span class="annottext">cAuthor :: CommitCfg -&gt; m String
+</span><a href="#local-6989586621679159382"><span class="hs-identifier hs-var hs-var">cAuthor</span></a></span></span><span> </span><span id="local-6989586621679159375"><span class="annot"><span class="annottext">CommitCfg
+</span><a href="#local-6989586621679159375"><span class="hs-identifier hs-var">ccfg</span></a></span></span><span>
+</span><span id="line-65"></span><span>            </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">String -&gt; Bool
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">CommitCfg -&gt; String
+</span><a href="HMGit.Commands.Porcelain.Commit.Core.html#commitAuthor"><span class="hs-identifier hs-var hs-var">commitAuthor</span></a></span><span> </span><span class="annot"><span class="annottext">CommitCfg
+</span><a href="#local-6989586621679159375"><span class="hs-identifier hs-var">ccfg</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-66"></span><span>                </span><span class="annot"><span class="annottext">IO String -&gt; m String
+forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; String -&gt; ShowS
+forall r. PrintfType r =&gt; String -&gt; r
+</span><span class="hs-identifier hs-var">printf</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;%s &lt;%s&gt;&quot;</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; ShowS) -&gt; IO String -&gt; IO ShowS
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; IO String
+</span><span class="hs-identifier hs-var">getEnv</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;HMGIT_AUTHOR_NAME&quot;</span></span><span> </span><span class="annot"><span class="annottext">IO ShowS -&gt; IO String -&gt; IO String
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; IO String
+</span><span class="hs-identifier hs-var">getEnv</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;HMGIT_AUTHOR_EMAIL&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-67"></span><span>            </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; m String
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; m String) -&gt; String -&gt; m String
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">CommitCfg -&gt; String
+</span><a href="HMGit.Commands.Porcelain.Commit.Core.html#commitAuthor"><span class="hs-identifier hs-var hs-var">commitAuthor</span></a></span><span> </span><span class="annot"><span class="annottext">CommitCfg
+</span><a href="#local-6989586621679159375"><span class="hs-identifier hs-var">ccfg</span></a></span><span>
+</span><span id="line-68"></span></pre></body></html>

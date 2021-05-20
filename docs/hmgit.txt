@@ -11,13 +11,12 @@ module HMGit.Development.TH
 relativeProjRoot :: FilePath -> Q Exp
 
 module HMGit.Internal.Exceptions
-invalidArgument :: String -> IOException
-noSuchThing :: String -> IOException
+invalidArgument :: String -> IOError
+noSuchThing :: String -> FilePath -> IOException
 newtype BugException
 BugException :: String -> BugException
 class MonadThrowable m
 fromMonad :: (MonadThrowable m, MonadThrow n, Exception e) => Maybe e -> m ~> n
-truncOtherThanBugs :: MonadCatch m => m () -> m ()
 instance GHC.Show.Show HMGit.Internal.Exceptions.BugException
 instance GHC.Exception.Type.Exception e => HMGit.Internal.Exceptions.MonadThrowable (Data.Either.Either e)
 instance HMGit.Internal.Exceptions.MonadThrowable GHC.Maybe.Maybe
@@ -38,29 +37,6 @@ HMGitConfig :: Path Abs Dir -> Int -> HMGitConfig
 HMGitConfigInit :: HMGitConfig
 hmGitConfig :: (MonadThrow m, MonadIO m) => String -> m HMGitConfig
 
-module HMGit.Internal.Core.Runner.API
-type HMGitT = ReaderT HMGitConfig
-hmGitDBPath :: Monad m => HMGitT m (Path Abs Dir)
-hmGitDBName :: Monad m => HMGitT m String
-hmGitRoot :: Monad m => HMGitT m (Path Abs Dir)
-hmGitTreeLim :: Monad m => HMGitT m Int
-hmGitIndexPath :: Monad m => HMGitT m (Path Abs File)
-getCurrentDirFromHMGit :: (MonadThrow m, MonadIO m) => HMGitT m (Path Rel Dir)
-runHMGit :: HMGitT m a -> HMGitConfig -> m a
-
-module HMGit.Internal.Core.Runner
-
-module HMGit.Development
-gitCfg :: HMGitConfig
-
-module HMGit.Commands.Porcelain.Init.Core
-type RepositoryName = String
-newtype Init m
-Init :: (RepositoryName -> HMGitT m ()) -> Init m
-initDefault :: (MonadThrow m, MonadIO m) => String -> Init m
-initQuiet :: MonadIO m => String -> Init m
-init :: (String -> Init m) -> String -> RepositoryName -> HMGitT m ()
-
 module HMGit.Internal.Parser.Pathspecs.Glob
 transpile :: MonadThrow m => String -> m GlobIR
 isLiteral :: GlobIR -> Bool
@@ -74,14 +50,12 @@ strictOne :: (MonadPlus m, MonadThrow m) => [a] -> m a
 foldMapM :: (Monad m, Monoid w, Foldable t) => (a -> m w) -> t a -> m w
 foldChoice :: (Foldable t, Alternative f) => (a -> f b) -> t a -> f b
 foldChoiceM :: (Monad m, Alternative f, Foldable t) => (a -> m (f b)) -> t a -> m (f b)
-formatHexStrings :: MonadThrow m => (Integral a, Show a) => [a] -> m String
-formatHexByteString :: MonadThrow m => ByteString -> m String
-formatHexByteString' :: MonadThrow m => ByteString -> m String
 first3M :: Functor m => (a -> m a') -> (a, b, c) -> m (a', b, c)
 makeRelativeEx :: (MonadIO m, MonadThrow m) => FilePath -> FilePath -> m FilePath
 (?*>) :: Alternative f => Bool -> f a -> f a
 (??) :: Functor f => f (a -> b) -> a -> f b
 bothM :: Monad m => (a -> m b) -> (a, a) -> m (b, b)
+hexStr :: (MonoFoldable mono, PrintfArg (Element mono)) => mono -> String
 instance GHC.Show.Show HMGit.Internal.Utils.DifferentDrives
 instance GHC.Exception.Type.Exception HMGit.Internal.Utils.DifferentDrives
 
@@ -89,6 +63,7 @@ module HMGit.Internal.Parser.Core.ByteString
 data ParseException
 TreeParser :: String -> ParseException
 IndexParser :: String -> ParseException
+MasterHashParser :: String -> ParseException
 runByteStringParser :: (MonadThrow m, Show e, ShowErrorComponent e, Typeable e, VisualStream s, TraversableStream s, Typeable s, Show s, Show (Token s)) => Parsec e s a -> Path b t -> s -> m a
 type ByteStringParser = Parsec ParseException ByteString
 pNull :: ByteStringParser Word8
@@ -214,11 +189,99 @@ IndexEntry :: Word32 -> Word32 -> Word32 -> Word32 -> Word32 -> Word32 -> Word32
 indexParser :: ByteStringParser [IndexEntry]
 putIndex :: Foldable t => t IndexEntry -> Put
 
-module HMGit.Internal.Core
+module HMGit.Internal.Core.Runner.API
 type HMGitT = ReaderT HMGitConfig
+
+-- | Get an abstract path to the HMGit database directory
+hmGitDBPath :: Monad m => HMGitT m (Path Abs Dir)
+
+-- | Get the HMGit database name
+hmGitDBName :: Monad m => HMGitT m String
+
+-- | Read refs/heads/master. If it does not exist, look for refs/heads/main
+--   as a fallback. The <tt>Nothing</tt> will be returned if neither
+--   exists.
+hmGitLoadMasterHash :: (MonadIO m, MonadThrow m) => HMGitT m (Maybe String)
+
+-- | Get an abstract path to the HMGit project directory
 hmGitRoot :: Monad m => HMGitT m (Path Abs Dir)
+
+-- | Get a loop limit of the tree
+hmGitTreeLim :: Monad m => HMGitT m Int
+
+-- | The index file path
+hmGitIndexPath :: Monad m => HMGitT m (Path Abs File)
+
+-- | If <tt>refs/heads/master</tt> or <tt>refs/heads/main</tt> exists,
+--   return <tt>Right</tt>, if they are not exist, the candidate path is
+--   wrapped in <tt>Left</tt> returned.
+hmGitBRPath :: MonadIO m => HMGitT m (Either (Path Abs File) (Path Abs File))
+
+-- | Get the path, ignoring whether it is an actual path or a candidate
+--   path.
+hmGitBRPath' :: MonadIO m => HMGitT m (Path Abs File)
+
+-- | If <tt>refs/heads/master</tt> or <tt>refs/heads/main</tt> exists,
+--   return <tt>Right</tt>, if they are not exist, the candidate name is
+--   wrapped in <tt>Left</tt> returned.
+hmGitBRName :: MonadIO m => HMGitT m (Either String String)
+
+-- | Get the name, ignoring whether it is a real name or a candidate name.
+hmGitBRName' :: MonadIO m => HMGitT m String
+
+-- | Returns the current path relative to the hmgit database directory
 getCurrentDirFromHMGit :: (MonadThrow m, MonadIO m) => HMGitT m (Path Rel Dir)
+
+-- | HMGit runner
 runHMGit :: HMGitT m a -> HMGitConfig -> m a
+
+
+-- | Matching patterns against file paths akin to the pathspec
+--   gitglossary(7) function.
+--   
+--   <ul>
+--   <li><b>NOTE</b>: Currently does not support magic signatures</li>
+--   <li>See also:
+--   <a>https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiddefpathspecapathspec</a></li>
+--   </ul>
+module HMGit.Internal.Parser.Pathspecs
+
+-- | Determines if the path given with <tt>cDir</tt> as the base point
+--   matches the pattern, and if so, returns a <tt>FilePath</tt> of
+--   relative paths (including <tt>../</tt> etc.) from <tt>cDir</tt>
+--   (<tt>P.Path</tt> is not supported <tt>../</tt>, so we must return as a
+--   string). If they do not match, some exception will be thrown.
+pathspecs :: (MonadCatch m, MonadIO m, Alternative m) => Path Abs Dir -> SomeBase File -> [String] -> HMGitT m FilePath
+lsMatches :: (MonadCatch m, MonadIO m) => Path Abs Dir -> [String] -> HMGitT m (Set (Path Abs File))
+
+module HMGit.Internal.Core.Runner
+
+module HMGit.Development
+gitCfg :: HMGitConfig
+
+module HMGit.Commands.Porcelain.Init.Core
+type RepositoryName = String
+newtype Init m
+Init :: (RepositoryName -> HMGitT m ()) -> Init m
+initDefault :: (MonadThrow m, MonadIO m) => String -> Init m
+initQuiet :: MonadIO m => String -> Init m
+init :: (String -> Init m) -> String -> RepositoryName -> HMGitT m ()
+
+module HMGit
+data HMGitConfig
+HMGitConfig :: Path Abs Dir -> Int -> HMGitConfig
+[hmGitDir] :: HMGitConfig -> Path Abs Dir
+[hmGitTreeLimit] :: HMGitConfig -> Int
+HMGitConfigInit :: HMGitConfig
+newtype BugException
+BugException :: String -> BugException
+hmGitConfig :: (MonadThrow m, MonadIO m) => String -> m HMGitConfig
+type HMGitT = ReaderT HMGitConfig
+
+-- | HMGit runner
+runHMGit :: HMGitT m a -> HMGitConfig -> m a
+
+module HMGit.Internal.Core
 data ObjectType
 Blob :: ObjectType
 Commit :: ObjectType
@@ -274,11 +337,11 @@ loadObject :: (MonadIO m, MonadCatch m, MonadPlus m) => String -> HMGitT m (Obje
 loadTree :: MonadThrow m => ByteString -> HMGitT m [(CMode, Path Rel File, String)]
 storeTree :: (MonadIO m, MonadCatch m) => HMGitT m ByteString
 loadIndex :: (MonadIO m, MonadThrow m) => HMGitT m [IndexEntry]
-storeIndex :: (MonadIO m, Foldable t) => t IndexEntry -> HMGitT m ()
 
 -- | Currently <a>latestBlobHashes</a> does not support gitignore and
 --   submodule, so we are embedding content to ignore directly in the code.
 --   Comments HACK below are the relevant part.
+storeIndex :: (MonadIO m, Foldable t) => t IndexEntry -> HMGitT m ()
 data HMGitStatus
 HMGitStatus :: Set (Path Rel File) -> Set (Path Rel File) -> Set (Path Rel File) -> HMGitStatus
 [statusChanged] :: HMGitStatus -> Set (Path Rel File)
@@ -288,28 +351,35 @@ indexedBlobHashes :: (MonadIO m, MonadCatch m) => HMGitT m (Map (Path Rel File) 
 getStatus :: (MonadIO m, MonadCatch m) => HMGitT m HMGitStatus
 instance GHC.Show.Show HMGit.Internal.Core.HMGitStatus
 
-module HMGit.Internal.Parser.Pathspecs
-pathspecs :: (MonadCatch m, MonadIO m, Alternative m) => Path Abs Dir -> SomeBase File -> [String] -> HMGitT m FilePath
-lsMatches :: (MonadCatch m, MonadIO m) => Path Abs Dir -> [String] -> HMGitT m (Set (Path Abs File))
-
 module HMGit.Commands.Porcelain.Status.Core
 newtype Status m
-Status :: ([FilePath] -> HMGitT m ()) -> Status m
-[status] :: Status m -> [FilePath] -> HMGitT m ()
+Status :: (StatusCfg -> HMGitT m ()) -> Status m
+[status] :: Status m -> StatusCfg -> HMGitT m ()
+newtype StatusCfg
+StatusCfg :: [String] -> StatusCfg
+[statusPathspecs] :: StatusCfg -> [String]
 statusDefault :: (MonadIO m, MonadCatch m, Alternative m) => Status m
 statusShort :: (MonadCatch m, MonadIO m, Alternative m) => Status m
 
 module HMGit.Commands.Porcelain.Diff.Core
+type ShowDiff = FilePath " file name" -> String " first contents" -> String " second contents" -> String
 newtype Diff m
-Diff :: (ShowDiff -> [FilePath] -> HMGitT m ()) -> Diff m
-[diff] :: Diff m -> ShowDiff -> [FilePath] -> HMGitT m ()
+Diff :: (DiffCfg -> HMGitT m ()) -> Diff m
+[diff] :: Diff m -> DiffCfg -> HMGitT m ()
+data DiffCfg
+DiffCfg :: ShowDiff -> [FilePath] -> DiffCfg
+[diffShow] :: DiffCfg -> ShowDiff
+[diffPath] :: DiffCfg -> [FilePath]
 showDiff :: String -> String -> ShowDiff
-diffShow :: (MonadIO m, MonadCatch m, MonadPlus m) => Diff m
+diffDefault :: (MonadIO m, MonadCatch m, MonadPlus m) => Diff m
 
 module HMGit.Commands.Porcelain.Add.Core
 newtype Add m
-Add :: ([FilePath] -> HMGitT m ()) -> Add m
-[add] :: Add m -> [FilePath] -> HMGitT m ()
+Add :: (AddCfg -> HMGitT m ()) -> Add m
+[add] :: Add m -> AddCfg -> HMGitT m ()
+newtype AddCfg
+AddCfg :: [FilePath] -> AddCfg
+[addPathspecs] :: AddCfg -> [FilePath]
 addDefault :: (MonadIO m, MonadCatch m) => Add m
 addDryRun :: (MonadCatch m, MonadIO m) => Add m
 
@@ -324,22 +394,24 @@ catOptObjectPP :: (MonadIO m, MonadThrow m) => CatFile m
 catFile :: (MonadIO m, MonadCatch m, MonadPlus m) => CatFile m -> String -> HMGitT m ()
 instance Control.Monad.IO.Class.MonadIO m => Data.String.IsString (HMGit.Commands.Plumbing.CatFile.Core.CatFile m)
 
-module HMGit
-data HMGitConfig
-HMGitConfig :: Path Abs Dir -> Int -> HMGitConfig
-[hmGitDir] :: HMGitConfig -> Path Abs Dir
-[hmGitTreeLimit] :: HMGitConfig -> Int
-HMGitConfigInit :: HMGitConfig
-newtype BugException
-BugException :: String -> BugException
-hmGitConfig :: (MonadThrow m, MonadIO m) => String -> m HMGitConfig
-type HMGitT = ReaderT HMGitConfig
-runHMGit :: HMGitT m a -> HMGitConfig -> m a
+module HMGit.Commands.Porcelain.Commit.Core
+newtype Commit m
+Commit :: (CommitCfg -> HMGitT m ()) -> Commit m
+[commit] :: Commit m -> CommitCfg -> HMGitT m ()
+data CommitCfg
+CommitCfg :: String -> String -> CommitCfg
+[commitMessage] :: CommitCfg -> String
+[commitAuthor] :: CommitCfg -> String
+commitDefault :: (MonadIO m, MonadCatch m) => Commit m
+instance GHC.Show.Show HMGit.Commands.Porcelain.Commit.Core.CommitCfg
 
 module HMGit.Commands.Plumbing.LsFiles.Core
 newtype LsFiles m
-LsFiles :: ([FilePath] -> HMGitT m ()) -> LsFiles m
-[lsFiles] :: LsFiles m -> [FilePath] -> HMGitT m ()
+LsFiles :: (LsFilesCfg -> HMGitT m ()) -> LsFiles m
+[lsFiles] :: LsFiles m -> LsFilesCfg -> HMGitT m ()
+newtype LsFilesCfg
+LsFilesCfg :: [String] -> LsFilesCfg
+[lsFilesPathspecs] :: LsFilesCfg -> [String]
 lsFilesShow :: (MonadCatch m, MonadIO m, Alternative m) => LsFiles m
 lsFilesDetail :: (MonadCatch m, MonadIO m, Alternative m) => LsFiles m
 
@@ -353,20 +425,21 @@ hashObject :: (MonadCatch m, MonadIO m) => HashObject m -> ObjectType -> FilePat
 module HMGit.Commands
 data Cmd m
 CmdInit :: (String -> Init m) -> RepositoryName -> Cmd m
-CmdAdd :: Add m -> [FilePath] -> Cmd m
+CmdAdd :: Add m -> AddCfg -> Cmd m
 CmdCatFile :: CatFile m -> String -> Cmd m
 CmdHashObject :: ObjectType -> HashObject m -> FilePath -> Cmd m
-CmdLsFiles :: LsFiles m -> [FilePath] -> Cmd m
-CmdStatus :: Status m -> [FilePath] -> Cmd m
-CmdDiff :: Diff m -> [FilePath] -> Bool -> String -> String -> Cmd m
+CmdLsFiles :: LsFiles m -> LsFilesCfg -> Cmd m
+CmdStatus :: Status m -> StatusCfg -> Cmd m
+CmdDiff :: Diff m -> DiffCfg -> Cmd m
+CmdCommit :: Commit m -> CommitCfg -> Cmd m
 
 module HMGit.Commands.Porcelain.Status.Cmd
 statusCmd :: (MonadCatch m, MonadIO m, Alternative m) => Mod CommandFields (Cmd m)
 
 module HMGit.Commands.Porcelain.Status
 newtype Status m
-Status :: ([FilePath] -> HMGitT m ()) -> Status m
-[status] :: Status m -> [FilePath] -> HMGitT m ()
+Status :: (StatusCfg -> HMGitT m ()) -> Status m
+[status] :: Status m -> StatusCfg -> HMGitT m ()
 statusCmd :: (MonadCatch m, MonadIO m, Alternative m) => Mod CommandFields (Cmd m)
 
 module HMGit.Commands.Porcelain.Init.Cmd
@@ -383,18 +456,35 @@ diffCmd :: (MonadCatch m, MonadIO m, MonadPlus m) => Mod CommandFields (Cmd m)
 
 module HMGit.Commands.Porcelain.Diff
 newtype Diff m
-Diff :: (ShowDiff -> [FilePath] -> HMGitT m ()) -> Diff m
-[diff] :: Diff m -> ShowDiff -> [FilePath] -> HMGitT m ()
+Diff :: (DiffCfg -> HMGitT m ()) -> Diff m
+[diff] :: Diff m -> DiffCfg -> HMGitT m ()
 diffCmd :: (MonadCatch m, MonadIO m, MonadPlus m) => Mod CommandFields (Cmd m)
 showDiff :: String -> String -> ShowDiff
+
+module HMGit.Commands.Porcelain.Commit.Cmd
+
+-- | The commit command field
+commitCmd :: (MonadIO m, MonadCatch m) => Mod CommandFields (Cmd m)
+
+module HMGit.Commands.Porcelain.Commit
+newtype Commit m
+Commit :: (CommitCfg -> HMGitT m ()) -> Commit m
+[commit] :: Commit m -> CommitCfg -> HMGitT m ()
+data CommitCfg
+CommitCfg :: String -> String -> CommitCfg
+[commitMessage] :: CommitCfg -> String
+[commitAuthor] :: CommitCfg -> String
+
+-- | The commit command field
+commitCmd :: (MonadIO m, MonadCatch m) => Mod CommandFields (Cmd m)
 
 module HMGit.Commands.Porcelain.Add.Cmd
 addCmd :: (MonadCatch m, MonadIO m) => Mod CommandFields (Cmd m)
 
 module HMGit.Commands.Porcelain.Add
 newtype Add m
-Add :: ([FilePath] -> HMGitT m ()) -> Add m
-[add] :: Add m -> [FilePath] -> HMGitT m ()
+Add :: (AddCfg -> HMGitT m ()) -> Add m
+[add] :: Add m -> AddCfg -> HMGitT m ()
 addCmd :: (MonadCatch m, MonadIO m) => Mod CommandFields (Cmd m)
 
 module HMGit.Commands.Plumbing.LsFiles.Cmd
@@ -402,8 +492,8 @@ lsFilesCmd :: (MonadCatch m, MonadIO m, Alternative m) => Mod CommandFields (Cmd
 
 module HMGit.Commands.Plumbing.LsFiles
 newtype LsFiles m
-LsFiles :: ([FilePath] -> HMGitT m ()) -> LsFiles m
-[lsFiles] :: LsFiles m -> [FilePath] -> HMGitT m ()
+LsFiles :: (LsFilesCfg -> HMGitT m ()) -> LsFiles m
+[lsFiles] :: LsFiles m -> LsFilesCfg -> HMGitT m ()
 lsFilesCmd :: (MonadCatch m, MonadIO m, Alternative m) => Mod CommandFields (Cmd m)
 
 module HMGit.Commands.Plumbing.HashObject.Cmd

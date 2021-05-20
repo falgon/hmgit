@@ -3,7 +3,8 @@ module HMGit.Commands.Porcelain.Diff.Cmd (
 ) where
 
 import           HMGit.Commands                     (Cmd (..))
-import           HMGit.Commands.Porcelain.Diff.Core (Diff (..), diffShow)
+import           HMGit.Commands.Porcelain.Diff.Core (Diff (..), DiffCfg (..),
+                                                     diffDefault, showDiff)
 
 import           Control.Exception.Safe             (MonadCatch)
 import           Control.Monad                      (MonadPlus)
@@ -13,15 +14,15 @@ import qualified Options.Applicative                as OA
 
 diffMode :: (MonadCatch m, MonadIO m, MonadPlus m) => OA.Parser (Diff m)
 diffMode = asum [
-    OA.flag' (Diff $ const $ const $ pure ()) $ mconcat [
+    OA.flag' (Diff $ const $ pure ()) $ mconcat [
         OA.long "quiet"
       , OA.help "Disable all output of the program."
       ]
-  , pure diffShow
+  , pure diffDefault
   ]
 
-diffPath :: OA.Parser [FilePath]
-diffPath = OA.many $ OA.argument OA.str $ mconcat [
+optDiffPath :: OA.Parser [FilePath]
+optDiffPath = OA.many $ OA.argument OA.str $ mconcat [
     OA.metavar "<path>..."
   , OA.help $ unwords [
         "The <paths> parameters, when given,"
@@ -54,5 +55,12 @@ dstPrefix = OA.option OA.str $ mconcat [
 
 diffCmd :: (MonadCatch m, MonadIO m, MonadPlus m) => OA.Mod OA.CommandFields (Cmd m)
 diffCmd = OA.command "diff"
-    $ OA.info (CmdDiff <$> (OA.helper <*> diffMode) <*> diffPath <*> noPrefix <*> srcPrefix <*> dstPrefix)
+    $ OA.info (CmdDiff
+        <$> (OA.helper <*> diffMode)
+        <*> (DiffCfg
+            <$> ((\b s d -> if b then showDiff mempty mempty else showDiff s d)
+                <$> noPrefix
+                <*> srcPrefix
+                <*> dstPrefix)
+            <*> optDiffPath))
     $ OA.progDesc "Show changes between commits, commit and working tree, etc"

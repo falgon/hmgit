@@ -3,43 +3,33 @@
 </span><span id="line-3"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
 </span><span id="line-4"></span><span>
 </span><span id="line-5"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="HMGit.Commands.html"><span class="hs-identifier">HMGit.Commands</span></a></span><span>                     </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Commands.html#Cmd"><span class="hs-identifier">Cmd</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
-</span><span id="line-6"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="HMGit.Commands.Porcelain.Diff.Core.html"><span class="hs-identifier">HMGit.Commands.Porcelain.Diff.Core</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Commands.Porcelain.Diff.Core.html#Diff"><span class="hs-identifier">Diff</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Commands.Porcelain.Diff.Core.html#diffShow"><span class="hs-identifier">diffShow</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-7"></span><span>
-</span><span id="line-8"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Exception.Safe</span></span><span>             </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadCatch</span></span><span class="hs-special">)</span><span>
-</span><span id="line-9"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Monad</span></span><span>                      </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadPlus</span></span><span class="hs-special">)</span><span>
-</span><span id="line-10"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Monad.IO.Class</span></span><span>             </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadIO</span></span><span class="hs-special">)</span><span>
-</span><span id="line-11"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Foldable</span></span><span>                      </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">asum</span></span><span class="hs-special">)</span><span>
-</span><span id="line-12"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Options.Applicative</span></span><span>                </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">OA</span></span><span>
-</span><span id="line-13"></span><span>
-</span><span id="line-14"></span><span id="local-6989586621679154475"><span class="annot"><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#diffMode"><span class="hs-identifier hs-type">diffMode</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadCatch</span></span><span> </span><span class="annot"><a href="#local-6989586621679154475"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679154475"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadPlus</span></span><span> </span><span class="annot"><a href="#local-6989586621679154475"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">OA.Parser</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Commands.Porcelain.Diff.Core.html#Diff"><span class="hs-identifier hs-type">Diff</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679154475"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span><span>
-</span><span id="line-15"></span><span id="diffMode"><span class="annot"><span class="annottext">diffMode :: Parser (Diff m)
+</span><span id="line-6"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="HMGit.Commands.Porcelain.Diff.Core.html"><span class="hs-identifier">HMGit.Commands.Porcelain.Diff.Core</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Commands.Porcelain.Diff.Core.html#Diff"><span class="hs-identifier">Diff</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Commands.Porcelain.Diff.Core.html#DiffCfg"><span class="hs-identifier">DiffCfg</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-7"></span><span>                                                     </span><span class="annot"><a href="HMGit.Commands.Porcelain.Diff.Core.html#diffDefault"><span class="hs-identifier">diffDefault</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Commands.Porcelain.Diff.Core.html#showDiff"><span class="hs-identifier">showDiff</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-8"></span><span>
+</span><span id="line-9"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Exception.Safe</span></span><span>             </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadCatch</span></span><span class="hs-special">)</span><span>
+</span><span id="line-10"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Monad</span></span><span>                      </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadPlus</span></span><span class="hs-special">)</span><span>
+</span><span id="line-11"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Monad.IO.Class</span></span><span>             </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadIO</span></span><span class="hs-special">)</span><span>
+</span><span id="line-12"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Foldable</span></span><span>                      </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">asum</span></span><span class="hs-special">)</span><span>
+</span><span id="line-13"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Options.Applicative</span></span><span>                </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">OA</span></span><span>
+</span><span id="line-14"></span><span>
+</span><span id="line-15"></span><span id="local-6989586621679159880"><span class="annot"><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#diffMode"><span class="hs-identifier hs-type">diffMode</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadCatch</span></span><span> </span><span class="annot"><a href="#local-6989586621679159880"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679159880"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadPlus</span></span><span> </span><span class="annot"><a href="#local-6989586621679159880"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">OA.Parser</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Commands.Porcelain.Diff.Core.html#Diff"><span class="hs-identifier hs-type">Diff</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679159880"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-16"></span><span id="diffMode"><span class="annot"><span class="annottext">diffMode :: Parser (Diff m)
 </span><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#diffMode"><span class="hs-identifier hs-var hs-var">diffMode</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Parser (Diff m)] -&gt; Parser (Diff m)
 forall (t :: * -&gt; *) (f :: * -&gt; *) a.
 (Foldable t, Alternative f) =&gt;
 t (f a) -&gt; f a
 </span><span class="hs-identifier hs-var">asum</span></span><span> </span><span class="hs-special">[</span><span>
-</span><span id="line-16"></span><span>    </span><span class="annot"><span class="annottext">Diff m -&gt; Mod FlagFields (Diff m) -&gt; Parser (Diff m)
+</span><span id="line-17"></span><span>    </span><span class="annot"><span class="annottext">Diff m -&gt; Mod FlagFields (Diff m) -&gt; Parser (Diff m)
 forall a. a -&gt; Mod FlagFields a -&gt; Parser a
-</span><span class="hs-identifier hs-var">OA.flag'</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(ShowDiff -&gt; [FilePath] -&gt; HMGitT m ()) -&gt; Diff m
-forall (m :: * -&gt; *).
-(ShowDiff -&gt; [FilePath] -&gt; HMGitT m ()) -&gt; Diff m
-</span><a href="HMGit.Commands.Porcelain.Diff.Core.html#Diff"><span class="hs-identifier hs-var">Diff</span></a></span><span> </span><span class="annot"><span class="annottext">((ShowDiff -&gt; [FilePath] -&gt; HMGitT m ()) -&gt; Diff m)
--&gt; (ShowDiff -&gt; [FilePath] -&gt; HMGitT m ()) -&gt; Diff m
+</span><span class="hs-identifier hs-var">OA.flag'</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(DiffCfg -&gt; HMGitT m ()) -&gt; Diff m
+forall (m :: * -&gt; *). (DiffCfg -&gt; HMGitT m ()) -&gt; Diff m
+</span><a href="HMGit.Commands.Porcelain.Diff.Core.html#Diff"><span class="hs-identifier hs-var">Diff</span></a></span><span> </span><span class="annot"><span class="annottext">((DiffCfg -&gt; HMGitT m ()) -&gt; Diff m)
+-&gt; (DiffCfg -&gt; HMGitT m ()) -&gt; Diff m
 forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">([FilePath] -&gt; HMGitT m ())
--&gt; ShowDiff -&gt; [FilePath] -&gt; HMGitT m ()
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">HMGitT m () -&gt; DiffCfg -&gt; HMGitT m ()
 forall a b. a -&gt; b -&gt; a
-</span><span class="hs-identifier hs-var">const</span></span><span> </span><span class="annot"><span class="annottext">(([FilePath] -&gt; HMGitT m ())
- -&gt; ShowDiff -&gt; [FilePath] -&gt; HMGitT m ())
--&gt; ([FilePath] -&gt; HMGitT m ())
--&gt; ShowDiff
--&gt; [FilePath]
--&gt; HMGitT m ()
-forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">HMGitT m () -&gt; [FilePath] -&gt; HMGitT m ()
-forall a b. a -&gt; b -&gt; a
-</span><span class="hs-identifier hs-var">const</span></span><span> </span><span class="annot"><span class="annottext">(HMGitT m () -&gt; [FilePath] -&gt; HMGitT m ())
--&gt; HMGitT m () -&gt; [FilePath] -&gt; HMGitT m ()
+</span><span class="hs-identifier hs-var">const</span></span><span> </span><span class="annot"><span class="annottext">(HMGitT m () -&gt; DiffCfg -&gt; HMGitT m ())
+-&gt; HMGitT m () -&gt; DiffCfg -&gt; HMGitT m ()
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">() -&gt; HMGitT m ()
 forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
@@ -49,63 +39,63 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Mod FlagFields (Diff m)] -&gt; Mod FlagFields (Diff m)
 forall a. Monoid a =&gt; [a] -&gt; a
 </span><span class="hs-identifier hs-var">mconcat</span></span><span> </span><span class="hs-special">[</span><span>
-</span><span id="line-17"></span><span>        </span><span class="annot"><span class="annottext">FilePath -&gt; Mod FlagFields (Diff m)
-forall (f :: * -&gt; *) a. HasName f =&gt; FilePath -&gt; Mod f a
-</span><span class="hs-identifier hs-var">OA.long</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span id="line-18"></span><span>        </span><span class="annot"><span class="annottext">String -&gt; Mod FlagFields (Diff m)
+forall (f :: * -&gt; *) a. HasName f =&gt; String -&gt; Mod f a
+</span><span class="hs-identifier hs-var">OA.long</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;quiet&quot;</span></span><span>
-</span><span id="line-18"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; Mod FlagFields (Diff m)
-forall (f :: * -&gt; *) a. FilePath -&gt; Mod f a
-</span><span class="hs-identifier hs-var">OA.help</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span id="line-19"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; Mod FlagFields (Diff m)
+forall (f :: * -&gt; *) a. String -&gt; Mod f a
+</span><span class="hs-identifier hs-var">OA.help</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;Disable all output of the program.&quot;</span></span><span>
-</span><span id="line-19"></span><span>      </span><span class="hs-special">]</span><span>
-</span><span id="line-20"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Diff m -&gt; Parser (Diff m)
+</span><span id="line-20"></span><span>      </span><span class="hs-special">]</span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Diff m -&gt; Parser (Diff m)
 forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
 </span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">Diff m
 forall (m :: * -&gt; *).
 (MonadIO m, MonadCatch m, MonadPlus m) =&gt;
 Diff m
-</span><a href="HMGit.Commands.Porcelain.Diff.Core.html#diffShow"><span class="hs-identifier hs-var">diffShow</span></a></span><span>
-</span><span id="line-21"></span><span>  </span><span class="hs-special">]</span><span>
-</span><span id="line-22"></span><span>
-</span><span id="line-23"></span><span class="annot"><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#diffPath"><span class="hs-identifier hs-type">diffPath</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">OA.Parser</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span class="hs-special">]</span><span>
-</span><span id="line-24"></span><span id="diffPath"><span class="annot"><span class="annottext">diffPath :: Parser [FilePath]
-</span><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#diffPath"><span class="hs-identifier hs-var hs-var">diffPath</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Parser FilePath -&gt; Parser [FilePath]
+</span><a href="HMGit.Commands.Porcelain.Diff.Core.html#diffDefault"><span class="hs-identifier hs-var">diffDefault</span></a></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">]</span><span>
+</span><span id="line-23"></span><span>
+</span><span id="line-24"></span><span class="annot"><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#optDiffPath"><span class="hs-identifier hs-type">optDiffPath</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">OA.Parser</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span class="hs-special">]</span><span>
+</span><span id="line-25"></span><span id="optDiffPath"><span class="annot"><span class="annottext">optDiffPath :: Parser [String]
+</span><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#optDiffPath"><span class="hs-identifier hs-var hs-var">optDiffPath</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Parser String -&gt; Parser [String]
 forall (f :: * -&gt; *) a. Alternative f =&gt; f a -&gt; f [a]
-</span><span class="hs-identifier hs-var">OA.many</span></span><span> </span><span class="annot"><span class="annottext">(Parser FilePath -&gt; Parser [FilePath])
--&gt; Parser FilePath -&gt; Parser [FilePath]
+</span><span class="hs-identifier hs-var">OA.many</span></span><span> </span><span class="annot"><span class="annottext">(Parser String -&gt; Parser [String])
+-&gt; Parser String -&gt; Parser [String]
 forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ReadM FilePath -&gt; Mod ArgumentFields FilePath -&gt; Parser FilePath
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ReadM String -&gt; Mod ArgumentFields String -&gt; Parser String
 forall a. ReadM a -&gt; Mod ArgumentFields a -&gt; Parser a
-</span><span class="hs-identifier hs-var">OA.argument</span></span><span> </span><span class="annot"><span class="annottext">ReadM FilePath
+</span><span class="hs-identifier hs-var">OA.argument</span></span><span> </span><span class="annot"><span class="annottext">ReadM String
 forall s. IsString s =&gt; ReadM s
-</span><span class="hs-identifier hs-var">OA.str</span></span><span> </span><span class="annot"><span class="annottext">(Mod ArgumentFields FilePath -&gt; Parser FilePath)
--&gt; Mod ArgumentFields FilePath -&gt; Parser FilePath
+</span><span class="hs-identifier hs-var">OA.str</span></span><span> </span><span class="annot"><span class="annottext">(Mod ArgumentFields String -&gt; Parser String)
+-&gt; Mod ArgumentFields String -&gt; Parser String
 forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Mod ArgumentFields FilePath] -&gt; Mod ArgumentFields FilePath
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Mod ArgumentFields String] -&gt; Mod ArgumentFields String
 forall a. Monoid a =&gt; [a] -&gt; a
 </span><span class="hs-identifier hs-var">mconcat</span></span><span> </span><span class="hs-special">[</span><span>
-</span><span id="line-25"></span><span>    </span><span class="annot"><span class="annottext">FilePath -&gt; Mod ArgumentFields FilePath
-forall (f :: * -&gt; *) a. HasMetavar f =&gt; FilePath -&gt; Mod f a
-</span><span class="hs-identifier hs-var">OA.metavar</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span id="line-26"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; Mod ArgumentFields String
+forall (f :: * -&gt; *) a. HasMetavar f =&gt; String -&gt; Mod f a
+</span><span class="hs-identifier hs-var">OA.metavar</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;&lt;path&gt;...&quot;</span></span><span>
-</span><span id="line-26"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; Mod ArgumentFields FilePath
-forall (f :: * -&gt; *) a. FilePath -&gt; Mod f a
-</span><span class="hs-identifier hs-var">OA.help</span></span><span> </span><span class="annot"><span class="annottext">(FilePath -&gt; Mod ArgumentFields FilePath)
--&gt; FilePath -&gt; Mod ArgumentFields FilePath
+</span><span id="line-27"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; Mod ArgumentFields String
+forall (f :: * -&gt; *) a. String -&gt; Mod f a
+</span><span class="hs-identifier hs-var">OA.help</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; Mod ArgumentFields String)
+-&gt; String -&gt; Mod ArgumentFields String
 forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[FilePath] -&gt; FilePath
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[String] -&gt; String
 </span><span class="hs-identifier hs-var">unwords</span></span><span> </span><span class="hs-special">[</span><span>
-</span><span id="line-27"></span><span>        </span><span class="annot"><span class="annottext">FilePath
+</span><span id="line-28"></span><span>        </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;The &lt;paths&gt; parameters, when given,&quot;</span></span><span>
-</span><span id="line-28"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span id="line-29"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;are used to limit the diff to the named paths&quot;</span></span><span>
-</span><span id="line-29"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span id="line-30"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;(you can give directory names and get diff for all files under them).&quot;</span></span><span>
-</span><span id="line-30"></span><span>       </span><span class="hs-special">]</span><span>
-</span><span id="line-31"></span><span>  </span><span class="hs-special">]</span><span>
-</span><span id="line-32"></span><span>
-</span><span id="line-33"></span><span class="annot"><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#noPrefix"><span class="hs-identifier hs-type">noPrefix</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">OA.Parser</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
-</span><span id="line-34"></span><span id="noPrefix"><span class="annot"><span class="annottext">noPrefix :: Parser Bool
+</span><span id="line-31"></span><span>       </span><span class="hs-special">]</span><span>
+</span><span id="line-32"></span><span>  </span><span class="hs-special">]</span><span>
+</span><span id="line-33"></span><span>
+</span><span id="line-34"></span><span class="annot"><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#noPrefix"><span class="hs-identifier hs-type">noPrefix</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">OA.Parser</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-35"></span><span id="noPrefix"><span class="annot"><span class="annottext">noPrefix :: Parser Bool
 </span><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#noPrefix"><span class="hs-identifier hs-var hs-var">noPrefix</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Mod FlagFields Bool -&gt; Parser Bool
 </span><span class="hs-identifier hs-var">OA.switch</span></span><span> </span><span class="annot"><span class="annottext">(Mod FlagFields Bool -&gt; Parser Bool)
 -&gt; Mod FlagFields Bool -&gt; Parser Bool
@@ -113,93 +103,92 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Mod FlagFields Bool] -&gt; Mod FlagFields Bool
 forall a. Monoid a =&gt; [a] -&gt; a
 </span><span class="hs-identifier hs-var">mconcat</span></span><span> </span><span class="hs-special">[</span><span>
-</span><span id="line-35"></span><span>    </span><span class="annot"><span class="annottext">FilePath -&gt; Mod FlagFields Bool
-forall (f :: * -&gt; *) a. HasName f =&gt; FilePath -&gt; Mod f a
-</span><span class="hs-identifier hs-var">OA.long</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span id="line-36"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; Mod FlagFields Bool
+forall (f :: * -&gt; *) a. HasName f =&gt; String -&gt; Mod f a
+</span><span class="hs-identifier hs-var">OA.long</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;no-prefix&quot;</span></span><span>
-</span><span id="line-36"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; Mod FlagFields Bool
-forall (f :: * -&gt; *) a. FilePath -&gt; Mod f a
-</span><span class="hs-identifier hs-var">OA.help</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span id="line-37"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; Mod FlagFields Bool
+forall (f :: * -&gt; *) a. String -&gt; Mod f a
+</span><span class="hs-identifier hs-var">OA.help</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;Do not show any source or destination prefix.&quot;</span></span><span>
-</span><span id="line-37"></span><span>  </span><span class="hs-special">]</span><span>
-</span><span id="line-38"></span><span>
-</span><span id="line-39"></span><span class="annot"><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#srcPrefix"><span class="hs-identifier hs-type">srcPrefix</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">OA.Parser</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
-</span><span id="line-40"></span><span id="srcPrefix"><span class="annot"><span class="annottext">srcPrefix :: Parser FilePath
-</span><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#srcPrefix"><span class="hs-identifier hs-var hs-var">srcPrefix</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ReadM FilePath -&gt; Mod OptionFields FilePath -&gt; Parser FilePath
+</span><span id="line-38"></span><span>  </span><span class="hs-special">]</span><span>
+</span><span id="line-39"></span><span>
+</span><span id="line-40"></span><span class="annot"><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#srcPrefix"><span class="hs-identifier hs-type">srcPrefix</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">OA.Parser</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-41"></span><span id="srcPrefix"><span class="annot"><span class="annottext">srcPrefix :: Parser String
+</span><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#srcPrefix"><span class="hs-identifier hs-var hs-var">srcPrefix</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ReadM String -&gt; Mod OptionFields String -&gt; Parser String
 forall a. ReadM a -&gt; Mod OptionFields a -&gt; Parser a
-</span><span class="hs-identifier hs-var">OA.option</span></span><span> </span><span class="annot"><span class="annottext">ReadM FilePath
+</span><span class="hs-identifier hs-var">OA.option</span></span><span> </span><span class="annot"><span class="annottext">ReadM String
 forall s. IsString s =&gt; ReadM s
-</span><span class="hs-identifier hs-var">OA.str</span></span><span> </span><span class="annot"><span class="annottext">(Mod OptionFields FilePath -&gt; Parser FilePath)
--&gt; Mod OptionFields FilePath -&gt; Parser FilePath
+</span><span class="hs-identifier hs-var">OA.str</span></span><span> </span><span class="annot"><span class="annottext">(Mod OptionFields String -&gt; Parser String)
+-&gt; Mod OptionFields String -&gt; Parser String
 forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Mod OptionFields FilePath] -&gt; Mod OptionFields FilePath
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Mod OptionFields String] -&gt; Mod OptionFields String
 forall a. Monoid a =&gt; [a] -&gt; a
 </span><span class="hs-identifier hs-var">mconcat</span></span><span> </span><span class="hs-special">[</span><span>
-</span><span id="line-41"></span><span>    </span><span class="annot"><span class="annottext">FilePath -&gt; Mod OptionFields FilePath
-forall (f :: * -&gt; *) a. HasName f =&gt; FilePath -&gt; Mod f a
-</span><span class="hs-identifier hs-var">OA.long</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span id="line-42"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; Mod OptionFields String
+forall (f :: * -&gt; *) a. HasName f =&gt; String -&gt; Mod f a
+</span><span class="hs-identifier hs-var">OA.long</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;src-prefix&quot;</span></span><span>
-</span><span id="line-42"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; Mod OptionFields FilePath
+</span><span id="line-43"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; Mod OptionFields String
 forall (f :: * -&gt; *) a. HasValue f =&gt; a -&gt; Mod f a
-</span><span class="hs-identifier hs-var">OA.value</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span class="hs-identifier hs-var">OA.value</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;a/&quot;</span></span><span>
-</span><span id="line-43"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; Mod OptionFields FilePath
-forall (f :: * -&gt; *) a. HasMetavar f =&gt; FilePath -&gt; Mod f a
-</span><span class="hs-identifier hs-var">OA.metavar</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span id="line-44"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; Mod OptionFields String
+forall (f :: * -&gt; *) a. HasMetavar f =&gt; String -&gt; Mod f a
+</span><span class="hs-identifier hs-var">OA.metavar</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;&lt;prefix&gt;&quot;</span></span><span>
-</span><span id="line-44"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; Mod OptionFields FilePath
-forall (f :: * -&gt; *) a. FilePath -&gt; Mod f a
-</span><span class="hs-identifier hs-var">OA.help</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span id="line-45"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; Mod OptionFields String
+forall (f :: * -&gt; *) a. String -&gt; Mod f a
+</span><span class="hs-identifier hs-var">OA.help</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;Show the given source prefix instead of \&quot;a/\&quot;.&quot;</span></span><span>
-</span><span id="line-45"></span><span>  </span><span class="hs-special">]</span><span>
-</span><span id="line-46"></span><span>
-</span><span id="line-47"></span><span class="annot"><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#dstPrefix"><span class="hs-identifier hs-type">dstPrefix</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">OA.Parser</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
-</span><span id="line-48"></span><span id="dstPrefix"><span class="annot"><span class="annottext">dstPrefix :: Parser FilePath
-</span><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#dstPrefix"><span class="hs-identifier hs-var hs-var">dstPrefix</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ReadM FilePath -&gt; Mod OptionFields FilePath -&gt; Parser FilePath
+</span><span id="line-46"></span><span>  </span><span class="hs-special">]</span><span>
+</span><span id="line-47"></span><span>
+</span><span id="line-48"></span><span class="annot"><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#dstPrefix"><span class="hs-identifier hs-type">dstPrefix</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">OA.Parser</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-49"></span><span id="dstPrefix"><span class="annot"><span class="annottext">dstPrefix :: Parser String
+</span><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#dstPrefix"><span class="hs-identifier hs-var hs-var">dstPrefix</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ReadM String -&gt; Mod OptionFields String -&gt; Parser String
 forall a. ReadM a -&gt; Mod OptionFields a -&gt; Parser a
-</span><span class="hs-identifier hs-var">OA.option</span></span><span> </span><span class="annot"><span class="annottext">ReadM FilePath
+</span><span class="hs-identifier hs-var">OA.option</span></span><span> </span><span class="annot"><span class="annottext">ReadM String
 forall s. IsString s =&gt; ReadM s
-</span><span class="hs-identifier hs-var">OA.str</span></span><span> </span><span class="annot"><span class="annottext">(Mod OptionFields FilePath -&gt; Parser FilePath)
--&gt; Mod OptionFields FilePath -&gt; Parser FilePath
+</span><span class="hs-identifier hs-var">OA.str</span></span><span> </span><span class="annot"><span class="annottext">(Mod OptionFields String -&gt; Parser String)
+-&gt; Mod OptionFields String -&gt; Parser String
 forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Mod OptionFields FilePath] -&gt; Mod OptionFields FilePath
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Mod OptionFields String] -&gt; Mod OptionFields String
 forall a. Monoid a =&gt; [a] -&gt; a
 </span><span class="hs-identifier hs-var">mconcat</span></span><span> </span><span class="hs-special">[</span><span>
-</span><span id="line-49"></span><span>    </span><span class="annot"><span class="annottext">FilePath -&gt; Mod OptionFields FilePath
-forall (f :: * -&gt; *) a. HasName f =&gt; FilePath -&gt; Mod f a
-</span><span class="hs-identifier hs-var">OA.long</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span id="line-50"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; Mod OptionFields String
+forall (f :: * -&gt; *) a. HasName f =&gt; String -&gt; Mod f a
+</span><span class="hs-identifier hs-var">OA.long</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;dst-prefix&quot;</span></span><span>
-</span><span id="line-50"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; Mod OptionFields FilePath
+</span><span id="line-51"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; Mod OptionFields String
 forall (f :: * -&gt; *) a. HasValue f =&gt; a -&gt; Mod f a
-</span><span class="hs-identifier hs-var">OA.value</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span class="hs-identifier hs-var">OA.value</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;b/&quot;</span></span><span>
-</span><span id="line-51"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; Mod OptionFields FilePath
-forall (f :: * -&gt; *) a. HasMetavar f =&gt; FilePath -&gt; Mod f a
-</span><span class="hs-identifier hs-var">OA.metavar</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span id="line-52"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; Mod OptionFields String
+forall (f :: * -&gt; *) a. HasMetavar f =&gt; String -&gt; Mod f a
+</span><span class="hs-identifier hs-var">OA.metavar</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;&lt;prefix&gt;&quot;</span></span><span>
-</span><span id="line-52"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; Mod OptionFields FilePath
-forall (f :: * -&gt; *) a. FilePath -&gt; Mod f a
-</span><span class="hs-identifier hs-var">OA.help</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span id="line-53"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; Mod OptionFields String
+forall (f :: * -&gt; *) a. String -&gt; Mod f a
+</span><span class="hs-identifier hs-var">OA.help</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;Show the given destination prefix instead of \&quot;b/\&quot;.&quot;</span></span><span>
-</span><span id="line-53"></span><span>  </span><span class="hs-special">]</span><span>
-</span><span id="line-54"></span><span>
-</span><span id="line-55"></span><span id="local-6989586621679154451"><span class="annot"><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#diffCmd"><span class="hs-identifier hs-type">diffCmd</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadCatch</span></span><span> </span><span class="annot"><a href="#local-6989586621679154451"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679154451"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadPlus</span></span><span> </span><span class="annot"><a href="#local-6989586621679154451"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">OA.Mod</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">OA.CommandFields</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Commands.html#Cmd"><span class="hs-identifier hs-type">Cmd</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679154451"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span><span>
-</span><span id="line-56"></span><span id="diffCmd"><span class="annot"><span class="annottext">diffCmd :: Mod CommandFields (Cmd m)
-</span><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#diffCmd"><span class="hs-identifier hs-var hs-var">diffCmd</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; ParserInfo (Cmd m) -&gt; Mod CommandFields (Cmd m)
-forall a. FilePath -&gt; ParserInfo a -&gt; Mod CommandFields a
-</span><span class="hs-identifier hs-var">OA.command</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span id="line-54"></span><span>  </span><span class="hs-special">]</span><span>
+</span><span id="line-55"></span><span>
+</span><span id="line-56"></span><span id="local-6989586621679159854"><span class="annot"><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#diffCmd"><span class="hs-identifier hs-type">diffCmd</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadCatch</span></span><span> </span><span class="annot"><a href="#local-6989586621679159854"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679159854"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadPlus</span></span><span> </span><span class="annot"><a href="#local-6989586621679159854"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">OA.Mod</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">OA.CommandFields</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Commands.html#Cmd"><span class="hs-identifier hs-type">Cmd</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679159854"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-57"></span><span id="diffCmd"><span class="annot"><span class="annottext">diffCmd :: Mod CommandFields (Cmd m)
+</span><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#diffCmd"><span class="hs-identifier hs-var hs-var">diffCmd</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; ParserInfo (Cmd m) -&gt; Mod CommandFields (Cmd m)
+forall a. String -&gt; ParserInfo a -&gt; Mod CommandFields a
+</span><span class="hs-identifier hs-var">OA.command</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;diff&quot;</span></span><span>
-</span><span id="line-57"></span><span>    </span><span class="annot"><span class="annottext">(ParserInfo (Cmd m) -&gt; Mod CommandFields (Cmd m))
+</span><span id="line-58"></span><span>    </span><span class="annot"><span class="annottext">(ParserInfo (Cmd m) -&gt; Mod CommandFields (Cmd m))
 -&gt; ParserInfo (Cmd m) -&gt; Mod CommandFields (Cmd m)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Parser (Cmd m) -&gt; InfoMod (Cmd m) -&gt; ParserInfo (Cmd m)
 forall a. Parser a -&gt; InfoMod a -&gt; ParserInfo a
-</span><span class="hs-identifier hs-var">OA.info</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Diff m -&gt; [FilePath] -&gt; Bool -&gt; FilePath -&gt; FilePath -&gt; Cmd m
-forall (m :: * -&gt; *).
-Diff m -&gt; [FilePath] -&gt; Bool -&gt; FilePath -&gt; FilePath -&gt; Cmd m
-</span><a href="HMGit.Commands.html#CmdDiff"><span class="hs-identifier hs-var">CmdDiff</span></a></span><span> </span><span class="annot"><span class="annottext">(Diff m -&gt; [FilePath] -&gt; Bool -&gt; FilePath -&gt; FilePath -&gt; Cmd m)
--&gt; Parser (Diff m)
--&gt; Parser ([FilePath] -&gt; Bool -&gt; FilePath -&gt; FilePath -&gt; Cmd m)
+</span><span class="hs-identifier hs-var">OA.info</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Diff m -&gt; DiffCfg -&gt; Cmd m
+forall (m :: * -&gt; *). Diff m -&gt; DiffCfg -&gt; Cmd m
+</span><a href="HMGit.Commands.html#CmdDiff"><span class="hs-identifier hs-var">CmdDiff</span></a></span><span>
+</span><span id="line-59"></span><span>        </span><span class="annot"><span class="annottext">(Diff m -&gt; DiffCfg -&gt; Cmd m)
+-&gt; Parser (Diff m) -&gt; Parser (DiffCfg -&gt; Cmd m)
 forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
 </span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Parser (Diff m -&gt; Diff m)
 forall a. Parser (a -&gt; a)
@@ -209,28 +198,50 @@ forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f
 forall (m :: * -&gt; *).
 (MonadCatch m, MonadIO m, MonadPlus m) =&gt;
 Parser (Diff m)
-</span><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#diffMode"><span class="hs-identifier hs-var">diffMode</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Parser ([FilePath] -&gt; Bool -&gt; FilePath -&gt; FilePath -&gt; Cmd m)
--&gt; Parser [FilePath]
--&gt; Parser (Bool -&gt; FilePath -&gt; FilePath -&gt; Cmd m)
+</span><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#diffMode"><span class="hs-identifier hs-var">diffMode</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-60"></span><span>        </span><span class="annot"><span class="annottext">Parser (DiffCfg -&gt; Cmd m) -&gt; Parser DiffCfg -&gt; Parser (Cmd m)
 forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
-</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">Parser [FilePath]
-</span><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#diffPath"><span class="hs-identifier hs-var">diffPath</span></a></span><span> </span><span class="annot"><span class="annottext">Parser (Bool -&gt; FilePath -&gt; FilePath -&gt; Cmd m)
--&gt; Parser Bool -&gt; Parser (FilePath -&gt; FilePath -&gt; Cmd m)
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ShowDiff -&gt; [String] -&gt; DiffCfg
+</span><a href="HMGit.Commands.Porcelain.Diff.Core.html#DiffCfg"><span class="hs-identifier hs-var">DiffCfg</span></a></span><span>
+</span><span id="line-61"></span><span>            </span><span class="annot"><span class="annottext">(ShowDiff -&gt; [String] -&gt; DiffCfg)
+-&gt; Parser ShowDiff -&gt; Parser ([String] -&gt; DiffCfg)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679159847"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679159847"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span id="local-6989586621679159846"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679159846"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span id="local-6989586621679159845"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679159845"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679159847"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; ShowDiff
+</span><a href="HMGit.Commands.Porcelain.Diff.Core.html#showDiff"><span class="hs-identifier hs-var">showDiff</span></a></span><span> </span><span class="annot"><span class="annottext">String
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span> </span><span class="annot"><span class="annottext">String
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; ShowDiff
+</span><a href="HMGit.Commands.Porcelain.Diff.Core.html#showDiff"><span class="hs-identifier hs-var">showDiff</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679159846"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679159845"><span class="hs-identifier hs-var">d</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-62"></span><span>                </span><span class="annot"><span class="annottext">(Bool -&gt; String -&gt; String -&gt; ShowDiff)
+-&gt; Parser Bool -&gt; Parser (String -&gt; String -&gt; ShowDiff)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Parser Bool
+</span><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#noPrefix"><span class="hs-identifier hs-var">noPrefix</span></a></span><span>
+</span><span id="line-63"></span><span>                </span><span class="annot"><span class="annottext">Parser (String -&gt; String -&gt; ShowDiff)
+-&gt; Parser String -&gt; Parser (String -&gt; ShowDiff)
 forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
-</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">Parser Bool
-</span><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#noPrefix"><span class="hs-identifier hs-var">noPrefix</span></a></span><span> </span><span class="annot"><span class="annottext">Parser (FilePath -&gt; FilePath -&gt; Cmd m)
--&gt; Parser FilePath -&gt; Parser (FilePath -&gt; Cmd m)
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">Parser String
+</span><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#srcPrefix"><span class="hs-identifier hs-var">srcPrefix</span></a></span><span>
+</span><span id="line-64"></span><span>                </span><span class="annot"><span class="annottext">Parser (String -&gt; ShowDiff) -&gt; Parser String -&gt; Parser ShowDiff
 forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
-</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">Parser FilePath
-</span><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#srcPrefix"><span class="hs-identifier hs-var">srcPrefix</span></a></span><span> </span><span class="annot"><span class="annottext">Parser (FilePath -&gt; Cmd m) -&gt; Parser FilePath -&gt; Parser (Cmd m)
-forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
-</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">Parser FilePath
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">Parser String
 </span><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#dstPrefix"><span class="hs-identifier hs-var">dstPrefix</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-58"></span><span>    </span><span class="annot"><span class="annottext">(InfoMod (Cmd m) -&gt; ParserInfo (Cmd m))
+</span><span id="line-65"></span><span>            </span><span class="annot"><span class="annottext">Parser ([String] -&gt; DiffCfg) -&gt; Parser [String] -&gt; Parser DiffCfg
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">Parser [String]
+</span><a href="HMGit.Commands.Porcelain.Diff.Cmd.html#optDiffPath"><span class="hs-identifier hs-var">optDiffPath</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-66"></span><span>    </span><span class="annot"><span class="annottext">(InfoMod (Cmd m) -&gt; ParserInfo (Cmd m))
 -&gt; InfoMod (Cmd m) -&gt; ParserInfo (Cmd m)
 forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FilePath -&gt; InfoMod (Cmd m)
-forall a. FilePath -&gt; InfoMod a
-</span><span class="hs-identifier hs-var">OA.progDesc</span></span><span> </span><span class="annot"><span class="annottext">FilePath
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; InfoMod (Cmd m)
+forall a. String -&gt; InfoMod a
+</span><span class="hs-identifier hs-var">OA.progDesc</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;Show changes between commits, commit and working tree, etc&quot;</span></span><span>
-</span><span id="line-59"></span></pre></body></html>
+</span><span id="line-67"></span></pre></body></html>
