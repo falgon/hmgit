@@ -1,34 +1,41 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span id="%24con2tag_EjE8LMigUOp1sxdpeCOdNW"></span><span class="hs-pragma">{-# LANGUAGE ExplicitNamespaces, FlexibleContexts, Rank2Types, TypeOperators #-}</span><span>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span id="%24con2tag_HNIxwkzJFPFGREUMcfdob8"></span><span class="hs-pragma">{-# LANGUAGE ExplicitNamespaces, FlexibleContexts, Rank2Types, TypeOperators #-}</span><span>
 </span><span id="line-2"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">HMGit.Internal.Parser.Core.ByteString</span><span> </span><span class="hs-special">(</span><span>
 </span><span id="line-3"></span><span>    </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#ParseException"><span class="hs-identifier">ParseException</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
 </span><span id="line-4"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#runByteStringParser"><span class="hs-identifier">runByteStringParser</span></a></span><span>
 </span><span id="line-5"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#ByteStringParser"><span class="hs-identifier">ByteStringParser</span></a></span><span>
-</span><span id="line-6"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#pNull"><span class="hs-identifier">pNull</span></a></span><span>
-</span><span id="line-7"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#pSpace"><span class="hs-identifier">pSpace</span></a></span><span>
-</span><span id="line-8"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#pDecimals"><span class="hs-identifier">pDecimals</span></a></span><span>
-</span><span id="line-9"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#fromBinaryGetter"><span class="hs-identifier">fromBinaryGetter</span></a></span><span>
-</span><span id="line-10"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-11"></span><span>
-</span><span id="line-12"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="HMGit.Internal.Exceptions.html"><span class="hs-identifier">HMGit.Internal.Exceptions</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Exceptions.html#MonadThrowable"><span class="hs-identifier">MonadThrowable</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
-</span><span id="line-13"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="HMGit.Internal.Utils.html"><span class="hs-identifier">HMGit.Internal.Utils</span></a></span><span>      </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Utils.html#first3M"><span class="hs-identifier">first3M</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Utils.html#foldChoice"><span class="hs-identifier">foldChoice</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-14"></span><span>
-</span><span id="line-15"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Exception.Safe</span></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Exception</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">MonadThrow</span></span><span class="hs-special">)</span><span>
-</span><span id="line-16"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Monad</span></span><span>             </span><span class="hs-special">(</span><span class="annot"><span class="hs-operator">(&gt;=&gt;)</span></span><span class="hs-special">)</span><span>
-</span><span id="line-17"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Natural</span></span><span>           </span><span class="hs-special">(</span><span class="hs-keyword">type</span><span> </span><span class="annot"><span class="hs-operator">(~&gt;)</span></span><span class="hs-special">)</span><span>
-</span><span id="line-18"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Binary.Get</span></span><span>           </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">BG</span></span><span>
-</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString.Lazy</span></span><span>      </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">BL</span></span><span>
-</span><span id="line-20"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Char</span></span><span>                 </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">chr</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">ord</span></span><span class="hs-special">)</span><span>
-</span><span id="line-21"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Tuple.Extra</span></span><span>          </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">thd3</span></span><span class="hs-special">)</span><span>
-</span><span id="line-22"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Typeable</span></span><span>             </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Typeable</span></span><span class="hs-special">)</span><span>
-</span><span id="line-23"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Void</span></span><span>                 </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Void</span></span><span class="hs-special">)</span><span>
-</span><span id="line-24"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Word</span></span><span>                 </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Word8</span></span><span class="hs-special">)</span><span>
-</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Path</span></span><span>                      </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">P</span></span><span>
-</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Text.Megaparsec</span></span><span>           </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">M</span></span><span>
-</span><span id="line-27"></span><span>
-</span><span id="line-28"></span><span class="hs-keyword">data</span><span> </span><span id="ParseException"><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#ParseException"><span class="hs-identifier hs-var">ParseException</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TreeParser"><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#TreeParser"><span class="hs-identifier hs-var">TreeParser</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
-</span><span id="line-29"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="IndexParser"><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#IndexParser"><span class="hs-identifier hs-var">IndexParser</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
-</span><span id="line-30"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="MasterHashParser"><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#MasterHashParser"><span class="hs-identifier hs-var">MasterHashParser</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
-</span><span id="line-31"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679157367"><span id="local-6989586621679157369"><span class="annot"><span class="annottext">ParseException -&gt; ParseException -&gt; Bool
+</span><span id="line-6"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#null"><span class="hs-identifier">null</span></a></span><span>
+</span><span id="line-7"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#space"><span class="hs-identifier">space</span></a></span><span>
+</span><span id="line-8"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#decimal"><span class="hs-identifier">decimal</span></a></span><span>
+</span><span id="line-9"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#octal"><span class="hs-identifier">octal</span></a></span><span>
+</span><span id="line-10"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#fromBinaryGetter"><span class="hs-identifier">fromBinaryGetter</span></a></span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#relFile"><span class="hs-identifier">relFile</span></a></span><span>
+</span><span id="line-12"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-13"></span><span>
+</span><span id="line-14"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="HMGit.Internal.Exceptions.html"><span class="hs-identifier">HMGit.Internal.Exceptions</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Exceptions.html#MonadThrowable"><span class="hs-identifier">MonadThrowable</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-15"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="HMGit.Internal.Utils.html"><span class="hs-identifier">HMGit.Internal.Utils</span></a></span><span>      </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Utils.html#first3M"><span class="hs-identifier">first3M</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-16"></span><span>
+</span><span id="line-17"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Codec.Binary.UTF8.String</span></span><span>  </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">S</span></span><span>
+</span><span id="line-18"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Exception.Safe</span></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Exception</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">MonadThrow</span></span><span class="hs-special">)</span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Monad</span></span><span>             </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">void</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-operator">(&gt;=&gt;)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Natural</span></span><span>           </span><span class="hs-special">(</span><span class="hs-keyword">type</span><span> </span><span class="annot"><span class="hs-operator">(~&gt;)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Binary.Get</span></span><span>           </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">BG</span></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString.Lazy</span></span><span>      </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">BL</span></span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Char</span></span><span>                 </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">chr</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">ord</span></span><span class="hs-special">)</span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Char</span></span><span>                 </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">digitToInt</span></span><span class="hs-special">)</span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.List</span></span><span>                 </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">foldl'</span></span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Tuple.Extra</span></span><span>          </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">thd3</span></span><span class="hs-special">)</span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Typeable</span></span><span>             </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Typeable</span></span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Void</span></span><span>                 </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Void</span></span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Word</span></span><span>                 </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Word8</span></span><span class="hs-special">)</span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Path</span></span><span>                      </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">P</span></span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Prelude</span></span><span>                   </span><span class="hs-keyword">hiding</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">null</span></span><span class="hs-special">)</span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Text.Megaparsec</span></span><span>           </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">M</span></span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Text.Megaparsec.Byte</span></span><span>      </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">M</span></span><span>
+</span><span id="line-34"></span><span>
+</span><span id="line-35"></span><span class="hs-keyword">data</span><span> </span><span id="ParseException"><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#ParseException"><span class="hs-identifier hs-var">ParseException</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TreeParser"><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#TreeParser"><span class="hs-identifier hs-var">TreeParser</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-36"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="IndexParser"><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#IndexParser"><span class="hs-identifier hs-var">IndexParser</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-37"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="MasterHashParser"><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#MasterHashParser"><span class="hs-identifier hs-var">MasterHashParser</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-38"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679157574"><span id="local-6989586621679157576"><span class="annot"><span class="annottext">ParseException -&gt; ParseException -&gt; Bool
 (ParseException -&gt; ParseException -&gt; Bool)
 -&gt; (ParseException -&gt; ParseException -&gt; Bool) -&gt; Eq ParseException
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
@@ -36,7 +43,7 @@ forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
 $c/= :: ParseException -&gt; ParseException -&gt; Bool
 == :: ParseException -&gt; ParseException -&gt; Bool
 $c== :: ParseException -&gt; ParseException -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679157351"><span id="local-6989586621679157353"><span id="local-6989586621679157355"><span id="local-6989586621679157357"><span id="local-6989586621679157359"><span id="local-6989586621679157361"><span id="local-6989586621679157363"><span class="annot"><span class="annottext">Eq ParseException
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679157558"><span id="local-6989586621679157560"><span id="local-6989586621679157562"><span id="local-6989586621679157564"><span id="local-6989586621679157566"><span id="local-6989586621679157568"><span id="local-6989586621679157570"><span class="annot"><span class="annottext">Eq ParseException
 Eq ParseException
 -&gt; (ParseException -&gt; ParseException -&gt; Ordering)
 -&gt; (ParseException -&gt; ParseException -&gt; Bool)
@@ -74,7 +81,7 @@ $c&lt; :: ParseException -&gt; ParseException -&gt; Bool
 compare :: ParseException -&gt; ParseException -&gt; Ordering
 $ccompare :: ParseException -&gt; ParseException -&gt; Ordering
 $cp1Ord :: Eq ParseException
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679157344"><span id="local-6989586621679157346"><span id="local-6989586621679157348"><span class="annot"><span class="annottext">Int -&gt; ParseException -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679157551"><span id="local-6989586621679157553"><span id="local-6989586621679157555"><span class="annot"><span class="annottext">Int -&gt; ParseException -&gt; ShowS
 [ParseException] -&gt; ShowS
 ParseException -&gt; String
 (Int -&gt; ParseException -&gt; ShowS)
@@ -90,82 +97,89 @@ $cshow :: ParseException -&gt; String
 showsPrec :: Int -&gt; ParseException -&gt; ShowS
 $cshowsPrec :: Int -&gt; ParseException -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
-</span><span id="line-32"></span><span>
-</span><span id="line-33"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679157339"><span class="annot"><span class="hs-identifier hs-type">M.ShowErrorComponent</span></span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#ParseException"><span class="hs-identifier hs-type">ParseException</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-34"></span><span>    </span><span id="local-6989586621679157337"><span class="annot"><span class="annottext">showErrorComponent :: ParseException -&gt; String
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var">showErrorComponent</span></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#TreeParser"><span class="hs-identifier hs-type">TreeParser</span></a></span><span> </span><span id="local-6989586621679157335"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621679157335"><span class="hs-identifier hs-var">s</span></a></span></span><span class="hs-special">)</span><span>       </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String
+</span><span id="line-39"></span><span>
+</span><span id="line-40"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679157546"><span class="annot"><span class="hs-identifier hs-type">M.ShowErrorComponent</span></span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#ParseException"><span class="hs-identifier hs-type">ParseException</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-41"></span><span>    </span><span id="local-6989586621679157544"><span class="annot"><span class="annottext">showErrorComponent :: ParseException -&gt; String
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">showErrorComponent</span></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#TreeParser"><span class="hs-identifier hs-type">TreeParser</span></a></span><span> </span><span id="local-6989586621679157542"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679157542"><span class="hs-identifier hs-var">s</span></a></span></span><span class="hs-special">)</span><span>       </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;tree object parse error: &quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621679157335"><span class="hs-identifier hs-var">s</span></a></span><span>
-</span><span id="line-35"></span><span>    </span><span class="annot"><span class="hs-identifier hs-var">showErrorComponent</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#IndexParser"><span class="hs-identifier hs-type">IndexParser</span></a></span><span> </span><span id="local-6989586621679157334"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621679157334"><span class="hs-identifier hs-var">s</span></a></span></span><span class="hs-special">)</span><span>      </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679157542"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-42"></span><span>    </span><span class="annot"><span class="hs-identifier hs-var">showErrorComponent</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#IndexParser"><span class="hs-identifier hs-type">IndexParser</span></a></span><span> </span><span id="local-6989586621679157541"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679157541"><span class="hs-identifier hs-var">s</span></a></span></span><span class="hs-special">)</span><span>      </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;index parse error: &quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621679157334"><span class="hs-identifier hs-var">s</span></a></span><span>
-</span><span id="line-36"></span><span>    </span><span class="annot"><span class="hs-identifier hs-var">showErrorComponent</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#MasterHashParser"><span class="hs-identifier hs-type">MasterHashParser</span></a></span><span> </span><span id="local-6989586621679157333"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621679157333"><span class="hs-identifier hs-var">s</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679157541"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-43"></span><span>    </span><span class="annot"><span class="hs-identifier hs-var">showErrorComponent</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#MasterHashParser"><span class="hs-identifier hs-type">MasterHashParser</span></a></span><span> </span><span id="local-6989586621679157540"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679157540"><span class="hs-identifier hs-var">s</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;master hash parse error: &quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621679157333"><span class="hs-identifier hs-var">s</span></a></span><span>
-</span><span id="line-37"></span><span>
-</span><span id="line-38"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679157325"><span id="local-6989586621679157327"><span id="local-6989586621679157329"><span class="annot"><span class="hs-identifier hs-type">Exception</span></span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#ParseException"><span class="hs-identifier hs-type">ParseException</span></a></span></span></span></span><span>
-</span><span id="line-39"></span><span>
-</span><span id="line-40"></span><span class="hs-keyword">type</span><span> </span><span id="ByteStringParser"><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#ByteStringParser"><span class="hs-identifier hs-var">ByteStringParser</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">M.Parsec</span></span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#ParseException"><span class="hs-identifier hs-type">ParseException</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">BL.ByteString</span></span><span>
-</span><span id="line-41"></span><span>
-</span><span id="line-42"></span><span id="local-6989586621679157318"><span id="local-6989586621679157319"><span id="local-6989586621679157320"><span id="local-6989586621679157321"><span id="local-6989586621679157322"><span id="local-6989586621679157323"><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#runByteStringParser"><span class="hs-identifier hs-type">runByteStringParser</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span>
-</span><span id="line-43"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">MonadThrow</span></span><span> </span><span class="annot"><a href="#local-6989586621679157323"><span class="hs-identifier hs-type">m</span></a></span><span>
-</span><span id="line-44"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="annot"><a href="#local-6989586621679157322"><span class="hs-identifier hs-type">e</span></a></span><span>
-</span><span id="line-45"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">M.ShowErrorComponent</span></span><span> </span><span class="annot"><a href="#local-6989586621679157322"><span class="hs-identifier hs-type">e</span></a></span><span>
-</span><span id="line-46"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span> </span><span class="annot"><a href="#local-6989586621679157322"><span class="hs-identifier hs-type">e</span></a></span><span>
-</span><span id="line-47"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">M.VisualStream</span></span><span> </span><span class="annot"><a href="#local-6989586621679157321"><span class="hs-identifier hs-type">s</span></a></span><span>
-</span><span id="line-48"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">M.TraversableStream</span></span><span> </span><span class="annot"><a href="#local-6989586621679157321"><span class="hs-identifier hs-type">s</span></a></span><span>
-</span><span id="line-49"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span> </span><span class="annot"><a href="#local-6989586621679157321"><span class="hs-identifier hs-type">s</span></a></span><span>
-</span><span id="line-50"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="annot"><a href="#local-6989586621679157321"><span class="hs-identifier hs-type">s</span></a></span><span>
-</span><span id="line-51"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">M.Token</span></span><span> </span><span class="annot"><a href="#local-6989586621679157321"><span class="hs-identifier hs-type">s</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-52"></span><span>  </span><span class="hs-special">)</span><span>
-</span><span id="line-53"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">M.Parsec</span></span><span> </span><span class="annot"><a href="#local-6989586621679157322"><span class="hs-identifier hs-type">e</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679157321"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679157320"><span class="hs-identifier hs-type">a</span></a></span><span>
-</span><span id="line-54"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">P.Path</span></span><span> </span><span class="annot"><a href="#local-6989586621679157319"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679157318"><span class="hs-identifier hs-type">t</span></a></span><span>
-</span><span id="line-55"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679157321"><span class="hs-identifier hs-type">s</span></a></span><span>
-</span><span id="line-56"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679157323"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679157320"><span class="hs-identifier hs-type">a</span></a></span></span></span></span></span></span></span><span>
-</span><span id="line-57"></span><span id="runByteStringParser"><span class="annot"><span class="annottext">runByteStringParser :: Parsec e s a -&gt; Path b t -&gt; s -&gt; m a
-</span><a href="HMGit.Internal.Parser.Core.ByteString.html#runByteStringParser"><span class="hs-identifier hs-var hs-var">runByteStringParser</span></a></span></span><span> </span><span id="local-6989586621679157315"><span class="annot"><span class="annottext">Parsec e s a
-</span><a href="#local-6989586621679157315"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span id="local-6989586621679157314"><span class="annot"><span class="annottext">Path b t
-</span><a href="#local-6989586621679157314"><span class="hs-identifier hs-var">fp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Void -&gt; Either (ParseErrorBundle s e) ~&gt; m
+</span><a href="#local-6989586621679157540"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-44"></span><span>
+</span><span id="line-45"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679157532"><span id="local-6989586621679157534"><span id="local-6989586621679157536"><span class="annot"><span class="hs-identifier hs-type">Exception</span></span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#ParseException"><span class="hs-identifier hs-type">ParseException</span></a></span></span></span></span><span>
+</span><span id="line-46"></span><span>
+</span><span id="line-47"></span><span class="hs-keyword">type</span><span> </span><span id="ByteStringParser"><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#ByteStringParser"><span class="hs-identifier hs-var">ByteStringParser</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">M.Parsec</span></span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#ParseException"><span class="hs-identifier hs-type">ParseException</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">BL.ByteString</span></span><span>
+</span><span id="line-48"></span><span>
+</span><span id="line-49"></span><span id="local-6989586621679157525"><span id="local-6989586621679157526"><span id="local-6989586621679157527"><span id="local-6989586621679157528"><span id="local-6989586621679157529"><span id="local-6989586621679157530"><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#runByteStringParser"><span class="hs-identifier hs-type">runByteStringParser</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-50"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">MonadThrow</span></span><span> </span><span class="annot"><a href="#local-6989586621679157530"><span class="hs-identifier hs-type">m</span></a></span><span>
+</span><span id="line-51"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="annot"><a href="#local-6989586621679157529"><span class="hs-identifier hs-type">e</span></a></span><span>
+</span><span id="line-52"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">M.ShowErrorComponent</span></span><span> </span><span class="annot"><a href="#local-6989586621679157529"><span class="hs-identifier hs-type">e</span></a></span><span>
+</span><span id="line-53"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span> </span><span class="annot"><a href="#local-6989586621679157529"><span class="hs-identifier hs-type">e</span></a></span><span>
+</span><span id="line-54"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">M.VisualStream</span></span><span> </span><span class="annot"><a href="#local-6989586621679157528"><span class="hs-identifier hs-type">s</span></a></span><span>
+</span><span id="line-55"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">M.TraversableStream</span></span><span> </span><span class="annot"><a href="#local-6989586621679157528"><span class="hs-identifier hs-type">s</span></a></span><span>
+</span><span id="line-56"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span> </span><span class="annot"><a href="#local-6989586621679157528"><span class="hs-identifier hs-type">s</span></a></span><span>
+</span><span id="line-57"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="annot"><a href="#local-6989586621679157528"><span class="hs-identifier hs-type">s</span></a></span><span>
+</span><span id="line-58"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">M.Token</span></span><span> </span><span class="annot"><a href="#local-6989586621679157528"><span class="hs-identifier hs-type">s</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-59"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-60"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">M.Parsec</span></span><span> </span><span class="annot"><a href="#local-6989586621679157529"><span class="hs-identifier hs-type">e</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679157528"><span class="hs-identifier hs-type">s</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679157527"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-61"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">P.Path</span></span><span> </span><span class="annot"><a href="#local-6989586621679157526"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679157525"><span class="hs-identifier hs-type">t</span></a></span><span>
+</span><span id="line-62"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679157528"><span class="hs-identifier hs-type">s</span></a></span><span>
+</span><span id="line-63"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679157530"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679157527"><span class="hs-identifier hs-type">a</span></a></span></span></span></span></span></span></span><span>
+</span><span id="line-64"></span><span id="runByteStringParser"><span class="annot"><span class="annottext">runByteStringParser :: Parsec e s a -&gt; Path b t -&gt; s -&gt; m a
+</span><a href="HMGit.Internal.Parser.Core.ByteString.html#runByteStringParser"><span class="hs-identifier hs-var hs-var">runByteStringParser</span></a></span></span><span> </span><span id="local-6989586621679157522"><span class="annot"><span class="annottext">Parsec e s a
+</span><a href="#local-6989586621679157522"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span id="local-6989586621679157521"><span class="annot"><span class="annottext">Path b t
+</span><a href="#local-6989586621679157521"><span class="hs-identifier hs-var">fp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Void -&gt; Either (ParseErrorBundle s e) ~&gt; m
 forall (m :: * -&gt; *) (n :: * -&gt; *) e.
 (MonadThrowable m, MonadThrow n, Exception e) =&gt;
 Maybe e -&gt; m ~&gt; n
 </span><a href="HMGit.Internal.Exceptions.html#fromMonad"><span class="hs-identifier hs-var">fromMonad</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Maybe Void
 forall a. Maybe a
 </span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Void</span></span><span class="hs-special">)</span><span>
-</span><span id="line-58"></span><span>    </span><span class="annot"><span class="annottext">(Either (ParseErrorBundle s e) a -&gt; m a)
+</span><span id="line-65"></span><span>    </span><span class="annot"><span class="annottext">(Either (ParseErrorBundle s e) a -&gt; m a)
 -&gt; (s -&gt; Either (ParseErrorBundle s e) a) -&gt; s -&gt; m a
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Parsec e s a -&gt; String -&gt; s -&gt; Either (ParseErrorBundle s e) a
 forall e s a.
 Parsec e s a -&gt; String -&gt; s -&gt; Either (ParseErrorBundle s e) a
 </span><span class="hs-identifier hs-var">M.runParser</span></span><span> </span><span class="annot"><span class="annottext">Parsec e s a
-</span><a href="#local-6989586621679157315"><span class="hs-identifier hs-var">p</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Path b t -&gt; String
+</span><a href="#local-6989586621679157522"><span class="hs-identifier hs-var">p</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Path b t -&gt; String
 forall b t. Path b t -&gt; String
 </span><span class="hs-identifier hs-var">P.toFilePath</span></span><span> </span><span class="annot"><span class="annottext">Path b t
-</span><a href="#local-6989586621679157314"><span class="hs-identifier hs-var">fp</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-59"></span><span>
-</span><span id="line-60"></span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#pNull"><span class="hs-identifier hs-type">pNull</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#ByteStringParser"><span class="hs-identifier hs-type">ByteStringParser</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word8</span></span><span>
-</span><span id="line-61"></span><span id="pNull"><span class="annot"><span class="annottext">pNull :: ByteStringParser Word8
-</span><a href="HMGit.Internal.Parser.Core.ByteString.html#pNull"><span class="hs-identifier hs-var hs-var">pNull</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Token ByteString
+</span><a href="#local-6989586621679157521"><span class="hs-identifier hs-var">fp</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-66"></span><span>
+</span><span id="line-67"></span><span class="hs-comment">-- | null</span><span>
+</span><span id="line-68"></span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#null"><span class="hs-identifier hs-type">null</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#ByteStringParser"><span class="hs-identifier hs-type">ByteStringParser</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word8</span></span><span>
+</span><span id="line-69"></span><span id="null"><span class="annot"><span class="annottext">null :: ByteStringParser Word8
+</span><a href="HMGit.Internal.Parser.Core.ByteString.html#null"><span class="hs-identifier hs-var hs-var">null</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Token ByteString
 -&gt; ParsecT ParseException ByteString Identity (Token ByteString)
 forall e s (m :: * -&gt; *).
 MonadParsec e s m =&gt;
 Token s -&gt; m (Token s)
 </span><span class="hs-identifier hs-var">M.single</span></span><span> </span><span class="annot"><span class="annottext">Token ByteString
 </span><span class="hs-number">0</span></span><span>
-</span><span id="line-62"></span><span>
-</span><span id="line-63"></span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#pSpace"><span class="hs-identifier hs-type">pSpace</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#ByteStringParser"><span class="hs-identifier hs-type">ByteStringParser</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word8</span></span><span>
-</span><span id="line-64"></span><span id="pSpace"><span class="annot"><span class="annottext">pSpace :: ByteStringParser Word8
-</span><a href="HMGit.Internal.Parser.Core.ByteString.html#pSpace"><span class="hs-identifier hs-var hs-var">pSpace</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Token ByteString
+</span><span id="line-70"></span><span>
+</span><span id="line-71"></span><span class="hs-comment">-- | M.space is fine but we just want to match 0x20</span><span>
+</span><span id="line-72"></span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#space"><span class="hs-identifier hs-type">space</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#ByteStringParser"><span class="hs-identifier hs-type">ByteStringParser</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-73"></span><span id="space"><span class="annot"><span class="annottext">space :: ByteStringParser ()
+</span><a href="HMGit.Internal.Parser.Core.ByteString.html#space"><span class="hs-identifier hs-var hs-var">space</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ByteStringParser Word8 -&gt; ByteStringParser ()
+forall (f :: * -&gt; *) a. Functor f =&gt; f a -&gt; f ()
+</span><span class="hs-identifier hs-var">void</span></span><span> </span><span class="annot"><span class="annottext">(ByteStringParser Word8 -&gt; ByteStringParser ())
+-&gt; ByteStringParser Word8 -&gt; ByteStringParser ()
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Token ByteString
 -&gt; ParsecT ParseException ByteString Identity (Token ByteString)
 forall e s (m :: * -&gt; *).
 MonadParsec e s m =&gt;
@@ -182,57 +196,90 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Int
 </span><span class="hs-identifier hs-var">ord</span></span><span> </span><span class="annot"><span class="annottext">Char
 </span><span class="hs-char">' '</span></span><span>
-</span><span id="line-65"></span><span>
-</span><span id="line-66"></span><span id="local-6989586621679157308"><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#pDecimals"><span class="hs-identifier hs-type">pDecimals</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Read</span></span><span> </span><span class="annot"><a href="#local-6989586621679157308"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#ByteStringParser"><span class="hs-identifier hs-type">ByteStringParser</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679157308"><span class="hs-identifier hs-type">i</span></a></span></span><span>
-</span><span id="line-67"></span><span id="pDecimals"><span class="annot"><span class="annottext">pDecimals :: ByteStringParser i
-</span><a href="HMGit.Internal.Parser.Core.ByteString.html#pDecimals"><span class="hs-identifier hs-var hs-var">pDecimals</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; i
-forall a. Read a =&gt; String -&gt; a
-</span><span class="hs-identifier hs-var">read</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; i) -&gt; ([Word8] -&gt; String) -&gt; [Word8] -&gt; i
-forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
-</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(Word8 -&gt; Char) -&gt; [Word8] -&gt; String
-forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
-</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; Char
-</span><span class="hs-identifier hs-var">chr</span></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; Char) -&gt; (Word8 -&gt; Int) -&gt; Word8 -&gt; Char
-forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
-</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Int
+</span><span id="line-74"></span><span>
+</span><span id="line-75"></span><span class="hs-comment">-- | decimal</span><span>
+</span><span id="line-76"></span><span id="local-6989586621679157515"><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#decimal"><span class="hs-identifier hs-type">decimal</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Num</span></span><span> </span><span class="annot"><a href="#local-6989586621679157515"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#ByteStringParser"><span class="hs-identifier hs-type">ByteStringParser</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679157515"><span class="hs-identifier hs-type">i</span></a></span></span><span>
+</span><span id="line-77"></span><span id="decimal"><span class="annot"><span class="annottext">decimal :: ByteStringParser i
+</span><a href="HMGit.Internal.Parser.Core.ByteString.html#decimal"><span class="hs-identifier hs-var hs-var">decimal</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(i -&gt; Word8 -&gt; i) -&gt; i -&gt; [Word8] -&gt; i
+forall (t :: * -&gt; *) b a.
+Foldable t =&gt;
+(b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b
+</span><span class="hs-identifier hs-var">foldl'</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679157514"><span class="annot"><span class="annottext">i
+</span><a href="#local-6989586621679157514"><span class="hs-identifier hs-var">acc</span></a></span></span><span> </span><span id="local-6989586621679157513"><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679157513"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">i
+</span><a href="#local-6989586621679157514"><span class="hs-identifier hs-var">acc</span></a></span><span> </span><span class="annot"><span class="annottext">i -&gt; i -&gt; i
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">*</span></span><span> </span><span class="annot"><span class="annottext">i
+</span><span class="hs-number">10</span></span><span> </span><span class="annot"><span class="annottext">i -&gt; i -&gt; i
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; i
 forall a b. (Integral a, Num b) =&gt; a -&gt; b
-</span><span class="hs-identifier hs-var">fromIntegral</span></span><span class="hs-special">)</span><span>
-</span><span id="line-68"></span><span>    </span><span class="annot"><span class="annottext">([Word8] -&gt; i)
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Char -&gt; Int
+</span><span class="hs-identifier hs-var">digitToInt</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; Char
+</span><span class="hs-identifier hs-var">chr</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word8 -&gt; Int
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679157513"><span class="hs-identifier hs-var">c</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">i
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-78"></span><span>    </span><span class="annot"><span class="annottext">([Word8] -&gt; i)
 -&gt; ParsecT ParseException ByteString Identity [Word8]
 -&gt; ByteStringParser i
 forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
 </span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">ByteStringParser Word8
 -&gt; ParsecT ParseException ByteString Identity [Word8]
 forall (m :: * -&gt; *) a. MonadPlus m =&gt; m a -&gt; m [a]
-</span><span class="hs-identifier hs-var">M.many</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Char -&gt; ByteStringParser Word8)
--&gt; String -&gt; ByteStringParser Word8
-forall (t :: * -&gt; *) (f :: * -&gt; *) a b.
-(Foldable t, Alternative f) =&gt;
-(a -&gt; f b) -&gt; t a -&gt; f b
-</span><a href="HMGit.Internal.Utils.html#foldChoice"><span class="hs-identifier hs-var">foldChoice</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word8 -&gt; ByteStringParser Word8
+</span><span class="hs-identifier hs-var">M.some</span></span><span> </span><span class="annot"><span class="annottext">ByteStringParser Word8
 forall e s (m :: * -&gt; *).
-MonadParsec e s m =&gt;
-Token s -&gt; m (Token s)
-</span><span class="hs-identifier hs-var">M.single</span></span><span> </span><span class="annot"><span class="annottext">(Word8 -&gt; ByteStringParser Word8)
--&gt; (Char -&gt; Word8) -&gt; Char -&gt; ByteStringParser Word8
-forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
-</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Word8
+(MonadParsec e s m, Token s ~ Word8) =&gt;
+m (Token s)
+</span><span class="hs-identifier hs-var">M.digitChar</span></span><span>
+</span><span id="line-79"></span><span>
+</span><span id="line-80"></span><span class="hs-comment">-- | octal</span><span>
+</span><span id="line-81"></span><span id="local-6989586621679157507"><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#octal"><span class="hs-identifier hs-type">octal</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Num</span></span><span> </span><span class="annot"><a href="#local-6989586621679157507"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#ByteStringParser"><span class="hs-identifier hs-type">ByteStringParser</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679157507"><span class="hs-identifier hs-type">i</span></a></span></span><span>
+</span><span id="line-82"></span><span id="octal"><span class="annot"><span class="annottext">octal :: ByteStringParser i
+</span><a href="HMGit.Internal.Parser.Core.ByteString.html#octal"><span class="hs-identifier hs-var hs-var">octal</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(i -&gt; Word8 -&gt; i) -&gt; i -&gt; [Word8] -&gt; i
+forall (t :: * -&gt; *) b a.
+Foldable t =&gt;
+(b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b
+</span><span class="hs-identifier hs-var">foldl'</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679157506"><span class="annot"><span class="annottext">i
+</span><a href="#local-6989586621679157506"><span class="hs-identifier hs-var">acc</span></a></span></span><span> </span><span id="local-6989586621679157505"><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679157505"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">i
+</span><a href="#local-6989586621679157506"><span class="hs-identifier hs-var">acc</span></a></span><span> </span><span class="annot"><span class="annottext">i -&gt; i -&gt; i
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">*</span></span><span> </span><span class="annot"><span class="annottext">i
+</span><span class="hs-number">8</span></span><span> </span><span class="annot"><span class="annottext">i -&gt; i -&gt; i
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; i
 forall a b. (Integral a, Num b) =&gt; a -&gt; b
-</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; Word8) -&gt; (Char -&gt; Int) -&gt; Char -&gt; Word8
-forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
-</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Int
-</span><span class="hs-identifier hs-var">ord</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Char
-</span><span class="hs-char">'0'</span></span><span class="hs-glyph">..</span><span class="annot"><span class="annottext">Char
-</span><span class="hs-char">'9'</span></span><span class="hs-special">]</span><span class="hs-special">)</span><span>
-</span><span id="line-69"></span><span>
-</span><span id="line-70"></span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#fromBinaryGetter"><span class="hs-identifier hs-type">fromBinaryGetter</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#ParseException"><span class="hs-identifier hs-type">ParseException</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">BG.Get</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#ByteStringParser"><span class="hs-identifier hs-type">ByteStringParser</span></a></span><span>
-</span><span id="line-71"></span><span id="fromBinaryGetter"><span class="annot"><span class="annottext">fromBinaryGetter :: (String -&gt; ParseException) -&gt; Get ~&gt; ByteStringParser
-</span><a href="HMGit.Internal.Parser.Core.ByteString.html#fromBinaryGetter"><span class="hs-identifier hs-var hs-var">fromBinaryGetter</span></a></span></span><span> </span><span id="local-6989586621679157304"><span class="annot"><span class="annottext">String -&gt; ParseException
-</span><a href="#local-6989586621679157304"><span class="hs-identifier hs-var">pException</span></a></span></span><span> </span><span id="local-6989586621679157303"><span class="annot"><span class="annottext">Get x
-</span><a href="#local-6989586621679157303"><span class="hs-identifier hs-var">binGetter</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ParsecT ParseException ByteString Identity ByteString
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Char -&gt; Int
+</span><span class="hs-identifier hs-var">digitToInt</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; Char
+</span><span class="hs-identifier hs-var">chr</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word8 -&gt; Int
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679157505"><span class="hs-identifier hs-var">c</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">i
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-83"></span><span>    </span><span class="annot"><span class="annottext">([Word8] -&gt; i)
+-&gt; ParsecT ParseException ByteString Identity [Word8]
+-&gt; ByteStringParser i
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">ByteStringParser Word8
+-&gt; ParsecT ParseException ByteString Identity [Word8]
+forall (m :: * -&gt; *) a. MonadPlus m =&gt; m a -&gt; m [a]
+</span><span class="hs-identifier hs-var">M.some</span></span><span> </span><span class="annot"><span class="annottext">ByteStringParser Word8
+forall e s (m :: * -&gt; *).
+(MonadParsec e s m, Token s ~ Word8) =&gt;
+m (Token s)
+</span><span class="hs-identifier hs-var">M.octDigitChar</span></span><span>
+</span><span id="line-84"></span><span>
+</span><span id="line-85"></span><span class="hs-comment">-- | Natural transformation from Get to parsec</span><span>
+</span><span id="line-86"></span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#fromBinaryGetter"><span class="hs-identifier hs-type">fromBinaryGetter</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#ParseException"><span class="hs-identifier hs-type">ParseException</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">BG.Get</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#ByteStringParser"><span class="hs-identifier hs-type">ByteStringParser</span></a></span><span>
+</span><span id="line-87"></span><span id="fromBinaryGetter"><span class="annot"><span class="annottext">fromBinaryGetter :: (String -&gt; ParseException) -&gt; Get ~&gt; ByteStringParser
+</span><a href="HMGit.Internal.Parser.Core.ByteString.html#fromBinaryGetter"><span class="hs-identifier hs-var hs-var">fromBinaryGetter</span></a></span></span><span> </span><span id="local-6989586621679157503"><span class="annot"><span class="annottext">String -&gt; ParseException
+</span><a href="#local-6989586621679157503"><span class="hs-identifier hs-var">pException</span></a></span></span><span> </span><span id="local-6989586621679157502"><span class="annot"><span class="annottext">Get x
+</span><a href="#local-6989586621679157502"><span class="hs-identifier hs-var">binGetter</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ParsecT ParseException ByteString Identity ByteString
 forall e s (m :: * -&gt; *). MonadParsec e s m =&gt; m s
 </span><span class="hs-identifier hs-var">M.getInput</span></span><span>
-</span><span id="line-72"></span><span>    </span><span class="annot"><span class="annottext">ParsecT ParseException ByteString Identity ByteString
+</span><span id="line-88"></span><span>    </span><span class="annot"><span class="annottext">ParsecT ParseException ByteString Identity ByteString
 -&gt; (ByteString -&gt; ParsecT ParseException ByteString Identity x)
 -&gt; ParsecT ParseException ByteString Identity x
 forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
@@ -252,20 +299,20 @@ forall e s (m :: * -&gt; *) a. MonadParsec e s m =&gt; e -&gt; m a
 -&gt; ParsecT ParseException ByteString Identity x
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ParseException
-</span><a href="#local-6989586621679157304"><span class="hs-identifier hs-var">pException</span></a></span><span> </span><span class="annot"><span class="annottext">(String -&gt; ParseException)
+</span><a href="#local-6989586621679157503"><span class="hs-identifier hs-var">pException</span></a></span><span> </span><span class="annot"><span class="annottext">(String -&gt; ParseException)
 -&gt; ((ByteString, ByteOffset, String) -&gt; String)
 -&gt; (ByteString, ByteOffset, String)
 -&gt; ParseException
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(ByteString, ByteOffset, String) -&gt; String
 forall a b c. (a, b, c) -&gt; c
-</span><span class="hs-identifier hs-var">thd3</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(ByteString -&gt; ParsecT ParseException ByteString Identity ())
+</span><span class="hs-identifier hs-var">thd3</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(ByteString -&gt; ByteStringParser ())
 -&gt; (ByteString, ByteOffset, x)
 -&gt; ParsecT ParseException ByteString Identity ((), ByteOffset, x)
 forall (m :: * -&gt; *) a a' b c.
 Functor m =&gt;
 (a -&gt; m a') -&gt; (a, b, c) -&gt; m (a', b, c)
-</span><a href="HMGit.Internal.Utils.html#first3M"><span class="hs-identifier hs-var">first3M</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; ParsecT ParseException ByteString Identity ()
+</span><a href="HMGit.Internal.Utils.html#first3M"><span class="hs-identifier hs-var">first3M</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; ByteStringParser ()
 forall e s (m :: * -&gt; *). MonadParsec e s m =&gt; s -&gt; m ()
 </span><span class="hs-identifier hs-var">M.setInput</span></span><span> </span><span class="annot"><span class="annottext">((ByteString, ByteOffset, x)
  -&gt; ParsecT ParseException ByteString Identity ((), ByteOffset, x))
@@ -286,7 +333,7 @@ forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">((), ByteOffset, x) -&gt; x
 forall a b c. (a, b, c) -&gt; c
 </span><span class="hs-identifier hs-var">thd3</span></span><span class="hs-special">)</span><span>
-</span><span id="line-73"></span><span>    </span><span class="annot"><span class="annottext">(Either
+</span><span id="line-89"></span><span>    </span><span class="annot"><span class="annottext">(Either
    (ByteString, ByteOffset, String) (ByteString, ByteOffset, x)
  -&gt; ParsecT ParseException ByteString Identity x)
 -&gt; (ByteString
@@ -305,5 +352,48 @@ Get a
 -&gt; Either
      (ByteString, ByteOffset, String) (ByteString, ByteOffset, a)
 </span><span class="hs-identifier hs-var">BG.runGetOrFail</span></span><span> </span><span class="annot"><span class="annottext">Get x
-</span><a href="#local-6989586621679157303"><span class="hs-identifier hs-var">binGetter</span></a></span><span>
-</span><span id="line-74"></span></pre></body></html>
+</span><a href="#local-6989586621679157502"><span class="hs-identifier hs-var">binGetter</span></a></span><span>
+</span><span id="line-90"></span><span>
+</span><span id="line-91"></span><span class="hs-comment">-- | parse relative file path until null</span><span>
+</span><span id="line-92"></span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#relFile"><span class="hs-identifier hs-type">relFile</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="HMGit.Internal.Parser.Core.ByteString.html#ByteStringParser"><span class="hs-identifier hs-type">ByteStringParser</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">P.Path</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">P.Rel</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">P.File</span></span><span class="hs-special">)</span><span>
+</span><span id="line-93"></span><span id="relFile"><span class="annot"><span class="annottext">relFile :: ByteStringParser (Path Rel File)
+</span><a href="HMGit.Internal.Parser.Core.ByteString.html#relFile"><span class="hs-identifier hs-var hs-var">relFile</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ByteStringParser Word8
+-&gt; ByteStringParser Word8
+-&gt; ParsecT ParseException ByteString Identity [Word8]
+forall (m :: * -&gt; *) a end. MonadPlus m =&gt; m a -&gt; m end -&gt; m [a]
+</span><span class="hs-identifier hs-var">M.manyTill</span></span><span> </span><span class="annot"><span class="annottext">ByteStringParser Word8
+forall e s (m :: * -&gt; *). MonadParsec e s m =&gt; m (Token s)
+</span><span class="hs-identifier hs-var">M.anySingle</span></span><span> </span><span class="annot"><span class="annottext">ByteStringParser Word8
+</span><a href="HMGit.Internal.Parser.Core.ByteString.html#null"><span class="hs-identifier hs-var">null</span></a></span><span>
+</span><span id="line-94"></span><span>    </span><span class="annot"><span class="annottext">ParsecT ParseException ByteString Identity [Word8]
+-&gt; ([Word8] -&gt; ByteStringParser (Path Rel File))
+-&gt; ByteStringParser (Path Rel File)
+forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="annot"><span class="annottext">ByteStringParser (Path Rel File)
+-&gt; (Path Rel File -&gt; ByteStringParser (Path Rel File))
+-&gt; Maybe (Path Rel File)
+-&gt; ByteStringParser (Path Rel File)
+forall b a. b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
+</span><span class="hs-identifier hs-var">maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ParseException -&gt; ByteStringParser (Path Rel File)
+forall e s (m :: * -&gt; *) a. MonadParsec e s m =&gt; e -&gt; m a
+</span><span class="hs-identifier hs-var">M.customFailure</span></span><span> </span><span class="annot"><span class="annottext">(ParseException -&gt; ByteStringParser (Path Rel File))
+-&gt; ParseException -&gt; ByteStringParser (Path Rel File)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ParseException
+</span><a href="HMGit.Internal.Parser.Core.ByteString.html#TreeParser"><span class="hs-identifier hs-var">TreeParser</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;failed to parse relative file path&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Path Rel File -&gt; ByteStringParser (Path Rel File)
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span>
+</span><span id="line-95"></span><span>     </span><span class="annot"><span class="annottext">(Maybe (Path Rel File) -&gt; ByteStringParser (Path Rel File))
+-&gt; ([Word8] -&gt; Maybe (Path Rel File))
+-&gt; [Word8]
+-&gt; ByteStringParser (Path Rel File)
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Maybe (Path Rel File)
+forall (m :: * -&gt; *). MonadThrow m =&gt; String -&gt; m (Path Rel File)
+</span><span class="hs-identifier hs-var">P.parseRelFile</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; Maybe (Path Rel File))
+-&gt; ([Word8] -&gt; String) -&gt; [Word8] -&gt; Maybe (Path Rel File)
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">[Word8] -&gt; String
+</span><span class="hs-identifier hs-var">S.decode</span></span><span>
+</span><span id="line-96"></span></pre></body></html>

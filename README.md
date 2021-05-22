@@ -1,8 +1,19 @@
 # HMGit
 
 [![CI](https://github.com/falgon/hmgit/actions/workflows/build.yml/badge.svg)](https://github.com/falgon/hmgit/actions/workflows/build.yml)
+[![CodeFactor](https://www.codefactor.io/repository/github/falgon/hmgit/badge)](https://www.codefactor.io/repository/github/falgon/hmgit)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ffalgon%2Fhmgit.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Ffalgon%2Fhmgit?ref=badge_shield)
+<a href="./LICENSE">
+<img src="https://img.shields.io/badge/license-BSD%203--Clause-blue.svg" alt="License" />
+</a>
+![Haskell Programming Language](https://img.shields.io/badge/language-Haskell-8D82AC.svg)
+[![Documents](https://img.shields.io/badge/docs-available-blue.svg)](https://falgon.github.io/hmgit/)
 
-Haskell Minimal Git (This is not made for practical purposes).
+
+Haskell Minimal Git (This is not made for practical purposes)
+
+- Focusing on Git version 2.17.1
+- This was made for [技術書店11](https://techbookfest.org/event/tbf11)
 
 ## Usage
 
@@ -10,11 +21,21 @@ HMGit has 8 commands: `add`, `cat-file`, `diff`, `hash-object`, `init`, `ls-file
 
 ```bash
 $ stack exec hmgit -- --help
-Usage: hmgit [--db-name <database name>] COMMAND
-  the subset of awesome content tracker
+    __  ____  __________ __
+   / / / /  |/  / ____(_) /_
+  / /_/ / /|_/ / / __/ / __/
+ / __  / /  / / /_/ / / /_
+/_/ /_/_/  /_/\____/_/\__/
+
+Usage: hmgit [--version] [--db-name <database name>] COMMAND
+  The subset of awesome content tracker Git
+  Version: 1.0.0
+  Commit hash: 76a315cce6bdcfe428338dca5466849eab3868d4
 
 Available options:
   -h,--help                Show this help text
+  --version                Prints the HMGit suite version that the hmgit program
+                           came from.
   --db-name <database name>
                            hmgit database name
 
@@ -154,3 +175,7 @@ $ stack build
 ```bash
 $ stack test
 ```
+
+## License
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ffalgon%2Fhmgit.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Ffalgon%2Fhmgit?ref=badge_large)

@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 module Main where
 
 import           HMGit                              (BugException (..),
@@ -18,7 +19,12 @@ import           Control.Exception.Safe             (MonadCatch,
                                                      tryAny)
 import           Control.Monad                      (MonadPlus, (>=>))
 import           Control.Monad.IO.Class             (MonadIO)
+import           Data.MonoTraversable               (ointercalate)
+import           Data.Version                       (showVersion)
+import           Development.GitRev                 (gitHash)
 import qualified Options.Applicative                as OA
+import qualified Options.Applicative.Help.Pretty    as OA
+import qualified Paths_hmgit                        as P
 import           Prelude                            hiding (init)
 import           System.Exit                        (exitFailure)
 import           System.IO                          (hPutStrLn, stderr)
@@ -47,13 +53,45 @@ programOptions = Opts
       , commitCmd
       ])
 
-optsParser :: (MonadCatch m, MonadIO m, MonadPlus m) => OA.ParserInfo (Opts m)
-optsParser = OA.info (OA.helper <*> programOptions) $ mconcat [
-    OA.fullDesc
-  , OA.progDesc "the subset of awesome content tracker"
+{-# INLINE logo #-}
+logo :: OA.Doc
+logo = OA.bold $ ointercalate OA.line [
+    OA.text "    __  ____  __________ __"
+  , OA.text "   / / / /  |/  / ____(_) /_"
+  , OA.text "  / /_/ / /|_/ / / __/ / __/"
+  , OA.text " / __  / /  / / /_/ / / /_"
+  , OA.text "/_/ /_/_/  /_/\\____/_/\\__/"
   ]
 
-optsToHMGitT :: (MonadPlus m, MonadCatch m, MonadIO m) => Opts m -> m (HMGitT m (), HMGitConfig)
+versionOption :: OA.Parser (a -> a)
+versionOption = OA.infoOption vopt $ mconcat [
+    OA.long "version"
+  , OA.help "Prints the HMGit suite version that the hmgit program came from."
+  ]
+    where
+        vopt = show $ ointercalate OA.line [
+            logo
+          , OA.line
+          , OA.text "Version:" OA.<+> OA.text (showVersion P.version)
+          , OA.text "Commit hash:" OA.<+> OA.text $(gitHash)
+          ]
+
+optsParser :: (MonadCatch m, MonadIO m, MonadPlus m) => OA.ParserInfo (Opts m)
+optsParser = OA.info (OA.helper <*> versionOption <*> programOptions) $ mconcat [
+    OA.fullDesc
+  , OA.headerDoc $ Just logo
+  , OA.progDescDoc $ Just $ mconcat [
+        OA.text "The subset of" OA.<+> OA.bold (OA.text "awesome") OA.<+> OA.text "content tracker Git"
+      , OA.line
+      , OA.text "Version:" OA.<+> OA.text (showVersion P.version)
+      , OA.line
+      , OA.text "Commit hash:" OA.<+> OA.text $(gitHash)
+      ]
+  ]
+
+optsToHMGitT :: (MonadPlus m, MonadCatch m, MonadIO m)
+    => Opts m
+    -> m (HMGitT m (), HMGitConfig)
 optsToHMGitT (Opts dbName (CmdInit runner repoName)) = pure (
     init runner dbName repoName
   , HMGitConfigInit

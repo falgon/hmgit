@@ -6,28 +6,26 @@ module HMGit.Internal.Parser.Object (
 ) where
 
 import           HMGit.Internal.Parser.Core
-import           HMGit.Internal.Utils       (foldChoice, hexStr, stateEmpty)
+import           HMGit.Internal.Utils       (foldChoice, hexStr)
 
-import qualified Codec.Binary.UTF8.String   as S
 import           Control.Monad.Extra        (ifM)
 import           Control.Monad.Loops        (unfoldrM)
-import           Control.Monad.Trans        (lift)
-import           Control.Monad.Trans.Maybe  (MaybeT (..), runMaybeT)
 import qualified Data.ByteString.Lazy       as BL
 import qualified Data.ByteString.Lazy.Char8 as BLC
 import qualified Data.ByteString.Lazy.UTF8  as BLU
 import           Data.List                  (isPrefixOf)
-import qualified Data.List.NonEmpty         as LN
 import           Data.Tuple.Extra           (secondM)
-import           Numeric                    (readOct)
 import qualified Path                       as P
+import           Prelude                    hiding (null)
 import           System.Posix.Types         (CMode (..))
 import qualified Text.Megaparsec            as M
 import qualified Text.Megaparsec.Char       as MC
 
-data ObjectType = Blob
-    | Commit
-    | Tree
+-- | The Git object type.
+-- Currently, it does not support tags.
+data ObjectType = Blob -- ^ Blob object
+    | Commit -- ^ Commit object
+    | Tree -- ^ Tree object
     deriving (Eq, Enum)
 
 instance Show ObjectType where
@@ -42,31 +40,25 @@ instance Read ObjectType where
         | "tree" `isPrefixOf` s = [(Tree, drop 4 s)]
         | otherwise = []
 
-pObjectTypes :: ByteStringParser ObjectType
-pObjectTypes = read . BLC.unpack
+objectTypes :: ByteStringParser ObjectType
+objectTypes = read . BLC.unpack
     <$> foldChoice (MC.string . BLU.fromString . show) [ Blob .. Tree ]
 
-pHeader :: Read i => ByteStringParser (ObjectType, i)
-pHeader = (,)
-    <$> pObjectTypes
-    <*> (pSpace *> pDecimals <* pNull)
+header :: Num i => ByteStringParser (ObjectType, i)
+header = (,)
+    <$> objectTypes
+    <*> (space *> decimal <* null)
 
+-- | Object binary parser
 objectParser :: ByteStringParser (ObjectType, BL.ByteString)
-objectParser = (pHeader >>= secondM (fmap BL.pack . flip M.count M.anySingle))
+objectParser = (header >>= secondM (fmap BL.pack . flip M.count M.anySingle))
     <* M.eof
 
+-- | Tree binary parser
 treeParser :: Int -> ByteStringParser [(CMode, P.Path P.Rel P.File, String)]
-treeParser limit = runMaybeT treeParser'
-    >>= maybe (M.customFailure $ TreeParser "failed to parse octet value of cmode") pure
-    where
-        treeParser' = flip unfoldrM 0 $ \limitCount ->
-            ifM ((limitCount >= limit ||) <$> lift M.atEnd) (pure Nothing) $ do
-                cmode <- stateEmpty
-                    =<< LN.head
-                    <$> MaybeT (LN.nonEmpty . readOct . show <$> pDecimals')
-                    <* lift pSpace
-                (.) Just . (.) (, succ limitCount) . (cmode,,)
-                    <$> MaybeT (P.parseRelFile . S.decode <$> M.manyTill M.anySingle pNull)
-                    <*> MaybeT (pure . hexStr <$> M.count 20 M.anySingle)
+treeParser limit = flip unfoldrM 0 $ \lim ->
+    ifM ((lim >= limit ||) <$> M.atEnd) (pure Nothing) $ do
+        cmode <- octal <* space
+        prel <- relFile
+        Just . (, succ lim) . (cmode, prel,) . hexStr <$> M.count 20 M.anySingle
 
-        pDecimals' = pDecimals :: ByteStringParser Integer

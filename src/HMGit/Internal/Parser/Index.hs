@@ -23,6 +23,7 @@ import           Data.Functor                          ((<&>))
 import           Data.Tuple.Extra                      (thd3)
 import           Data.Word                             (Word16, Word32)
 import qualified Path                                  as P
+import           Prelude                               hiding (null)
 import qualified Text.Megaparsec                       as M
 import           Text.Printf                           (printf)
 
@@ -143,8 +144,8 @@ indexBody expectedEntriesNum = unfoldM (ifM stopConditions (pure Nothing) idxFie
                 <*> BG.getLazyByteString 20
                 <*> BG.getWord16be
             fmap entry . P.parseRelFile . BUS.decode
-                <$> M.manyTill (M.anySingleBut 0) pNull
-                <*  M.count' 0 7 pNull
+                <$> M.manyTill (M.anySingleBut 0) null
+                <*  M.count' 0 7 null
 
         lookNumEntries :: [IndexEntry] -> ByteStringParser [IndexEntry]
         lookNumEntries entries

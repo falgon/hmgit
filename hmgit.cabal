@@ -4,11 +4,13 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c81ffd193da131f01bb938ac334c686053cb5352acc1576dba5941a71916d77f
+-- hash: 6803b2b7775aea9fc5161422f2fca9e17da463245a12f95be3667d87d3e15d07
 
 name:           hmgit
-version:        1.0.0.0
+version:        1.0.0
+synopsis:       The subset of awesome content tracker Git
 description:    Please see the README on GitHub at <https://github.com/falgon/hmgit#readme>
+category:       Git
 homepage:       https://github.com/falgon/hmgit#readme
 bug-reports:    https://github.com/falgon/hmgit/issues
 author:         Roki
@@ -105,6 +107,8 @@ library
 
 executable hmgit
   main-is: Main.hs
+  other-modules:
+      Paths_hmgit
   hs-source-dirs:
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -O2
@@ -120,6 +124,7 @@ executable hmgit
     , extra
     , file-embed
     , filepath
+    , gitrev
     , hmgit
     , megaparsec
     , monad-loops
@@ -138,9 +143,6 @@ executable hmgit
     , unix
     , utf8-string
     , zlib
-  if false
-    other-modules:
-        Paths_hmgit
   default-language: Haskell2010
 
 test-suite hmgit-test

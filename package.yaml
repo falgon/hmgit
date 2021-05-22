@@ -1,24 +1,16 @@
 name:                hmgit
-version:             1.0.0.0
+version:             1.0.0
 github:              "falgon/hmgit"
 license:             BSD3
 author:              "Roki"
 maintainer:          "falgon53@yahoo.co.jp"
 copyright:           "2021 Roki"
-
 extra-source-files:
 - README.md
 - ChangeLog.md
-
-# Metadata used when publishing your package
-# synopsis:            Short description of your package
-# category:            Web
-
-# To avoid duplicated efforts in documentation and dealing with the
-# complications of embedding Haddock markup inside cabal files, it is
-# common to point users to the README.md file.
+synopsis:            The subset of awesome content tracker Git
+category:            Git
 description:         Please see the README on GitHub at <https://github.com/falgon/hmgit#readme>
-
 dependencies:
 - base >= 4.7 && < 5
 - directory
@@ -68,9 +60,8 @@ executables:
     - -O2
     dependencies:
     - hmgit
-    when:
-    - condition: false
-      other-modules: Paths_hmgit
+    - gitrev
+    other-modules: Paths_hmgit
 
 tests:
   hmgit-test:

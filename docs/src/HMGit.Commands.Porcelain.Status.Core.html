@@ -23,8 +23,8 @@
 </span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Path.IO</span></span><span>                         </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">P</span></span><span>
 </span><span id="line-24"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Text.Printf</span></span><span>                     </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">printf</span></span><span class="hs-special">)</span><span>
 </span><span id="line-25"></span><span>
-</span><span id="line-26"></span><span class="hs-keyword">newtype</span><span> </span><span id="Status"><span class="annot"><a href="HMGit.Commands.Porcelain.Status.Core.html#Status"><span class="hs-identifier hs-var">Status</span></a></span></span><span> </span><span id="local-6989586621679158872"><span class="annot"><a href="#local-6989586621679158872"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Status"><span class="annot"><a href="HMGit.Commands.Porcelain.Status.Core.html#Status"><span class="hs-identifier hs-var">Status</span></a></span></span><span> </span><span class="hs-special">{</span><span> </span><span id="status"><span class="annot"><span class="annottext">Status m -&gt; StatusCfg -&gt; HMGitT m ()
-</span><a href="HMGit.Commands.Porcelain.Status.Core.html#status"><span class="hs-identifier hs-var hs-var">status</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="HMGit.Commands.Porcelain.Status.Core.html#StatusCfg"><span class="hs-identifier hs-type">StatusCfg</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="HMGit.Internal.Core.Runner.API.html#HMGitT"><span class="hs-identifier hs-type">HMGitT</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679158872"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="hs-special">}</span><span>
+</span><span id="line-26"></span><span class="hs-keyword">newtype</span><span> </span><span id="Status"><span class="annot"><a href="HMGit.Commands.Porcelain.Status.Core.html#Status"><span class="hs-identifier hs-var">Status</span></a></span></span><span> </span><span id="local-6989586621679159065"><span class="annot"><a href="#local-6989586621679159065"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Status"><span class="annot"><a href="HMGit.Commands.Porcelain.Status.Core.html#Status"><span class="hs-identifier hs-var">Status</span></a></span></span><span> </span><span class="hs-special">{</span><span> </span><span id="status"><span class="annot"><span class="annottext">Status m -&gt; StatusCfg -&gt; HMGitT m ()
+</span><a href="HMGit.Commands.Porcelain.Status.Core.html#status"><span class="hs-identifier hs-var hs-var">status</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="HMGit.Commands.Porcelain.Status.Core.html#StatusCfg"><span class="hs-identifier hs-type">StatusCfg</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="HMGit.Internal.Core.Runner.API.html#HMGitT"><span class="hs-identifier hs-type">HMGitT</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679159065"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="hs-special">}</span><span>
 </span><span id="line-27"></span><span>
 </span><span id="line-28"></span><span class="hs-keyword">newtype</span><span> </span><span id="StatusCfg"><span class="annot"><a href="HMGit.Commands.Porcelain.Status.Core.html#StatusCfg"><span class="hs-identifier hs-var">StatusCfg</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="StatusCfg"><span class="annot"><a href="HMGit.Commands.Porcelain.Status.Core.html#StatusCfg"><span class="hs-identifier hs-var">StatusCfg</span></a></span></span><span> </span><span class="hs-special">{</span><span>
 </span><span id="line-29"></span><span>    </span><span id="statusPathspecs"><span class="annot"><span class="annottext">StatusCfg -&gt; [String]
@@ -33,21 +33,21 @@
 </span><span id="line-31"></span><span>
 </span><span id="line-32"></span><span class="hs-keyword">type</span><span> </span><span id="StatusSelector"><span class="annot"><a href="HMGit.Commands.Porcelain.Status.Core.html#StatusSelector"><span class="hs-identifier hs-var">StatusSelector</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="HMGit.Internal.Core.html#HMGitStatus"><span class="hs-identifier hs-type">HMGitStatus</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S.Set</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">P.Path</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">P.Rel</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">P.File</span></span><span class="hs-special">)</span><span>
 </span><span id="line-33"></span><span>
-</span><span id="line-34"></span><span class="hs-keyword">type</span><span> </span><span id="StatusShow"><span class="annot"><a href="HMGit.Commands.Porcelain.Status.Core.html#StatusShow"><span class="hs-identifier hs-var">StatusShow</span></a></span></span><span> </span><span id="local-6989586621679158825"><span class="annot"><a href="#local-6989586621679158825"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ReaderT</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Core.html#HMGitStatus"><span class="hs-identifier hs-type">HMGitStatus</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span class="hs-special">]</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">P.Path</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">P.Abs</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">P.Dir</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Core.Runner.API.html#HMGitT"><span class="hs-identifier hs-type">HMGitT</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679158825"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-34"></span><span class="hs-keyword">type</span><span> </span><span id="StatusShow"><span class="annot"><a href="HMGit.Commands.Porcelain.Status.Core.html#StatusShow"><span class="hs-identifier hs-var">StatusShow</span></a></span></span><span> </span><span id="local-6989586621679159018"><span class="annot"><a href="#local-6989586621679159018"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ReaderT</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Core.html#HMGitStatus"><span class="hs-identifier hs-type">HMGitStatus</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span class="hs-special">]</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">P.Path</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">P.Abs</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">P.Dir</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="HMGit.Internal.Core.Runner.API.html#HMGitT"><span class="hs-identifier hs-type">HMGitT</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679159018"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-35"></span><span>
-</span><span id="line-36"></span><span id="local-6989586621679158846"><span class="annot"><a href="HMGit.Commands.Porcelain.Status.Core.html#statusShow"><span class="hs-identifier hs-type">statusShow</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679158846"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadCatch</span></span><span> </span><span class="annot"><a href="#local-6989586621679158846"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Alternative</span></span><span> </span><span class="annot"><a href="#local-6989586621679158846"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-36"></span><span id="local-6989586621679159039"><span class="annot"><a href="HMGit.Commands.Porcelain.Status.Core.html#statusShow"><span class="hs-identifier hs-type">statusShow</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679159039"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadCatch</span></span><span> </span><span class="annot"><a href="#local-6989586621679159039"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Alternative</span></span><span> </span><span class="annot"><a href="#local-6989586621679159039"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-37"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="HMGit.Commands.Porcelain.Status.Core.html#StatusSelector"><span class="hs-identifier hs-type">StatusSelector</span></a></span><span>
 </span><span id="line-38"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
-</span><span id="line-39"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="HMGit.Commands.Porcelain.Status.Core.html#StatusShow"><span class="hs-identifier hs-type">StatusShow</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679158846"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span><span>
+</span><span id="line-39"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="HMGit.Commands.Porcelain.Status.Core.html#StatusShow"><span class="hs-identifier hs-type">StatusShow</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679159039"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span><span>
 </span><span id="line-40"></span><span id="statusShow"><span class="annot"><span class="annottext">statusShow :: StatusSelector -&gt; String -&gt; StatusShow m ()
-</span><a href="HMGit.Commands.Porcelain.Status.Core.html#statusShow"><span class="hs-identifier hs-var hs-var">statusShow</span></a></span></span><span> </span><span id="local-6989586621679158823"><span class="annot"><span class="annottext">StatusSelector
-</span><a href="#local-6989586621679158823"><span class="hs-identifier hs-var">sctor</span></a></span></span><span> </span><span id="local-6989586621679158822"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621679158822"><span class="hs-identifier hs-var">title</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-41"></span><span>    </span><span class="hs-special">(</span><span id="local-6989586621679158821"><span class="annot"><span class="annottext">HMGitStatus
-</span><a href="#local-6989586621679158821"><span class="hs-identifier hs-var">hs</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679158820"><span class="annot"><span class="annottext">[String]
-</span><a href="#local-6989586621679158820"><span class="hs-identifier hs-var">pats</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679158819"><span class="annot"><span class="annottext">Path Abs Dir
-</span><a href="#local-6989586621679158819"><span class="hs-identifier hs-var">cDir</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679158818"><span class="annot"><span class="annottext">String -&gt; IO ()
-</span><a href="#local-6989586621679158818"><span class="hs-identifier hs-var">printer</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">ReaderT
+</span><a href="HMGit.Commands.Porcelain.Status.Core.html#statusShow"><span class="hs-identifier hs-var hs-var">statusShow</span></a></span></span><span> </span><span id="local-6989586621679159016"><span class="annot"><span class="annottext">StatusSelector
+</span><a href="#local-6989586621679159016"><span class="hs-identifier hs-var">sctor</span></a></span></span><span> </span><span id="local-6989586621679159015"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679159015"><span class="hs-identifier hs-var">title</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-41"></span><span>    </span><span class="hs-special">(</span><span id="local-6989586621679159014"><span class="annot"><span class="annottext">HMGitStatus
+</span><a href="#local-6989586621679159014"><span class="hs-identifier hs-var">hs</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679159013"><span class="annot"><span class="annottext">[String]
+</span><a href="#local-6989586621679159013"><span class="hs-identifier hs-var">pats</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679159012"><span class="annot"><span class="annottext">Path Abs Dir
+</span><a href="#local-6989586621679159012"><span class="hs-identifier hs-var">cDir</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679159011"><span class="annot"><span class="annottext">String -&gt; IO ()
+</span><a href="#local-6989586621679159011"><span class="hs-identifier hs-var">printer</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">ReaderT
   (HMGitStatus, [String], Path Abs Dir, String -&gt; IO ())
   (HMGitT m)
   (HMGitStatus, [String], Path Abs Dir, String -&gt; IO ())
@@ -68,9 +68,9 @@ forall (m :: * -&gt; *) r. Monad m =&gt; ReaderT r m r
 forall (t :: * -&gt; *) (m :: * -&gt; *) b a.
 (Foldable t, Monad m) =&gt;
 (b -&gt; a -&gt; m b) -&gt; b -&gt; t a -&gt; m b
-</span><span class="hs-identifier hs-var">foldM</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679158817"><span class="annot"><span class="annottext">[String]
-</span><a href="#local-6989586621679158817"><span class="hs-identifier hs-var">acc</span></a></span></span><span> </span><span id="local-6989586621679158816"><span class="annot"><span class="annottext">Path Rel File
-</span><a href="#local-6989586621679158816"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ReaderT HMGitConfig m [String]
+</span><span class="hs-identifier hs-var">foldM</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679159010"><span class="annot"><span class="annottext">[String]
+</span><a href="#local-6989586621679159010"><span class="hs-identifier hs-var">acc</span></a></span></span><span> </span><span id="local-6989586621679159009"><span class="annot"><span class="annottext">Path Rel File
+</span><a href="#local-6989586621679159009"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ReaderT HMGitConfig m [String]
 -&gt; ReaderT
      (HMGitStatus, [String], Path Abs Dir, String -&gt; IO ())
      (HMGitT m)
@@ -83,17 +83,17 @@ forall (m :: * -&gt; *).
 (MonadCatch m, MonadIO m, Alternative m) =&gt;
 Path Abs Dir -&gt; SomeBase File -&gt; [String] -&gt; HMGitT m String
 </span><a href="HMGit.Internal.Parser.Pathspecs.html#pathspecs"><span class="hs-identifier hs-var">pathspecs</span></a></span><span> </span><span class="annot"><span class="annottext">Path Abs Dir
-</span><a href="#local-6989586621679158819"><span class="hs-identifier hs-var">cDir</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Path Rel File -&gt; SomeBase File
+</span><a href="#local-6989586621679159012"><span class="hs-identifier hs-var">cDir</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Path Rel File -&gt; SomeBase File
 forall t. Path Rel t -&gt; SomeBase t
 </span><span class="hs-identifier hs-var">P.Rel</span></span><span> </span><span class="annot"><span class="annottext">Path Rel File
-</span><a href="#local-6989586621679158816"><span class="hs-identifier hs-var">p</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[String]
-</span><a href="#local-6989586621679158820"><span class="hs-identifier hs-var">pats</span></a></span><span> </span><span class="annot"><span class="annottext">HMGitT m String
+</span><a href="#local-6989586621679159009"><span class="hs-identifier hs-var">p</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[String]
+</span><a href="#local-6989586621679159013"><span class="hs-identifier hs-var">pats</span></a></span><span> </span><span class="annot"><span class="annottext">HMGitT m String
 -&gt; (String -&gt; [String]) -&gt; ReaderT HMGitConfig m [String]
 forall (f :: * -&gt; *) a b. Functor f =&gt; f a -&gt; (a -&gt; b) -&gt; f b
 </span><span class="hs-operator hs-var">&lt;&amp;&gt;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; [String] -&gt; [String]
 forall a. a -&gt; [a] -&gt; [a]
 </span><span class="hs-glyph hs-var">:</span></span><span class="annot"><span class="annottext">[String]
-</span><a href="#local-6989586621679158817"><span class="hs-identifier hs-var">acc</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">ReaderT
+</span><a href="#local-6989586621679159010"><span class="hs-identifier hs-var">acc</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">ReaderT
   (HMGitStatus, [String], Path Abs Dir, String -&gt; IO ())
   (HMGitT m)
   [String]
@@ -126,15 +126,15 @@ forall a b. a -&gt; b -&gt; a
      [String]
 forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
 </span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">[String]
-</span><a href="#local-6989586621679158817"><span class="hs-identifier hs-var">acc</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679159010"><span class="hs-identifier hs-var">acc</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
 </span><span id="line-43"></span><span>        </span><span class="annot"><span class="annottext">[String]
 forall a. Monoid a =&gt; a
 </span><span class="hs-identifier hs-var">mempty</span></span><span>
 </span><span id="line-44"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Set (Path Rel File) -&gt; [Path Rel File]
 forall a. Set a -&gt; [a]
 </span><span class="hs-identifier hs-var">S.toList</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">StatusSelector
-</span><a href="#local-6989586621679158823"><span class="hs-identifier hs-var">sctor</span></a></span><span> </span><span class="annot"><span class="annottext">HMGitStatus
-</span><a href="#local-6989586621679158821"><span class="hs-identifier hs-var">hs</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679159016"><span class="hs-identifier hs-var">sctor</span></a></span><span> </span><span class="annot"><span class="annottext">HMGitStatus
+</span><a href="#local-6989586621679159014"><span class="hs-identifier hs-var">hs</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
 </span><span id="line-45"></span><span>        </span><span class="annot"><span class="annottext">ReaderT
   (HMGitStatus, [String], Path Abs Dir, String -&gt; IO ())
   (HMGitT m)
@@ -159,12 +159,12 @@ forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
 </span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">() -&gt; StatusShow m ()
 forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
 </span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
-</span><span id="line-48"></span><span>            </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679158811"><span class="annot"><span class="annottext">NonEmpty String
-</span><a href="#local-6989586621679158811"><span class="hs-identifier hs-var">fs</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">IO () -&gt; StatusShow m ()
+</span><span id="line-48"></span><span>            </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679159004"><span class="annot"><span class="annottext">NonEmpty String
+</span><a href="#local-6989586621679159004"><span class="hs-identifier hs-var">fs</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">IO () -&gt; StatusShow m ()
 forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
 </span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; IO ()
 </span><span class="hs-identifier hs-var">putStr</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621679158822"><span class="hs-identifier hs-var">title</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679159015"><span class="hs-identifier hs-var">title</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-49"></span><span>                </span><span class="annot"><span class="annottext">StatusShow m () -&gt; StatusShow m () -&gt; StatusShow m ()
 forall (f :: * -&gt; *) a b. Applicative f =&gt; f a -&gt; f b -&gt; f b
 </span><span class="hs-operator hs-var">*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; StatusShow m ()) -&gt; NonEmpty String -&gt; StatusShow m ()
@@ -177,10 +177,10 @@ forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
 -&gt; (String -&gt; IO ()) -&gt; String -&gt; StatusShow m ()
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; IO ()
-</span><a href="#local-6989586621679158818"><span class="hs-identifier hs-var">printer</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">NonEmpty String
-</span><a href="#local-6989586621679158811"><span class="hs-identifier hs-var">fs</span></a></span><span>
+</span><a href="#local-6989586621679159011"><span class="hs-identifier hs-var">printer</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">NonEmpty String
+</span><a href="#local-6989586621679159004"><span class="hs-identifier hs-var">fs</span></a></span><span>
 </span><span id="line-50"></span><span>
-</span><span id="line-51"></span><span id="local-6989586621679158806"><span class="annot"><a href="HMGit.Commands.Porcelain.Status.Core.html#statusDefault"><span class="hs-identifier hs-type">statusDefault</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679158806"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadCatch</span></span><span> </span><span class="annot"><a href="#local-6989586621679158806"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Alternative</span></span><span> </span><span class="annot"><a href="#local-6989586621679158806"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="HMGit.Commands.Porcelain.Status.Core.html#Status"><span class="hs-identifier hs-type">Status</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679158806"><span class="hs-identifier hs-type">m</span></a></span></span><span>
+</span><span id="line-51"></span><span id="local-6989586621679158999"><span class="annot"><a href="HMGit.Commands.Porcelain.Status.Core.html#statusDefault"><span class="hs-identifier hs-type">statusDefault</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679158999"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadCatch</span></span><span> </span><span class="annot"><a href="#local-6989586621679158999"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Alternative</span></span><span> </span><span class="annot"><a href="#local-6989586621679158999"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="HMGit.Commands.Porcelain.Status.Core.html#Status"><span class="hs-identifier hs-type">Status</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679158999"><span class="hs-identifier hs-type">m</span></a></span></span><span>
 </span><span id="line-52"></span><span id="statusDefault"><span class="annot"><span class="annottext">statusDefault :: Status m
 </span><a href="HMGit.Commands.Porcelain.Status.Core.html#statusDefault"><span class="hs-identifier hs-var hs-var">statusDefault</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(StatusCfg -&gt; HMGitT m ()) -&gt; Status m
 forall (m :: * -&gt; *). (StatusCfg -&gt; HMGitT m ()) -&gt; Status m
@@ -193,7 +193,7 @@ forall a (m :: * -&gt; *) (m :: * -&gt; *) t.
 (PrintfArg a, MonadIO m, MonadIO m, MonadCatch m) =&gt;
 t
 -&gt; ReaderT HMGitConfig m (HMGitStatus, t, Path Abs Dir, a -&gt; m ())
-</span><a href="#local-6989586621679158805"><span class="hs-identifier hs-var">cfg</span></a></span><span> </span><span class="annot"><span class="annottext">([String]
+</span><a href="#local-6989586621679158998"><span class="hs-identifier hs-var">cfg</span></a></span><span> </span><span class="annot"><span class="annottext">([String]
  -&gt; ReaderT
       HMGitConfig
       m
@@ -229,13 +229,13 @@ forall r (m :: * -&gt; *) a. ReaderT r m a -&gt; r -&gt; m a
   (HMGitStatus, [String], Path Abs Dir, String -&gt; IO ())
   (HMGitT m)
   ()
-</span><a href="#local-6989586621679158803"><span class="hs-identifier hs-var">statusShow'</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679158996"><span class="hs-identifier hs-var">statusShow'</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-53"></span><span>    </span><span class="hs-keyword">where</span><span>
-</span><span id="line-54"></span><span>        </span><span id="local-6989586621679158805"><span class="annot"><span class="annottext">cfg :: t
+</span><span id="line-54"></span><span>        </span><span id="local-6989586621679158998"><span class="annot"><span class="annottext">cfg :: t
 -&gt; ReaderT HMGitConfig m (HMGitStatus, t, Path Abs Dir, a -&gt; m ())
-</span><a href="#local-6989586621679158805"><span class="hs-identifier hs-var hs-var">cfg</span></a></span></span><span> </span><span id="local-6989586621679158802"><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621679158802"><span class="hs-identifier hs-var">pats</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-special">,</span></span><span> </span><span class="annot"><span class="annottext">t
-</span><a href="#local-6989586621679158802"><span class="hs-identifier hs-var">pats</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-special">,</span></span><span> </span><span class="annot"><span class="annottext">IO () -&gt; m ()
+</span><a href="#local-6989586621679158998"><span class="hs-identifier hs-var hs-var">cfg</span></a></span></span><span> </span><span id="local-6989586621679158995"><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621679158995"><span class="hs-identifier hs-var">pats</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-special">,</span></span><span> </span><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621679158995"><span class="hs-identifier hs-var">pats</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-special">,</span></span><span> </span><span class="annot"><span class="annottext">IO () -&gt; m ()
 forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
 </span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">(IO () -&gt; m ()) -&gt; (a -&gt; IO ()) -&gt; a -&gt; m ()
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
@@ -269,11 +269,11 @@ forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f
 </span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">ReaderT HMGitConfig m (Path Abs Dir)
 forall (m :: * -&gt; *). MonadIO m =&gt; m (Path Abs Dir)
 </span><span class="hs-identifier hs-var">P.getCurrentDir</span></span><span>
-</span><span id="line-57"></span><span>        </span><span id="local-6989586621679158803"><span class="annot"><span class="annottext">statusShow' :: ReaderT
+</span><span id="line-57"></span><span>        </span><span id="local-6989586621679158996"><span class="annot"><span class="annottext">statusShow' :: ReaderT
   (HMGitStatus, [String], Path Abs Dir, String -&gt; IO ())
   (HMGitT m)
   ()
-</span><a href="#local-6989586621679158803"><span class="hs-identifier hs-var hs-var">statusShow'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(StatusSelector
+</span><a href="#local-6989586621679158996"><span class="hs-identifier hs-var hs-var">statusShow'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(StatusSelector
  -&gt; String
  -&gt; ReaderT
       (HMGitStatus, [String], Path Abs Dir, String -&gt; IO ())
@@ -307,21 +307,21 @@ StatusSelector -&gt; String -&gt; StatusShow m ()
 </span><span class="hs-string">&quot;New files:\n&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;Deleted files:\n&quot;</span></span><span> </span><span class="hs-special">]</span><span>
 </span><span id="line-60"></span><span>
-</span><span id="line-61"></span><span id="local-6989586621679158795"><span class="annot"><a href="HMGit.Commands.Porcelain.Status.Core.html#statusShort"><span class="hs-identifier hs-type">statusShort</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadCatch</span></span><span> </span><span class="annot"><a href="#local-6989586621679158795"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679158795"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Alternative</span></span><span> </span><span class="annot"><a href="#local-6989586621679158795"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="HMGit.Commands.Porcelain.Status.Core.html#Status"><span class="hs-identifier hs-type">Status</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679158795"><span class="hs-identifier hs-type">m</span></a></span></span><span>
+</span><span id="line-61"></span><span id="local-6989586621679158988"><span class="annot"><a href="HMGit.Commands.Porcelain.Status.Core.html#statusShort"><span class="hs-identifier hs-type">statusShort</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadCatch</span></span><span> </span><span class="annot"><a href="#local-6989586621679158988"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679158988"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Alternative</span></span><span> </span><span class="annot"><a href="#local-6989586621679158988"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="HMGit.Commands.Porcelain.Status.Core.html#Status"><span class="hs-identifier hs-type">Status</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679158988"><span class="hs-identifier hs-type">m</span></a></span></span><span>
 </span><span id="line-62"></span><span id="statusShort"><span class="annot"><span class="annottext">statusShort :: Status m
 </span><a href="HMGit.Commands.Porcelain.Status.Core.html#statusShort"><span class="hs-identifier hs-var hs-var">statusShort</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(StatusCfg -&gt; HMGitT m ()) -&gt; Status m
 forall (m :: * -&gt; *). (StatusCfg -&gt; HMGitT m ()) -&gt; Status m
 </span><a href="HMGit.Commands.Porcelain.Status.Core.html#Status"><span class="hs-identifier hs-var">Status</span></a></span><span> </span><span class="annot"><span class="annottext">((StatusCfg -&gt; HMGitT m ()) -&gt; Status m)
 -&gt; (StatusCfg -&gt; HMGitT m ()) -&gt; Status m
 forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679158794"><span class="annot"><span class="annottext">StatusCfg
-</span><a href="#local-6989586621679158794"><span class="hs-identifier hs-var">statusCfg</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-63"></span><span>    </span><span id="local-6989586621679158793"><span class="annot"><span class="annottext">Path Abs Dir
-</span><a href="#local-6989586621679158793"><span class="hs-identifier hs-var">cDir</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">ReaderT HMGitConfig m (Path Abs Dir)
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679158987"><span class="annot"><span class="annottext">StatusCfg
+</span><a href="#local-6989586621679158987"><span class="hs-identifier hs-var">statusCfg</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-63"></span><span>    </span><span id="local-6989586621679158986"><span class="annot"><span class="annottext">Path Abs Dir
+</span><a href="#local-6989586621679158986"><span class="hs-identifier hs-var">cDir</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">ReaderT HMGitConfig m (Path Abs Dir)
 forall (m :: * -&gt; *). MonadIO m =&gt; m (Path Abs Dir)
 </span><span class="hs-identifier hs-var">P.getCurrentDir</span></span><span>
-</span><span id="line-64"></span><span>    </span><span id="local-6989586621679158792"><span class="annot"><span class="annottext">HMGitStatus
-</span><a href="#local-6989586621679158792"><span class="hs-identifier hs-var">st</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">HMGitT m HMGitStatus
+</span><span id="line-64"></span><span>    </span><span id="local-6989586621679158985"><span class="annot"><span class="annottext">HMGitStatus
+</span><a href="#local-6989586621679158985"><span class="hs-identifier hs-var">st</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">HMGitT m HMGitStatus
 forall (m :: * -&gt; *).
 (MonadIO m, MonadCatch m) =&gt;
 HMGitT m HMGitStatus
@@ -335,8 +335,8 @@ HMGitT m HMGitStatus
 forall (m :: * -&gt; *) a b c.
 Applicative m =&gt;
 (a -&gt; b -&gt; m c) -&gt; [a] -&gt; [b] -&gt; m ()
-</span><span class="hs-identifier hs-var">zipWithM_</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679158791"><span class="annot"><span class="annottext">StatusSelector
-</span><a href="#local-6989586621679158791"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ReaderT
+</span><span class="hs-identifier hs-var">zipWithM_</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679158984"><span class="annot"><span class="annottext">StatusSelector
+</span><a href="#local-6989586621679158984"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ReaderT
   (HMGitStatus, [String], Path Abs Dir, String -&gt; IO ())
   (HMGitT m)
   ()
@@ -353,7 +353,7 @@ forall (m :: * -&gt; *).
 (MonadIO m, MonadCatch m, Alternative m) =&gt;
 StatusSelector -&gt; String -&gt; StatusShow m ()
 </span><a href="HMGit.Commands.Porcelain.Status.Core.html#statusShow"><span class="hs-identifier hs-var">statusShow</span></a></span><span> </span><span class="annot"><span class="annottext">StatusSelector
-</span><a href="#local-6989586621679158791"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679158984"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;&quot;</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
 </span><span id="line-66"></span><span>        </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">StatusSelector
 </span><a href="HMGit.Internal.Core.html#statusChanged"><span class="hs-identifier hs-var hs-var">statusChanged</span></a></span><span>
@@ -363,10 +363,10 @@ StatusSelector -&gt; String -&gt; StatusShow m ()
 </span><a href="HMGit.Internal.Core.html#statusDeleted"><span class="hs-identifier hs-var hs-var">statusDeleted</span></a></span><span>
 </span><span id="line-69"></span><span>        </span><span class="hs-special">]</span><span>
 </span><span id="line-70"></span><span>        </span><span class="hs-special">[</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">HMGitStatus
-</span><a href="#local-6989586621679158792"><span class="hs-identifier hs-var">st</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">StatusCfg -&gt; [String]
+</span><a href="#local-6989586621679158985"><span class="hs-identifier hs-var">st</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">StatusCfg -&gt; [String]
 </span><a href="HMGit.Commands.Porcelain.Status.Core.html#statusPathspecs"><span class="hs-identifier hs-var hs-var">statusPathspecs</span></a></span><span> </span><span class="annot"><span class="annottext">StatusCfg
-</span><a href="#local-6989586621679158794"><span class="hs-identifier hs-var">statusCfg</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Path Abs Dir
-</span><a href="#local-6989586621679158793"><span class="hs-identifier hs-var">cDir</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; IO ()
+</span><a href="#local-6989586621679158987"><span class="hs-identifier hs-var">statusCfg</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Path Abs Dir
+</span><a href="#local-6989586621679158986"><span class="hs-identifier hs-var">cDir</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; IO ()
 </span><span class="hs-identifier hs-var">putStrLn</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; IO ()) -&gt; (String -&gt; String) -&gt; String -&gt; IO ()
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; String
@@ -374,10 +374,10 @@ forall r. PrintfType r =&gt; String -&gt; r
 </span><span class="hs-identifier hs-var">printf</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot; M %s&quot;</span></span><span class="hs-special">)</span><span>
 </span><span id="line-71"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">HMGitStatus
-</span><a href="#local-6989586621679158792"><span class="hs-identifier hs-var">st</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">StatusCfg -&gt; [String]
+</span><a href="#local-6989586621679158985"><span class="hs-identifier hs-var">st</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">StatusCfg -&gt; [String]
 </span><a href="HMGit.Commands.Porcelain.Status.Core.html#statusPathspecs"><span class="hs-identifier hs-var hs-var">statusPathspecs</span></a></span><span> </span><span class="annot"><span class="annottext">StatusCfg
-</span><a href="#local-6989586621679158794"><span class="hs-identifier hs-var">statusCfg</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Path Abs Dir
-</span><a href="#local-6989586621679158793"><span class="hs-identifier hs-var">cDir</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; IO ()
+</span><a href="#local-6989586621679158987"><span class="hs-identifier hs-var">statusCfg</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Path Abs Dir
+</span><a href="#local-6989586621679158986"><span class="hs-identifier hs-var">cDir</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; IO ()
 </span><span class="hs-identifier hs-var">putStrLn</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; IO ()) -&gt; (String -&gt; String) -&gt; String -&gt; IO ()
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; String
@@ -385,10 +385,10 @@ forall r. PrintfType r =&gt; String -&gt; r
 </span><span class="hs-identifier hs-var">printf</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;?? %s&quot;</span></span><span class="hs-special">)</span><span>
 </span><span id="line-72"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">HMGitStatus
-</span><a href="#local-6989586621679158792"><span class="hs-identifier hs-var">st</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">StatusCfg -&gt; [String]
+</span><a href="#local-6989586621679158985"><span class="hs-identifier hs-var">st</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">StatusCfg -&gt; [String]
 </span><a href="HMGit.Commands.Porcelain.Status.Core.html#statusPathspecs"><span class="hs-identifier hs-var hs-var">statusPathspecs</span></a></span><span> </span><span class="annot"><span class="annottext">StatusCfg
-</span><a href="#local-6989586621679158794"><span class="hs-identifier hs-var">statusCfg</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Path Abs Dir
-</span><a href="#local-6989586621679158793"><span class="hs-identifier hs-var">cDir</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; IO ()
+</span><a href="#local-6989586621679158987"><span class="hs-identifier hs-var">statusCfg</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Path Abs Dir
+</span><a href="#local-6989586621679158986"><span class="hs-identifier hs-var">cDir</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; IO ()
 </span><span class="hs-identifier hs-var">putStrLn</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; IO ()) -&gt; (String -&gt; String) -&gt; String -&gt; IO ()
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; String

@@ -25,4 +25,13 @@ jobs:
       - name: Build test
         run: |
           stack --local-bin-path . install
+          ./hmgit --version
           ./hmgit --help
+          ./hmgit init test && cd test
+          echo hoge > hoge
+          ../hmgit add hoge
+          ../hmgit commit -m 'ci test' --author 'roki <roki@example.com>'
+          ../hmgit ls-files -s
+          ../hmgit cat-file -p $(echo hoge | ../hmgit hash-object --stdin)
+          echo foo > hoge
+          ../hmgit diff

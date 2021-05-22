@@ -2,10 +2,12 @@
 -- See Hoogle, http://www.haskell.org/hoogle/
 
 
--- | Please see the README on GitHub at
+-- | The subset of awesome content tracker Git
+--   
+--   Please see the README on GitHub at
 --   <a>https://github.com/falgon/hmgit#readme</a>
 @package hmgit
-@version 1.0.0.0
+@version 1.0.0
 
 module HMGit.Development.TH
 relativeProjRoot :: FilePath -> Q Exp
@@ -45,7 +47,6 @@ match' :: String -> String -> Bool
 instance GHC.Show.Show HMGit.Internal.Parser.Pathspecs.Glob.GlobIRToken
 
 module HMGit.Internal.Utils
-stateEmpty :: (Foldable t, MonadPlus m) => (a, t b) -> m a
 strictOne :: (MonadPlus m, MonadThrow m) => [a] -> m a
 foldMapM :: (Monad m, Monoid w, Foldable t) => (a -> m w) -> t a -> m w
 foldChoice :: (Foldable t, Alternative f) => (a -> f b) -> t a -> f b
@@ -66,10 +67,24 @@ IndexParser :: String -> ParseException
 MasterHashParser :: String -> ParseException
 runByteStringParser :: (MonadThrow m, Show e, ShowErrorComponent e, Typeable e, VisualStream s, TraversableStream s, Typeable s, Show s, Show (Token s)) => Parsec e s a -> Path b t -> s -> m a
 type ByteStringParser = Parsec ParseException ByteString
-pNull :: ByteStringParser Word8
-pSpace :: ByteStringParser Word8
-pDecimals :: Read i => ByteStringParser i
+
+-- | null
+null :: ByteStringParser Word8
+
+-- | M.space is fine but we just want to match 0x20
+space :: ByteStringParser ()
+
+-- | decimal
+decimal :: Num i => ByteStringParser i
+
+-- | octal
+octal :: Num i => ByteStringParser i
+
+-- | Natural transformation from Get to parsec
 fromBinaryGetter :: (String -> ParseException) -> Get ~> ByteStringParser
+
+-- | parse relative file path until null
+relFile :: ByteStringParser (Path Rel File)
 instance GHC.Show.Show HMGit.Internal.Parser.Core.ByteString.ParseException
 instance GHC.Classes.Ord HMGit.Internal.Parser.Core.ByteString.ParseException
 instance GHC.Classes.Eq HMGit.Internal.Parser.Core.ByteString.ParseException
@@ -125,11 +140,23 @@ instance GHC.Show.Show HMGit.Internal.Parser.Index.IndexEntry
 module HMGit.Internal.Parser.Core
 
 module HMGit.Internal.Parser.Object
+
+-- | The Git object type. Currently, it does not support tags.
 data ObjectType
+
+-- | Blob object
 Blob :: ObjectType
+
+-- | Commit object
 Commit :: ObjectType
+
+-- | Tree object
 Tree :: ObjectType
+
+-- | Object binary parser
 objectParser :: ByteStringParser (ObjectType, ByteString)
+
+-- | Tree binary parser
 treeParser :: Int -> ByteStringParser [(CMode, Path Rel File, String)]
 instance GHC.Enum.Enum HMGit.Internal.Parser.Object.ObjectType
 instance GHC.Classes.Eq HMGit.Internal.Parser.Object.ObjectType
@@ -140,11 +167,23 @@ module HMGit.Internal.Parser
 type ByteStringParser = Parsec ParseException ByteString
 data ParseException
 runByteStringParser :: (MonadThrow m, Show e, ShowErrorComponent e, Typeable e, VisualStream s, TraversableStream s, Typeable s, Show s, Show (Token s)) => Parsec e s a -> Path b t -> s -> m a
+
+-- | The Git object type. Currently, it does not support tags.
 data ObjectType
+
+-- | Blob object
 Blob :: ObjectType
+
+-- | Commit object
 Commit :: ObjectType
+
+-- | Tree object
 Tree :: ObjectType
+
+-- | Object binary parser
 objectParser :: ByteStringParser (ObjectType, ByteString)
+
+-- | Tree binary parser
 treeParser :: Int -> ByteStringParser [(CMode, Path Rel File, String)]
 data IndexEntry
 IndexEntry :: Word32 -> Word32 -> Word32 -> Word32 -> Word32 -> Word32 -> Word32 -> Word32 -> Word32 -> Word32 -> ByteString -> Word16 -> Path Rel File -> IndexEntry
@@ -282,15 +321,21 @@ type HMGitT = ReaderT HMGitConfig
 runHMGit :: HMGitT m a -> HMGitConfig -> m a
 
 module HMGit.Internal.Core
+
+-- | The Git object type. Currently, it does not support tags.
 data ObjectType
+
+-- | Blob object
 Blob :: ObjectType
+
+-- | Commit object
 Commit :: ObjectType
+
+-- | Tree object
 Tree :: ObjectType
+
+-- | Information for built objects
 data ObjectInfo
-ObjectInfo :: ByteString -> ByteString -> Path Abs File -> ObjectInfo
-[objectId] :: ObjectInfo -> ByteString
-[objectData] :: ObjectInfo -> ByteString
-[objectPath] :: ObjectInfo -> Path Abs File
 data IndexEntry
 IndexEntry :: Word32 -> Word32 -> Word32 -> Word32 -> Word32 -> Word32 -> Word32 -> Word32 -> Word32 -> Word32 -> ByteString -> Word16 -> Path Rel File -> IndexEntry
 
@@ -331,23 +376,46 @@ IndexEntry :: Word32 -> Word32 -> Word32 -> Word32 -> Word32 -> Word32 -> Word32
 -- | A 16-bit <tt>flags</tt> field split into (high to low bits)
 [ieFlags] :: IndexEntry -> Word16
 [iePath] :: IndexEntry -> Path Rel File
+
+-- | Create object ID, path, zlib compressed data from object type and
+--   content
 fromContents :: MonadCatch m => ObjectType -> ByteString -> HMGitT m ObjectInfo
+
+-- | Create an object to HMGit database
 storeObject :: (MonadIO m, MonadCatch m) => ObjectType -> ByteString -> HMGitT m ByteString
+
+-- | Read an object from HMGit database by Object ID
 loadObject :: (MonadIO m, MonadCatch m, MonadPlus m) => String -> HMGitT m (ObjectType, ByteString)
+
+-- | Read a tree from raw data
 loadTree :: MonadThrow m => ByteString -> HMGitT m [(CMode, Path Rel File, String)]
+
+-- | Create a tree object to HMGit database <b>NOTE</b>: Currently only
+--   supports a single, top-level directory
 storeTree :: (MonadIO m, MonadCatch m) => HMGitT m ByteString
+
+-- | Read index entries
 loadIndex :: (MonadIO m, MonadThrow m) => HMGitT m [IndexEntry]
 
--- | Currently <a>latestBlobHashes</a> does not support gitignore and
---   submodule, so we are embedding content to ignore directly in the code.
---   Comments HACK below are the relevant part.
+-- | Write index entries
 storeIndex :: (MonadIO m, Foldable t) => t IndexEntry -> HMGitT m ()
+
+-- | Data representing status
 data HMGitStatus
-HMGitStatus :: Set (Path Rel File) -> Set (Path Rel File) -> Set (Path Rel File) -> HMGitStatus
-[statusChanged] :: HMGitStatus -> Set (Path Rel File)
-[statusNew] :: HMGitStatus -> Set (Path Rel File)
-[statusDeleted] :: HMGitStatus -> Set (Path Rel File)
+
+-- | Calculates the latest, or current, hash of the working tree and
+--   returns a map of its path and hash value.
+--   
+--   <b>NOTE</b>: Currently <a>latestBlobHashes</a> does not support
+--   gitignore and submodule, so we are embedding content to ignore
+--   directly in the code. Comments HACK below are the relevant part.
+latestBlobHashes :: (MonadIO m, MonadCatch m) => HMGitT m (Map (Path Rel File) String)
+
+-- | Returns a map of blob file paths and hashes that are already part of
+--   the repository. This is a pair with <a>latestBlobHashes</a>.
 indexedBlobHashes :: (MonadIO m, MonadCatch m) => HMGitT m (Map (Path Rel File) String)
+
+-- | Get status
 getStatus :: (MonadIO m, MonadCatch m) => HMGitT m HMGitStatus
 instance GHC.Show.Show HMGit.Internal.Core.HMGitStatus
 

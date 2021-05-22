@@ -1,7 +1,6 @@
 {-# LANGUAGE ExplicitForAll, FlexibleContexts, TupleSections #-}
 module HMGit.Internal.Utils (
-    stateEmpty
-  , strictOne
+    strictOne
   , foldMapM
   , foldChoice
   , foldChoiceM
