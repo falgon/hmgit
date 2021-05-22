@@ -1,6 +1,7 @@
 # HMGit
 
 [![CI](https://github.com/falgon/hmgit/actions/workflows/build.yml/badge.svg)](https://github.com/falgon/hmgit/actions/workflows/build.yml)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ffalgon%2Fhmgit.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Ffalgon%2Fhmgit?ref=badge_shield)
 
 Haskell Minimal Git (This is not made for practical purposes).
 
@@ -154,3 +155,7 @@ $ stack build
 ```bash
 $ stack test
 ```
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ffalgon%2Fhmgit.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Ffalgon%2Fhmgit?ref=badge_large)
