@@ -12,11 +12,12 @@ import           HMGit.Commands.Porcelain.Init.Core      (Init, RepositoryName)
 import           HMGit.Commands.Porcelain.Status.Core    (Status, StatusCfg)
 import           HMGit.Internal.Parser                   (ObjectType (..))
 
-data Cmd m = CmdInit (String -> Init m) RepositoryName
-    | CmdAdd (Add m) AddCfg
-    | CmdCatFile (CatFile m) String
-    | CmdHashObject ObjectType (HashObject m) FilePath
-    | CmdLsFiles (LsFiles m) LsFilesCfg
-    | CmdStatus (Status m) StatusCfg
-    | CmdDiff (Diff m) DiffCfg
-    | CmdCommit (Commit m) CommitCfg
+-- | Commands supported by HMGit
+data Cmd m = CmdInit (String -> Init m) RepositoryName -- ^ init
+    | CmdAdd (Add m) AddCfg -- ^ add
+    | CmdCatFile (CatFile m) String -- ^ cat-file
+    | CmdHashObject ObjectType (HashObject m) FilePath -- ^ hash-object
+    | CmdLsFiles (LsFiles m) LsFilesCfg -- ^ ls-files
+    | CmdStatus (Status m) StatusCfg -- ^ status
+    | CmdDiff (Diff m) DiffCfg -- ^ diff
+    | CmdCommit (Commit m) CommitCfg -- ^ commit

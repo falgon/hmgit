@@ -491,14 +491,32 @@ hashObjectWrite :: (MonadCatch m, MonadIO m) => HashObject m
 hashObject :: (MonadCatch m, MonadIO m) => HashObject m -> ObjectType -> FilePath -> HMGitT m ()
 
 module HMGit.Commands
+
+-- | Commands supported by HMGit
 data Cmd m
+
+-- | init
 CmdInit :: (String -> Init m) -> RepositoryName -> Cmd m
+
+-- | add
 CmdAdd :: Add m -> AddCfg -> Cmd m
+
+-- | cat-file
 CmdCatFile :: CatFile m -> String -> Cmd m
+
+-- | hash-object
 CmdHashObject :: ObjectType -> HashObject m -> FilePath -> Cmd m
+
+-- | ls-files
 CmdLsFiles :: LsFiles m -> LsFilesCfg -> Cmd m
+
+-- | status
 CmdStatus :: Status m -> StatusCfg -> Cmd m
+
+-- | diff
 CmdDiff :: Diff m -> DiffCfg -> Cmd m
+
+-- | commit
 CmdCommit :: Commit m -> CommitCfg -> Cmd m
 
 module HMGit.Commands.Porcelain.Status.Cmd
