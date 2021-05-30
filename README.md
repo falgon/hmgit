@@ -8,7 +8,7 @@
 </a>
 ![Haskell Programming Language](https://img.shields.io/badge/language-Haskell-8D82AC.svg)
 [![Documents](https://img.shields.io/badge/docs-available-blue.svg)](https://falgon.github.io/hmgit/)
-
+[![buymeacoffe](https://badgen.net/badge/icon/buymeacoffee?icon=buymeacoffee&label)](https://www.buymeacoffee.com/roki)
 
 Haskell Minimal Git (This is not made for practical purposes)
 
